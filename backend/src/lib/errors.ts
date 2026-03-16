@@ -1,0 +1,74 @@
+class ApiError extends Error {
+  code: string;
+  statusCode: number;
+  details?: unknown;
+
+  constructor(code: string, statusCode: number, message?: string, details?: unknown) {
+    super(message ?? code);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
+
+const Errors = {
+  AUTH_INVALID_CREDENTIALS: () => new ApiError("AUTH_INVALID_CREDENTIALS", 401),
+  AUTH_EMAIL_NOT_VERIFIED: () => new ApiError("AUTH_EMAIL_NOT_VERIFIED", 403),
+  AUTH_PHONE_NOT_VERIFIED: () => new ApiError("AUTH_PHONE_NOT_VERIFIED", 403),
+  AUTH_SESSION_EXPIRED: () => new ApiError("AUTH_SESSION_EXPIRED", 401),
+  MFA_REQUIRED: () => new ApiError("MFA_REQUIRED", 403, "MFA verification required for this action"),
+  MFA_NOT_CONFIGURED: () => new ApiError("MFA_NOT_CONFIGURED", 404, "MFA is not configured for this account"),
+  MFA_INVALID_CODE: () => new ApiError("MFA_INVALID_CODE", 401, "Invalid MFA code"),
+  USER_SUSPENDED: () => new ApiError("USER_SUSPENDED", 403),
+  USER_NOT_FOUND: () => new ApiError("USER_NOT_FOUND", 404),
+  WORKER_PROFILE_NOT_FOUND: () => new ApiError("WORKER_PROFILE_NOT_FOUND", 404),
+  WORKER_NOT_VERIFIED: () => new ApiError("WORKER_NOT_VERIFIED", 403),
+  CONVERSATION_NOT_FOUND: () => new ApiError("CONVERSATION_NOT_FOUND", 404),
+  MESSAGE_NOT_FOUND: () => new ApiError("MESSAGE_NOT_FOUND", 404),
+  POST_NOT_FOUND: () => new ApiError("POST_NOT_FOUND", 404),
+  COMMENT_NOT_FOUND: () => new ApiError("COMMENT_NOT_FOUND", 404),
+  REQUEST_NOT_FOUND: () => new ApiError("REQUEST_NOT_FOUND", 404),
+  REQUEST_ALREADY_ACCEPTED: () => new ApiError("REQUEST_ALREADY_ACCEPTED", 409),
+  REQUEST_INVALID_STATUS_TRANSITION: () => new ApiError("REQUEST_INVALID_STATUS_TRANSITION", 422),
+  BOOKING_NOT_FOUND: () => new ApiError("BOOKING_NOT_FOUND", 404),
+  RESCHEDULE_NOT_FOUND: () => new ApiError("RESCHEDULE_NOT_FOUND", 404),
+  BOOKING_TIME_CONFLICT: () => new ApiError("BOOKING_TIME_CONFLICT", 409),
+  BOOKING_ALREADY_COMPLETED: () => new ApiError("BOOKING_ALREADY_COMPLETED", 409),
+  BOOKING_INVALID_STATUS_TRANSITION: () => new ApiError("BOOKING_INVALID_STATUS_TRANSITION", 422),
+  REVIEW_NOT_FOUND: () => new ApiError("REVIEW_NOT_FOUND", 404),
+  REVIEW_REPLY_NOT_FOUND: () => new ApiError("REVIEW_REPLY_NOT_FOUND", 404),
+  REVIEW_NOT_ALLOWED: () => new ApiError("REVIEW_NOT_ALLOWED", 403),
+  NOTIFICATION_NOT_FOUND: () => new ApiError("NOTIFICATION_NOT_FOUND", 404),
+  PUSH_DEVICE_NOT_FOUND: () => new ApiError("PUSH_DEVICE_NOT_FOUND", 404),
+  PAYMENT_INTENT_NOT_FOUND: () => new ApiError("PAYMENT_INTENT_NOT_FOUND", 404),
+  PAYMENT_INTENT_INVALID_STATE: () => new ApiError("PAYMENT_INTENT_INVALID_STATE", 422),
+  BILLING_WEBHOOK_INVALID_SIGNATURE: () => new ApiError("BILLING_WEBHOOK_INVALID_SIGNATURE", 401),
+  BILLING_PROVIDER_UNSUPPORTED: () => new ApiError("BILLING_PROVIDER_UNSUPPORTED", 422),
+  SUPPORT_TICKET_NOT_FOUND: () => new ApiError("SUPPORT_TICKET_NOT_FOUND", 404),
+  SUPPORT_TICKET_ACCESS_DENIED: () => new ApiError("SUPPORT_TICKET_ACCESS_DENIED", 403),
+  REPORT_NOT_FOUND: () => new ApiError("REPORT_NOT_FOUND", 404),
+  MODERATION_CASE_NOT_FOUND: () => new ApiError("MODERATION_CASE_NOT_FOUND", 404),
+  FRAUD_SIGNAL_NOT_FOUND: () => new ApiError("FRAUD_SIGNAL_NOT_FOUND", 404),
+  CONTENT_NOT_FOUND: () => new ApiError("CONTENT_NOT_FOUND", 404),
+  ADMIN_ROLE_NOT_FOUND: () => new ApiError("ADMIN_ROLE_NOT_FOUND", 404),
+  FEATURE_FLAG_NOT_FOUND: () => new ApiError("FEATURE_FLAG_NOT_FOUND", 404),
+  SYSTEM_CONFIG_NOT_FOUND: () => new ApiError("SYSTEM_CONFIG_NOT_FOUND", 404),
+  CITY_NOT_FOUND: () => new ApiError("CITY_NOT_FOUND", 404),
+  CONVERSATION_ACCESS_DENIED: () => new ApiError("CONVERSATION_ACCESS_DENIED", 403),
+  FILE_UPLOAD_INVALID_TYPE: () => new ApiError("FILE_UPLOAD_INVALID_TYPE", 422),
+  FILE_UPLOAD_TOO_LARGE: () => new ApiError("FILE_UPLOAD_TOO_LARGE", 422),
+  MEDIA_ASSET_NOT_FOUND: () => new ApiError("MEDIA_ASSET_NOT_FOUND", 404),
+  MEDIA_UPLOAD_EXPIRED: () => new ApiError("MEDIA_UPLOAD_EXPIRED", 410),
+  MEDIA_UPLOAD_NOT_READY: () => new ApiError("MEDIA_UPLOAD_NOT_READY", 409),
+  MEDIA_READ_URL_INVALID: () => new ApiError("MEDIA_READ_URL_INVALID", 401),
+  PERMISSION_DENIED: () => new ApiError("PERMISSION_DENIED", 403),
+  RATE_LIMIT_EXCEEDED: () => new ApiError("RATE_LIMIT_EXCEEDED", 429),
+  IDEMPOTENCY_CONFLICT: () => new ApiError("IDEMPOTENCY_CONFLICT", 409),
+  VALIDATION_FAILED: (details?: unknown) => new ApiError("VALIDATION_FAILED", 422, "Validation failed", details),
+  CITY_NOT_SUPPORTED: () => new ApiError("CITY_NOT_SUPPORTED", 422),
+  FEATURE_FLAG_DISABLED: () => new ApiError("FEATURE_FLAG_DISABLED", 403),
+  COMMENT_REPLY_DEPTH_EXCEEDED: () =>
+    new ApiError("COMMENT_REPLY_DEPTH_EXCEEDED", 422, "Replies cannot be nested beyond one level")
+};
+
+export { ApiError, Errors };

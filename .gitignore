@@ -1,0 +1,15 @@
+# Backend dependencies and build output
+backend/node_modules/
+backend/dist/
+backend/.tmp/
+backend/backups/
+backend/.secrets/
+
+# Local environment files
+backend/.env
+backend/.env.local
+
+# Docker and OS noise
+*.log
+.DS_Store
+Thumbs.db

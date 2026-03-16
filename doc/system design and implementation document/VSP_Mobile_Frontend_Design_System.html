@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VSP Mobile — React Native Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#0EA5E9;--brand-d:#0284C7;--brand-l:#E0F2FE;
+  --accent:#F97316;--accent-l:#FFF7ED;
+  --dark:#0F172A;--dark2:#1E293B;--dark3:#334155;
+  --mid:#64748B;--light:#94A3B8;--border:#E2E8F0;
+  --bg-screen:#F0F9FF;--white:#FFFFFF;
+  --success:#10B981;--warn:#F59E0B;--danger:#EF4444;
+  --font:'Nunito',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --r:12px;--r-lg:20px;--r-xl:28px;--r-full:999px;
+}
+body{font-family:var(--body);background:#0F172A;color:var(--dark);line-height:1.6}
+.doc{max-width:1200px;margin:0 auto;padding:48px 32px 120px}
+
+.hero{text-align:center;padding:80px 0 64px}
+.hero h1{font-family:var(--font);font-size:52px;font-weight:900;color:#fff;letter-spacing:-1.5px;line-height:1.1}
+.hero h1 em{font-style:normal;color:#FB923C}
+.hero p{color:#64748B;font-size:17px;margin-top:16px}
+.pill-row{display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.pill{background:#1E293B;border:1px solid #334155;color:#CBD5E1;font-size:12px;font-weight:600;padding:6px 14px;border-radius:999px;font-family:var(--mono)}
+
+.sec{margin-top:72px}
+.sec-tag{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#FB923C;margin-bottom:14px;font-family:var(--font)}
+.sec-title{font-size:28px;font-weight:900;color:#fff;margin-bottom:8px;letter-spacing:-.5px;font-family:var(--font)}
+.sec-desc{font-size:15px;color:#64748B;margin-bottom:32px}
+.divider{height:1px;background:linear-gradient(90deg,transparent,#1E293B 20%,#1E293B 80%,transparent);margin:64px 0}
+
+.card{background:#111827;border:1px solid #1E293B;border-radius:20px;padding:24px}
+.card-label{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#475569;margin-bottom:16px;font-family:var(--font)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* PHONE FRAME */
+.phone-wrap{display:flex;justify-content:center;align-items:flex-start;gap:32px;flex-wrap:wrap}
+.phone{width:280px;background:#fff;border-radius:44px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3),0 0 0 8px #1E293B,0 0 0 10px #334155;position:relative;flex-shrink:0}
+.phone-notch{background:#0F172A;height:36px;display:flex;align-items:center;justify-content:center}
+.notch-bar{width:80px;height:6px;background:#1E293B;border-radius:3px}
+.phone-screen{min-height:520px;background:var(--bg-screen);overflow:hidden;position:relative}
+.phone-home-bar{height:28px;background:#fff;display:flex;align-items:center;justify-content:center}
+.home-bar{width:100px;height:4px;background:#E2E8F0;border-radius:2px}
+.phone-label{text-align:center;margin-top:14px;font-size:12px;font-weight:700;color:#64748B;font-family:var(--font);letter-spacing:.5px;text-transform:uppercase}
+
+/* BOTTOM TAB */
+.bottom-tab{background:#fff;border-top:1px solid #F1F5F9;display:flex;align-items:center;padding:8px 0;position:sticky;bottom:0}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;cursor:pointer}
+.tab-icon{font-size:20px;line-height:1}
+.tab-label{font-size:10px;font-weight:600;font-family:var(--font)}
+.tab-item .tab-icon,.tab-item .tab-label{color:#94A3B8}
+.tab-item.active .tab-icon,.tab-item.active .tab-label{color:#0EA5E9}
+.tab-badge{position:absolute;top:-4px;right:-6px;background:#EF4444;color:#fff;font-size:9px;font-weight:700;padding:2px 5px;border-radius:999px;font-family:var(--font)}
+
+/* MOBILE TOP BAR */
+.mob-topbar{background:#fff;padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F1F5F9}
+.mob-topbar-title{font-family:var(--font);font-size:18px;font-weight:800;color:#0F172A}
+.mob-icon-btn{width:36px;height:36px;border-radius:12px;background:#F8FAFC;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;color:#64748B;position:relative}
+
+/* MOBILE SEARCH BAR */
+.mob-search{background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:var(--r-full);display:flex;align-items:center;gap:8px;padding:10px 16px;margin:12px 16px}
+.mob-search-ph{font-size:14px;color:#94A3B8;font-family:var(--body)}
+
+/* MOBILE WORKER CARD */
+.mob-worker-card{background:#fff;border-radius:var(--r-lg);margin:0 16px 12px;padding:14px;display:flex;gap:12px;align-items:flex-start;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #F1F5F9}
+.mob-wc-av{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;font-family:var(--font)}
+.mob-wc-info{flex:1;min-width:0}
+.mob-wc-name{font-family:var(--font);font-size:15px;font-weight:800;color:#0F172A}
+.mob-wc-sub{font-size:12px;color:#64748B;margin-top:2px}
+.mob-wc-row{display:flex;gap:10px;margin-top:6px;align-items:center}
+.mob-badge{display:inline-flex;align-items:center;background:#E0F2FE;color:#0369A1;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;font-family:var(--font)}
+.mob-stat{font-size:11px;color:#64748B;font-weight:600;display:flex;align-items:center;gap:3px}
+.mob-wc-actions{display:flex;gap:6px;margin-top:10px}
+.mob-btn{flex:1;background:#0EA5E9;color:#fff;border:none;border-radius:var(--r);padding:8px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;font-family:var(--font)}
+.mob-btn-out{flex:1;background:transparent;color:#0EA5E9;border:1.5px solid #0EA5E9;border-radius:var(--r);padding:8px;font-size:12px;font-weight:700;text-align:center;cursor:pointer;font-family:var(--font)}
+
+/* MOBILE POST CARD */
+.mob-post{background:#fff;margin:0 0 8px;overflow:hidden}
+.mob-post-hdr{display:flex;align-items:center;gap:10px;padding:12px 16px 8px}
+.mob-post-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;font-family:var(--font)}
+.mob-post-name{font-family:var(--font);font-size:14px;font-weight:700;color:#0F172A}
+.mob-post-meta{font-size:11px;color:#94A3B8}
+.mob-post-body{font-size:13px;color:#334155;padding:0 16px 10px;line-height:1.6}
+.mob-post-img{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#E0F2FE,#EDE9FE);display:flex;align-items:center;justify-content:center;color:#94A3B8;font-size:12px}
+.mob-post-actions{display:flex;gap:0;padding:8px 8px;border-top:1px solid #F8FAFC}
+.mob-post-act{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;color:#64748B;padding:6px;border-radius:8px;font-family:var(--body);font-weight:500;background:none;border:none;cursor:pointer}
+
+/* MOBILE BOOKING CARD */
+.mob-booking{background:#fff;border-radius:var(--r-lg);margin:0 16px 10px;padding:14px;border-left:4px solid #0EA5E9;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.mob-bk-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-bottom:8px;font-family:var(--font)}
+.mob-bk-title{font-family:var(--font);font-size:14px;font-weight:800;color:#0F172A}
+.mob-bk-meta{font-size:12px;color:#64748B;margin-top:4px}
+.mob-bk-row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+
+/* MOBILE CHAT */
+.mob-chat-list{background:#fff}
+.mob-conv-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #F8FAFC;cursor:pointer}
+.mob-conv-item:active{background:#F8FAFC}
+.mob-conv-av{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0;position:relative;font-family:var(--font)}
+.mob-conv-online{position:absolute;bottom:1px;right:1px;width:12px;height:12px;background:#10B981;border-radius:50%;border:2px solid #fff}
+.mob-conv-info{flex:1;min-width:0}
+.mob-conv-name{font-family:var(--font);font-size:14px;font-weight:700;color:#0F172A}
+.mob-conv-preview{font-size:12px;color:#94A3B8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mob-conv-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.mob-conv-time{font-size:11px;color:#94A3B8}
+.mob-unread{background:#0EA5E9;color:#fff;font-size:10px;font-weight:700;min-width:18px;height:18px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:var(--font)}
+
+/* MOBILE MAP */
+.mob-map{background:#E0F2FE;position:relative;overflow:hidden}
+.mob-map-overlay{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(255,255,255,1) 0%,rgba(255,255,255,.8) 60%,transparent 100%);padding:12px 16px 0}
+.mob-map-card-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:12px}
+.mob-map-worker-card{background:#fff;border-radius:14px;min-width:160px;padding:12px;box-shadow:var(--shadow);flex-shrink:0;border:1px solid #F1F5F9}
+
+/* ONBOARDING STEP */
+.mob-onboard{background:#fff;min-height:400px;display:flex;flex-direction:column}
+.mob-step-bar{height:4px;background:#F1F5F9;margin:0 16px;border-radius:2px;overflow:hidden}
+.mob-step-fill{height:100%;background:#0EA5E9;border-radius:2px}
+.mob-step-content{flex:1;padding:24px 16px}
+.mob-step-icon{width:56px;height:56px;border-radius:18px;background:#E0F2FE;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:16px}
+.mob-step-title{font-family:var(--font);font-size:22px;font-weight:900;color:#0F172A;margin-bottom:8px;line-height:1.2}
+.mob-step-desc{font-size:14px;color:#64748B;line-height:1.6}
+.mob-step-footer{padding:16px;border-top:1px solid #F1F5F9;display:flex;gap:10px}
+.mob-btn-back{flex:1;background:#F1F5F9;color:#334155;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.mob-btn-cta{flex:2;background:#0EA5E9;color:#fff;border:none;border-radius:14px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;font-family:var(--font)}
+
+/* NOTIFICATION ROW */
+.mob-notif{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid #F8FAFC;background:#fff}
+.mob-notif.unread{background:#F0F9FF}
+.mob-notif-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.mob-notif-title{font-family:var(--font);font-size:13px;font-weight:700;color:#0F172A}
+.mob-notif-body{font-size:12px;color:#64748B;margin-top:2px;line-height:1.5}
+.mob-notif-time{font-size:11px;color:#94A3B8;margin-top:4px}
+
+/* WORKER DASHBOARD */
+.mob-stat-row{display:flex;gap:8px;padding:0 16px;overflow-x:auto}
+.mob-stat-card{background:#fff;border-radius:16px;min-width:120px;padding:14px;flex-shrink:0;border:1px solid #F1F5F9;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.mob-stat-val{font-family:var(--font);font-size:22px;font-weight:900;color:#0F172A}
+.mob-stat-label{font-size:11px;color:#64748B;margin-top:3px;font-weight:600}
+
+/* INCOMING REQUEST */
+.mob-request-card{background:#fff;border-radius:var(--r-lg);margin:0 16px 10px;padding:14px;border:1px solid #E2E8F0;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.mob-req-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.mob-req-title{font-family:var(--font);font-size:14px;font-weight:800;color:#0F172A}
+.mob-req-trade{display:inline-flex;background:#E0F2FE;color:#0369A1;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;font-family:var(--font)}
+.mob-req-meta{font-size:12px;color:#64748B;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.mob-req-actions{display:flex;gap:8px}
+.mob-btn-accept{flex:1;background:#0EA5E9;color:#fff;border:none;border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)}
+.mob-btn-decline{flex:1;background:#FEE2E2;color:#991B1B;border:none;border-radius:12px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)}
+
+/* CODE BOX */
+.codex{background:#020617;border:1px solid #1E293B;border-left:3px solid #FB923C;border-radius:12px;padding:16px 18px;margin-top:16px}
+.codex-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#FB923C;margin-bottom:10px;font-family:var(--font)}
+.codex pre{font-family:var(--mono);font-size:12px;color:#94A3B8;line-height:1.8;white-space:pre-wrap}
+.codex pre .k{color:#38BDF8}
+.codex pre .s{color:#34D399}
+.codex pre .c{color:#475569}
+
+/* GAP BOXES */
+.gap-box{border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start}
+.gap-missing{background:#FEE2E2;border:1px solid #FCA5A5}
+.gap-ok{background:#F1F5F9;border:1px solid #CBD5E1}
+.gap-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:8px;font-family:var(--font)}
+.gb-fixed{background:#DBEAFE;color:#1E40AF}
+.gb-missing{background:#FEE2E2;color:#991B1B}
+.gap-title{font-size:13px;font-weight:700;color:#0F172A;font-family:var(--font)}
+.gap-desc{font-size:12px;color:#64748B;margin-top:3px}
+
+/* PAGE TABLE */
+.ptbl{width:100%;border-collapse:collapse;background:#111827;border-radius:20px;overflow:hidden;border:1px solid #1E293B}
+.ptbl th{background:#1E293B;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#64748B;padding:10px 14px;text-align:left;font-family:var(--font)}
+.ptbl td{padding:10px 14px;font-size:12px;color:#94A3B8;border-bottom:1px solid #1E293B;vertical-align:middle}
+.ptbl tr:last-child td{border-bottom:none}
+.ptbl td:first-child{font-family:var(--mono);color:#FB923C;font-size:11px}
+.ptbl td:nth-child(2){font-weight:600;color:#E2E8F0;font-size:13px}
+
+/* PROMPT BOX */
+.prompt-block{background:#0A0F1E;border-radius:12px;padding:20px;font-family:var(--mono);font-size:12.5px;color:#94A3B8;line-height:1.9;border:1px solid #1E293B}
+.prompt-block .ph{color:#F59E0B}
+.prompt-block .kw{color:#60A5FA}
+.prompt-block .val{color:#34D399}
+
+/* SW */
+.sw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.sw{border-radius:12px;overflow:hidden;border:1px solid #1E293B}
+.sw-c{height:56px}
+.sw-i{background:#111827;padding:8px 12px}
+.sw-n{font-size:12px;font-weight:600;color:#E2E8F0;font-family:var(--font)}
+.sw-v{font-size:11px;color:#64748B;font-family:var(--mono);margin-top:2px}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<!-- HEADER -->
+<div class="hero">
+  <h1>VSP Mobile<br><em>React Native</em><br>Design System</h1>
+  <p>Visual reference for Cursor + ChatGPT Codex · All 41 screens · React Native + Expo</p>
+  <div class="pill-row">
+    <span class="pill">React Native</span>
+    <span class="pill">Expo SDK 51</span>
+    <span class="pill">TypeScript</span>
+    <span class="pill">NativeWind</span>
+    <span class="pill">TanStack Query</span>
+    <span class="pill">41 Screens</span>
+  </div>
+</div>
+
+<!-- ═══ SECTION 1 — GAP ANALYSIS ════════════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 1</div>
+  <div class="sec-title">Cross-Check: Mobile Frontend vs Backend</div>
+  <div class="sec-desc">Mobile spec checked against 195-endpoint backend. Gaps found and resolved below.</div>
+
+  <div class="card">
+    <div class="card-label">Gaps Found — Resolved</div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Media Upload — Signed URL flow missing from spec <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">Pages 32 (Portfolio Upload) and 33 (Certifications Upload) need: POST /media/upload-url → PUT signed URL → POST /media/confirm. Also avatar change needs this flow. Backend has it, spec didn't list it.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Assignment Accept/Decline missing from mobile spec <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">Screen 37 (Request Response Screen) needs: POST /service-requests/:id/assignments/:id/accept and /decline. These exist in backend but were absent from mobile spec.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">POST /reviews missing from mobile spec <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">No review creation endpoint listed. Backend has POST /api/v1/reviews + POST /reviews/:id/dimensions. Required for booking completion flow.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Worker Earnings (Screen 40) — No backend endpoint <span class="gap-badge gb-missing">NEW ENDPOINT NEEDED</span></div><div class="gap-desc">Screen 40 is "Worker Earnings / Performance Placeholder". Backend has no earnings endpoint. Add GET /api/v1/worker-profiles/me/analytics (same as web) showing jobs_completed, avg_rating, monthly bookings chart data. Mark as "Coming Soon" in UI until backend implements.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Follow/Unfollow not in mobile spec <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">Feed cards show Follow button. POST + DELETE /api/v1/users/me/follows needed for feed and worker profile screens.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Save Worker not in mobile spec <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">Screen 13 (Saved Workers) requires POST + DELETE /users/me/saved-workers/:workerId. Present in backend, absent from mobile spec.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Availability Setup (Screen 31) — endpoints not listed <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">POST/PATCH/DELETE /worker-profiles/me/availability/rules and /exceptions required for Screen 31.</div></div></div>
+    <div class="gap-box gap-missing"><div style="font-size:18px">⚠️</div><div><div class="gap-title">Billing for Featured Subscription — not in mobile spec <span class="gap-badge gb-fixed">ADDED</span></div><div class="gap-desc">Worker Performance screen should surface featured subscription upsell. Add: POST /billing/payment-intents + GET /billing/subscriptions/me to worker profile/dashboard flow.</div></div></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 2 — COLOUR TOKENS ════════════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 2</div>
+  <div class="sec-title">Colour Tokens — Mobile Palette</div>
+  <div class="sec-desc">Same brand blue as web but warmer, more saturated for mobile. Orange accent for CTAs. Rounded corners everywhere.</div>
+  <div class="card">
+    <div class="sw-grid">
+      <div class="sw"><div class="sw-c" style="background:#0EA5E9"></div><div class="sw-i"><div class="sw-n">Brand</div><div class="sw-v">#0EA5E9</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#E0F2FE"></div><div class="sw-i"><div class="sw-n">Brand Light</div><div class="sw-v">#E0F2FE</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#F97316"></div><div class="sw-i"><div class="sw-n">Accent</div><div class="sw-v">#F97316</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#0F172A"></div><div class="sw-i"><div class="sw-n">Dark Text</div><div class="sw-v">#0F172A</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#64748B"></div><div class="sw-i"><div class="sw-n">Mid Text</div><div class="sw-v">#64748B</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#F0F9FF;border:1px solid #E0F2FE"></div><div class="sw-i"><div class="sw-n">Screen BG</div><div class="sw-v">#F0F9FF</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#F8FAFC;border:1px solid #E2E8F0"></div><div class="sw-i"><div class="sw-n">Card BG</div><div class="sw-v">#FFFFFF</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#10B981"></div><div class="sw-i"><div class="sw-n">Success</div><div class="sw-v">#10B981</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#F59E0B"></div><div class="sw-i"><div class="sw-n">Warning</div><div class="sw-v">#F59E0B</div></div></div>
+      <div class="sw"><div class="sw-c" style="background:#EF4444"></div><div class="sw-i"><div class="sw-n">Danger</div><div class="sw-v">#EF4444</div></div></div>
+    </div>
+  </div>
+  <div class="codex">
+    <div class="codex-title">Codex Reference — NativeWind + Theme</div>
+    <pre><span class="c">// tailwind.config.js</span>
+theme: { extend: { colors: {
+  brand: <span class="s">'#0EA5E9'</span>, 'brand-light': <span class="s">'#E0F2FE'</span>,
+  accent: <span class="s">'#F97316'</span>, 'screen-bg': <span class="s">'#F0F9FF'</span>,
+}}}
+<span class="c">// Use NativeWind v4 for Tailwind in React Native</span>
+<span class="c">// Font: Nunito (headings) + Inter (body)</span></pre>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 3 — TYPOGRAPHY ════════════════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 3</div>
+  <div class="sec-title">Typography — Mobile Scale</div>
+  <div class="sec-desc">Nunito for all headings (rounded, friendly). Inter for body. Bigger touch targets, minimum 14px body text.</div>
+  <div class="card" style="background:#fff">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:baseline;gap:20px;padding-bottom:16px;border-bottom:1px solid #F1F5F9">
+        <div style="width:140px;flex-shrink:0"><div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#94A3B8;font-family:'Nunito'">Screen Title</div><div style="font-size:10px;color:#CBD5E1;font-family:'JetBrains Mono';margin-top:4px;background:#F8FAFC;padding:4px 6px;border-radius:4px">Nunito 900<br>24px / -0.5px</div></div>
+        <div style="font-family:'Nunito';font-size:24px;font-weight:900;color:#0F172A;letter-spacing:-.5px">Search Workers</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:20px;padding-bottom:16px;border-bottom:1px solid #F1F5F9">
+        <div style="width:140px;flex-shrink:0"><div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#94A3B8;font-family:'Nunito'">Card Title</div><div style="font-size:10px;color:#CBD5E1;font-family:'JetBrains Mono';margin-top:4px;background:#F8FAFC;padding:4px 6px;border-radius:4px">Nunito 800<br>16px</div></div>
+        <div style="font-family:'Nunito';font-size:16px;font-weight:800;color:#0F172A">Bob Williams</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:20px;padding-bottom:16px;border-bottom:1px solid #F1F5F9">
+        <div style="width:140px;flex-shrink:0"><div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#94A3B8;font-family:'Nunito'">Body</div><div style="font-size:10px;color:#CBD5E1;font-family:'JetBrains Mono';margin-top:4px;background:#F8FAFC;padding:4px 6px;border-radius:4px">Inter 400<br>14px / 1.6</div></div>
+        <div style="font-family:'Inter';font-size:14px;color:#334155;line-height:1.6">Fully licensed electrician with 8 years experience. Available in East Legon and surrounding areas.</div>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:20px">
+        <div style="width:140px;flex-shrink:0"><div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#94A3B8;font-family:'Nunito'">Caption</div><div style="font-size:10px;color:#CBD5E1;font-family:'JetBrains Mono';margin-top:4px;background:#F8FAFC;padding:4px 6px;border-radius:4px">Inter 600<br>12px</div></div>
+        <div style="font-family:'Inter';font-size:12px;color:#94A3B8;font-weight:600">⚡ Electrician · 47 jobs · Accra · 2.3km away</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 4 — NAVIGATION ════════════════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 4</div>
+  <div class="sec-title">Navigation — Bottom Tabs + Stack</div>
+  <div class="sec-desc">Bottom tab navigator for 5 main tabs. Stack navigator for all detail screens. Customer and Worker share the same app with conditional UI.</div>
+
+  <div class="phone-wrap">
+    <!-- Bottom Tab Phone -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="phone-screen">
+          <div class="mob-topbar"><div class="mob-topbar-title">Home</div><div style="display:flex;gap:8px"><div class="mob-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="notif-dot"></div></div></div></div>
+          <div style="background:#fff;padding:12px 16px"><div class="mob-search" style="margin:0;background:#F0F9FF"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><div class="mob-search-ph">Find electricians, plumbers...</div></div></div>
+          <div style="padding:12px 16px 8px"><div style="font-family:'Nunito';font-size:16px;font-weight:800;color:#0F172A;margin-bottom:10px">Nearby Workers</div></div>
+          <div class="mob-worker-card">
+            <div class="mob-wc-av" style="background:linear-gradient(135deg,#0EA5E9,#8B5CF6)">BW</div>
+            <div class="mob-wc-info">
+              <div class="mob-wc-name">Bob Williams</div>
+              <div class="mob-wc-sub">⭐ 4.8 · Licensed Electrician</div>
+              <div class="mob-wc-row"><span class="mob-badge">⚡ Electrician</span><span class="mob-stat">📍 2.3km</span></div>
+              <div class="mob-wc-actions"><button class="mob-btn">Book Now</button><button class="mob-btn-out">Message</button></div>
+            </div>
+          </div>
+          <div class="mob-worker-card">
+            <div class="mob-wc-av" style="background:linear-gradient(135deg,#10B981,#059669)">AK</div>
+            <div class="mob-wc-info">
+              <div class="mob-wc-name">Ama Kojo</div>
+              <div class="mob-wc-sub">⭐ 4.6 · Plumber</div>
+              <div class="mob-wc-row"><span class="mob-badge">🔧 Plumber</span><span class="mob-stat">📍 1.1km</span></div>
+              <div class="mob-wc-actions"><button class="mob-btn">Book Now</button><button class="mob-btn-out">Message</button></div>
+            </div>
+          </div>
+          <div class="bottom-tab">
+            <div class="tab-item active"><div class="tab-icon">🏠</div><div class="tab-label">Home</div></div>
+            <div class="tab-item"><div class="tab-icon">🔍</div><div class="tab-label">Search</div></div>
+            <div class="tab-item"><div class="tab-icon">📱</div><div class="tab-label">Feed</div></div>
+            <div class="tab-item" style="position:relative"><div class="tab-icon">💬</div><div class="tab-label">Messages</div><div class="tab-badge" style="top:4px;right:28px">3</div></div>
+            <div class="tab-item"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="home-bar"></div></div>
+      </div>
+      <div class="phone-label">Customer Home</div>
+    </div>
+
+    <!-- Feed Phone -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="phone-screen">
+          <div class="mob-topbar"><div class="mob-topbar-title">Feed</div><div style="display:flex;gap:8px"><div class="mob-icon-btn">✏️</div></div></div>
+          <div style="background:#F0F9FF;padding:8px 16px"><div style="background:#fff;border-radius:14px;border:1px solid #E2E8F0;display:flex;align-items:center;gap:10px;padding:10px 14px"><div class="mob-post-av" style="background:linear-gradient(135deg,#0EA5E9,#8B5CF6);width:34px;height:34px;font-size:12px">AJ</div><div style="font-size:13px;color:#94A3B8;font-family:'Inter'">Share a work update...</div></div></div>
+          <div class="mob-post">
+            <div class="mob-post-hdr"><div class="mob-post-av" style="background:linear-gradient(135deg,#10B981,#059669)">BW</div><div><div class="mob-post-name">Bob Williams</div><div class="mob-post-meta">⚡ Electrician · 2h ago</div></div></div>
+            <div class="mob-post-body">Just completed a full rewiring job in East Legon! Client was over the moon 🔌⚡</div>
+            <div class="mob-post-img">📷 Job photo</div>
+            <div class="mob-post-actions">
+              <button class="mob-post-act">❤️ 124</button>
+              <button class="mob-post-act">💬 18</button>
+              <button class="mob-post-act">🔖</button>
+              <button class="mob-post-act">↗</button>
+            </div>
+          </div>
+          <div class="bottom-tab">
+            <div class="tab-item"><div class="tab-icon">🏠</div><div class="tab-label">Home</div></div>
+            <div class="tab-item"><div class="tab-icon">🔍</div><div class="tab-label">Search</div></div>
+            <div class="tab-item active"><div class="tab-icon">📱</div><div class="tab-label">Feed</div></div>
+            <div class="tab-item"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></div>
+            <div class="tab-item"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="home-bar"></div></div>
+      </div>
+      <div class="phone-label">Feed Screen</div>
+    </div>
+
+    <!-- Worker Dashboard Phone -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="phone-screen" style="background:#F0F9FF">
+          <div class="mob-topbar"><div style="display:flex;flex-direction:column"><div class="mob-topbar-title">Dashboard</div><div style="font-size:11px;color:#94A3B8">Good morning, Bob 👋</div></div><div class="mob-icon-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div></div>
+          <div style="padding:12px 0 6px">
+            <div class="mob-stat-row">
+              <div class="mob-stat-card"><div class="mob-stat-val">47</div><div class="mob-stat-label">Jobs Done</div></div>
+              <div class="mob-stat-card"><div class="mob-stat-val" style="color:#F59E0B">4.8⭐</div><div class="mob-stat-label">Rating</div></div>
+              <div class="mob-stat-card"><div class="mob-stat-val" style="color:#0EA5E9">94%</div><div class="mob-stat-label">Response</div></div>
+            </div>
+          </div>
+          <div style="padding:10px 16px 6px"><div style="font-family:'Nunito';font-size:14px;font-weight:800;color:#0F172A">New Requests <span style="background:#EF4444;color:#fff;font-size:10px;padding:2px 7px;border-radius:999px;font-family:'Nunito'">3</span></div></div>
+          <div class="mob-request-card">
+            <div class="mob-req-header"><div class="mob-req-title">Replace 3 light switches</div><span class="mob-req-trade">⚡ Electrical</span></div>
+            <div class="mob-req-meta"><span>📍 East Legon · 1.8km</span><span>💰 Negotiate</span></div>
+            <div class="mob-req-actions"><button class="mob-btn-accept">✓ Accept</button><button class="mob-btn-decline">✗ Decline</button></div>
+          </div>
+          <div class="bottom-tab">
+            <div class="tab-item active"><div class="tab-icon">📊</div><div class="tab-label">Dashboard</div></div>
+            <div class="tab-item"><div class="tab-icon">📋</div><div class="tab-label">Requests</div></div>
+            <div class="tab-item"><div class="tab-icon">📅</div><div class="tab-label">Bookings</div></div>
+            <div class="tab-item"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></div>
+            <div class="tab-item"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="home-bar"></div></div>
+      </div>
+      <div class="phone-label">Worker Dashboard</div>
+    </div>
+  </div>
+
+  <div class="codex" style="margin-top:24px">
+    <div class="codex-title">Codex Reference — Navigation Setup</div>
+    <pre><span class="c">// App.tsx — Expo Router or React Navigation</span>
+<span class="c">// Bottom tabs differ for customer vs worker role</span>
+<span class="k">const</span> customerTabs = [<span class="s">'Home'</span>, <span class="s">'Search'</span>, <span class="s">'Feed'</span>, <span class="s">'Messages'</span>, <span class="s">'Profile'</span>]
+<span class="k">const</span> workerTabs  = [<span class="s">'Dashboard'</span>, <span class="s">'Requests'</span>, <span class="s">'Bookings'</span>, <span class="s">'Messages'</span>, <span class="s">'Profile'</span>]
+<span class="c">// Stack screens (no bottom tab):</span>
+<span class="c">// WorkerDetail, BookingDetail, ConversationDetail,</span>
+<span class="c">// CreateRequest, ReviewSubmission, WorkerOnboarding(steps 1–9)</span>
+<span class="c">// All stacks use: headerShown=true, back arrow, white bg</span></pre>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 5 — MORE SCREENS ════════════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 5</div>
+  <div class="sec-title">Key Screen Patterns</div>
+
+  <div class="phone-wrap" style="margin-bottom:40px">
+    <!-- Messages -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="phone-screen" style="background:#fff">
+          <div class="mob-topbar"><div class="mob-topbar-title">Messages <span style="background:#0EA5E9;color:#fff;font-size:10px;padding:2px 8px;border-radius:999px;font-family:'Nunito'">3</span></div></div>
+          <div class="mob-chat-list">
+            <div class="mob-conv-item">
+              <div class="mob-conv-av" style="background:linear-gradient(135deg,#10B981,#059669)">BW<div class="mob-conv-online"></div></div>
+              <div class="mob-conv-info"><div class="mob-conv-name">Bob Williams</div><div class="mob-conv-preview">Yes, I can do Tuesday morning!</div></div>
+              <div class="mob-conv-meta"><div class="mob-conv-time">10:37</div><div class="mob-unread">2</div></div>
+            </div>
+            <div class="mob-conv-item">
+              <div class="mob-conv-av" style="background:linear-gradient(135deg,#F97316,#DC2626)">AK</div>
+              <div class="mob-conv-info"><div class="mob-conv-name">Ama Kojo</div><div class="mob-conv-preview">I can be there by 9am, is that ok?</div></div>
+              <div class="mob-conv-meta"><div class="mob-conv-time">Yesterday</div><div class="mob-unread">1</div></div>
+            </div>
+            <div class="mob-conv-item">
+              <div class="mob-conv-av" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">KM</div>
+              <div class="mob-conv-info"><div class="mob-conv-name">Kwame Mensah</div><div class="mob-conv-preview">Thank you for the 5-star review! 🙏</div></div>
+              <div class="mob-conv-meta"><div class="mob-conv-time">Mon</div></div>
+            </div>
+          </div>
+          <div class="bottom-tab">
+            <div class="tab-item"><div class="tab-icon">🏠</div><div class="tab-label">Home</div></div>
+            <div class="tab-item"><div class="tab-icon">🔍</div><div class="tab-label">Search</div></div>
+            <div class="tab-item"><div class="tab-icon">📱</div><div class="tab-label">Feed</div></div>
+            <div class="tab-item active"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></div>
+            <div class="tab-item"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="home-bar"></div></div>
+      </div>
+      <div class="phone-label">Messages / Inbox</div>
+    </div>
+
+    <!-- Bookings -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="phone-screen" style="background:#F0F9FF">
+          <div class="mob-topbar"><div class="mob-topbar-title">My Bookings</div></div>
+          <div style="display:flex;gap:8px;padding:12px 16px;overflow-x:auto">
+            <button style="background:#0EA5E9;color:#fff;border:none;border-radius:999px;padding:7px 16px;font-size:12px;font-weight:700;font-family:'Nunito';white-space:nowrap">All</button>
+            <button style="background:#fff;color:#64748B;border:1.5px solid #E2E8F0;border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600;font-family:'Nunito';white-space:nowrap">Active</button>
+            <button style="background:#fff;color:#64748B;border:1.5px solid #E2E8F0;border-radius:999px;padding:7px 16px;font-size:12px;font-weight:600;font-family:'Nunito';white-space:nowrap">Completed</button>
+          </div>
+          <div class="mob-booking">
+            <div class="mob-bk-status" style="background:#DBEAFE;color:#1E40AF">● Confirmed</div>
+            <div class="mob-bk-title">Replace 3 light switches</div>
+            <div class="mob-bk-meta">📅 Jan 12 · 10:00 AM<br>📍 East Legon, Accra</div>
+            <div class="mob-bk-row"><div style="display:flex;align-items:center;gap:6px"><div class="mob-conv-av" style="width:28px;height:28px;background:linear-gradient(135deg,#10B981,#059669);font-size:10px">BW</div><div style="font-size:12px;font-weight:600;color:#0F172A;font-family:'Nunito'">Bob Williams</div></div><button style="background:#0EA5E9;color:#fff;border:none;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;font-family:'Nunito'">Details</button></div>
+          </div>
+          <div class="mob-booking" style="border-left-color:#10B981">
+            <div class="mob-bk-status" style="background:#D1FAE5;color:#065F46">● Completed</div>
+            <div class="mob-bk-title">Pipe Repair — Kitchen</div>
+            <div class="mob-bk-meta">📅 Jan 8 · 09:00 AM</div>
+            <div class="mob-bk-row"><div style="font-size:12px;color:#94A3B8;font-family:'Inter'">Ama Kojo · ⭐ 4.6</div><button style="background:#F0F9FF;color:#0EA5E9;border:1.5px solid #0EA5E9;border-radius:10px;padding:6px 14px;font-size:12px;font-weight:700;font-family:'Nunito'">Review</button></div>
+          </div>
+          <div class="bottom-tab">
+            <div class="tab-item"><div class="tab-icon">🏠</div><div class="tab-label">Home</div></div>
+            <div class="tab-item"><div class="tab-icon">🔍</div><div class="tab-label">Search</div></div>
+            <div class="tab-item"><div class="tab-icon">📱</div><div class="tab-label">Feed</div></div>
+            <div class="tab-item"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></div>
+            <div class="tab-item active"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="home-bar"></div></div>
+      </div>
+      <div class="phone-label">Customer Bookings</div>
+    </div>
+
+    <!-- Onboarding Step -->
+    <div>
+      <div class="phone">
+        <div class="phone-notch"><div class="notch-bar"></div></div>
+        <div class="phone-screen" style="background:#fff">
+          <div style="padding:16px 16px 0;display:flex;align-items:center;gap:12px">
+            <button style="background:none;border:none;font-size:20px;cursor:pointer">←</button>
+            <div style="flex:1"><div class="mob-step-bar"><div class="mob-step-fill" style="width:33%"></div></div></div>
+            <div style="font-size:12px;color:#94A3B8;font-family:'Nunito';font-weight:700">3/9</div>
+          </div>
+          <div class="mob-onboard">
+            <div class="mob-step-content">
+              <div class="mob-step-icon">⚡</div>
+              <div class="mob-step-title">What trades do you work in?</div>
+              <div class="mob-step-desc">Select all that apply. You can add more later from your profile settings.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:20px">
+                <div style="background:#E0F2FE;border:2px solid #0EA5E9;border-radius:14px;padding:12px;text-align:center;cursor:pointer"><div style="font-size:24px">⚡</div><div style="font-size:13px;font-weight:700;color:#0369A1;margin-top:4px;font-family:'Nunito'">Electrician</div></div>
+                <div style="background:#fff;border:2px solid #E2E8F0;border-radius:14px;padding:12px;text-align:center;cursor:pointer"><div style="font-size:24px">🔧</div><div style="font-size:13px;font-weight:700;color:#64748B;margin-top:4px;font-family:'Nunito'">Plumber</div></div>
+                <div style="background:#fff;border:2px solid #E2E8F0;border-radius:14px;padding:12px;text-align:center;cursor:pointer"><div style="font-size:24px">🪚</div><div style="font-size:13px;font-weight:700;color:#64748B;margin-top:4px;font-family:'Nunito'">Carpenter</div></div>
+                <div style="background:#fff;border:2px solid #E2E8F0;border-radius:14px;padding:12px;text-align:center;cursor:pointer"><div style="font-size:24px">🎨</div><div style="font-size:13px;font-weight:700;color:#64748B;margin-top:4px;font-family:'Nunito'">Painter</div></div>
+              </div>
+            </div>
+            <div class="mob-step-footer">
+              <button class="mob-btn-back">Back</button>
+              <button class="mob-btn-cta">Continue →</button>
+            </div>
+          </div>
+        </div>
+        <div class="phone-home-bar"><div class="home-bar"></div></div>
+      </div>
+      <div class="phone-label">Worker Onboarding</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 6 — MOBILE-SPECIFIC RULES ════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 6</div>
+  <div class="sec-title">Mobile-Specific Implementation Rules</div>
+  <div class="card" style="display:flex;flex-direction:column;gap:16px">
+    <div style="background:#020617;border-radius:12px;padding:16px;font-family:var(--mono);font-size:12px;color:#94A3B8;line-height:1.9">
+      <span style="color:#FB923C">TOUCH TARGETS</span><br>
+      Minimum 44×44pt touch area for all buttons and icons.<br>
+      Add padding to small icons: hitSlop={{ top:8, bottom:8, left:8, right:8 }}<br><br>
+      <span style="color:#FB923C">INFINITE SCROLL (FlatList)</span><br>
+      <span style="color:#38BDF8">const</span> handleEndReached = () => { <span style="color:#38BDF8">if</span> (hasNextPage && !isFetching) fetchNextPage() }<br>
+      onEndReachedThreshold={0.3} // load when 30% from bottom<br>
+      keyExtractor={(item) => item.id}<br>
+      ListFooterComponent={isFetchingNextPage ? &lt;LoadingSpinner /&gt; : null}<br><br>
+      <span style="color:#FB923C">PULL TO REFRESH</span><br>
+      refreshControl={&lt;RefreshControl refreshing={isRefetching} onRefresh={refetch} /&gt;}<br><br>
+      <span style="color:#FB923C">KEYBOARD AVOIDING</span><br>
+      Wrap chat screens and forms in KeyboardAvoidingView behavior="padding"<br><br>
+      <span style="color:#FB923C">MEDIA UPLOAD (Image Picker)</span><br>
+      Use expo-image-picker. On select: POST /media/upload-url → PUT blob → POST /media/confirm<br>
+      Show upload progress bar. Handle errors with retry.<br><br>
+      <span style="color:#FB923C">PUSH NOTIFICATIONS</span><br>
+      On first launch: request permission → POST /push-devices with FCM/APNs token<br>
+      On logout: DELETE /push-devices/:deviceId<br><br>
+      <span style="color:#FB923C">WEBSOCKET (Chat)</span><br>
+      Connect on ConversationDetail screen mount. Disconnect on unmount.<br>
+      Use reconnect with exponential backoff (max 30s).<br>
+      Persist messages to AsyncStorage as fallback.
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 7 — ALL 41 SCREENS QUICK REF ═════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 7</div>
+  <div class="sec-title">All 41 Screens — Navigator + Endpoint Reference</div>
+  <table class="ptbl">
+    <thead><tr><th>#</th><th>Screen</th><th>Navigator</th><th>Primary Endpoint</th></tr></thead>
+    <tbody>
+      <tr><td>01</td><td>Splash Screen</td><td>Root</td><td>GET /auth/me (check token)</td></tr>
+      <tr><td>02</td><td>Onboarding Slides</td><td>Auth Stack</td><td>None — local only</td></tr>
+      <tr><td>03</td><td>Login</td><td>Auth Stack</td><td>POST /auth/login</td></tr>
+      <tr><td>04</td><td>Register</td><td>Auth Stack</td><td>POST /auth/register</td></tr>
+      <tr><td>05</td><td>Forgot Password</td><td>Auth Stack</td><td>POST /auth/request-password-reset</td></tr>
+      <tr><td>06</td><td>Reset Password</td><td>Auth Stack</td><td>POST /auth/reset-password</td></tr>
+      <tr><td>07</td><td>Home</td><td>Customer Tab 1</td><td>GET /discovery/featured-workers + GET /bookings</td></tr>
+      <tr><td>08</td><td>Feed</td><td>Customer Tab 3</td><td>GET /posts/feed (FlatList infinite)</td></tr>
+      <tr><td>09</td><td>Post Detail</td><td>Stack → Feed</td><td>GET /posts/:postId + GET /posts/:postId/comments</td></tr>
+      <tr><td>10</td><td>Search Workers</td><td>Customer Tab 2</td><td>GET /search/workers</td></tr>
+      <tr><td>11</td><td>Nearby Workers Map</td><td>Stack → Search</td><td>GET /search/workers/map (react-native-maps)</td></tr>
+      <tr><td>12</td><td>Worker Detail</td><td>Stack → any</td><td>GET /worker-profiles/:id + GET /workers/:id/reviews</td></tr>
+      <tr><td>13</td><td>Saved Workers</td><td>Stack → Profile</td><td>GET /users/me/saved-workers</td></tr>
+      <tr><td>14</td><td>Create Service Request</td><td>Stack → any</td><td>POST /service-requests</td></tr>
+      <tr><td>15</td><td>Requests List</td><td>Stack → Profile</td><td>GET /service-requests</td></tr>
+      <tr><td>16</td><td>Request Detail</td><td>Stack → Requests</td><td>GET /service-requests/:requestId</td></tr>
+      <tr><td>17</td><td>Bookings List</td><td>Customer Tab or Stack</td><td>GET /bookings</td></tr>
+      <tr><td>18</td><td>Booking Detail</td><td>Stack → Bookings</td><td>GET /bookings/:bookingId</td></tr>
+      <tr><td>19</td><td>Review Submission</td><td>Stack → Booking</td><td>POST /reviews + POST /reviews/:id/dimensions</td></tr>
+      <tr><td>20</td><td>Notifications</td><td>Stack → any</td><td>GET /notifications</td></tr>
+      <tr><td>21</td><td>Inbox</td><td>Customer Tab 4</td><td>GET /conversations + GET /inbox/unread-count</td></tr>
+      <tr><td>22</td><td>Conversation Detail</td><td>Stack → Inbox</td><td>GET /conversations/:id/messages (WebSocket)</td></tr>
+      <tr><td>23</td><td>User Profile</td><td>Customer Tab 5</td><td>GET /users/me</td></tr>
+      <tr><td>24</td><td>Edit Profile</td><td>Stack → Profile</td><td>PATCH /users/me + POST /media/upload-url</td></tr>
+      <tr><td>25</td><td>Settings</td><td>Stack → Profile</td><td>PATCH /notifications/preferences</td></tr>
+      <tr><td>26</td><td>Worker Onboarding Start</td><td>Onboarding Stack</td><td>POST /worker-profiles</td></tr>
+      <tr><td>27</td><td>Worker Profile Setup</td><td>Onboarding Step 1</td><td>PATCH /worker-profiles/me</td></tr>
+      <tr><td>28</td><td>Trade Selection</td><td>Onboarding Step 2</td><td>GET /trade-categories + POST /worker-profiles/me/trades</td></tr>
+      <tr><td>29</td><td>Services Management</td><td>Onboarding Step 3</td><td>POST/PATCH/DELETE /worker-profiles/me/services</td></tr>
+      <tr><td>30</td><td>Service Area Setup</td><td>Onboarding Step 4</td><td>POST /worker-profiles/me/service-areas (map picker)</td></tr>
+      <tr><td>31</td><td>Availability Setup</td><td>Onboarding Step 5</td><td>POST/PATCH/DELETE /worker-profiles/me/availability/rules</td></tr>
+      <tr><td>32</td><td>Portfolio Upload</td><td>Onboarding Step 6</td><td>POST /media/upload-url → PUT → POST /media/confirm + POST /worker-profiles/me/portfolio</td></tr>
+      <tr><td>33</td><td>Certifications Upload</td><td>Onboarding Step 7</td><td>POST /media/upload-url → PUT → confirm + POST /worker-profiles/me/certifications</td></tr>
+      <tr><td>34</td><td>Verification Submit</td><td>Onboarding Step 8</td><td>POST /worker-profiles/me/verification-requests</td></tr>
+      <tr><td>35</td><td>Worker Dashboard</td><td>Worker Tab 1</td><td>GET /worker-profiles/me + GET /bookings + GET /service-requests</td></tr>
+      <tr><td>36</td><td>Incoming Requests</td><td>Worker Tab 2</td><td>GET /service-requests?status=MATCHED</td></tr>
+      <tr><td>37</td><td>Request Response Screen</td><td>Stack → Requests</td><td>GET /service-requests/:id + POST .../assignments/:id/accept or /decline</td></tr>
+      <tr><td>38</td><td>Worker Bookings</td><td>Worker Tab 3</td><td>GET /bookings (worker context)</td></tr>
+      <tr><td>39</td><td>Worker Reviews</td><td>Stack → Profile</td><td>GET /workers/:workerId/reviews</td></tr>
+      <tr><td>40</td><td>Worker Earnings / Performance</td><td>Stack → Dashboard</td><td>🆕 GET /worker-profiles/me/analytics (Coming Soon)</td></tr>
+      <tr><td>41</td><td>Worker Profile Preview</td><td>Stack → Profile</td><td>GET /worker-profiles/:id (public view of own profile)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══ SECTION 8 — CODEX PROMPT TEMPLATE ════════════════════════ -->
+<div class="sec">
+  <div class="sec-tag">Section 8</div>
+  <div class="sec-title">Cursor + Codex Prompt Template</div>
+  <div class="card">
+    <div class="card-label">Master Prompt — Fill in brackets for each screen</div>
+    <div class="prompt-block">
+      Generate the <span class="ph">[SCREEN NAME]</span> screen for VSP Mobile (React Native).<br><br>
+      <span class="kw">TECH:</span> React Native · Expo SDK 51 · TypeScript · NativeWind (Tailwind for RN) · TanStack Query<br><br>
+      <span class="kw">DESIGN TOKENS:</span><br>
+      - Font headings: Nunito (900/800/700) · Body: Inter (400/500) · Mono: JetBrains Mono<br>
+      - Brand blue: #0EA5E9 · Accent orange: #F97316 · Screen BG: #F0F9FF<br>
+      - Border radius: small=12px, medium=20px, full=999px<br>
+      - All touch targets minimum 44pt · hitSlop on icon buttons<br><br>
+      <span class="kw">NAVIGATOR:</span> <span class="ph">[Bottom Tab | Stack (and which tab/stack)]</span><br><br>
+      <span class="kw">SCREEN CONTENT:</span><br>
+      <span class="ph">[Describe header, sections, cards, interactions]</span><br><br>
+      <span class="kw">API:</span><br>
+      - Endpoint: <span class="ph">[e.g. GET /api/v1/bookings]</span><br>
+      - Use useQuery/useInfiniteQuery (TanStack Query)<br>
+      - FlatList for lists with onEndReached for infinite scroll<br>
+      - RefreshControl for pull-to-refresh<br>
+      - ActivityIndicator or skeleton while loading<br><br>
+      <span class="kw">PLATFORM:</span> Handle iOS safe areas (useSafeAreaInsets). KeyboardAvoidingView for forms.<br><br>
+      TypeScript. No StyleSheet.create — use NativeWind className. Functional components + hooks only.
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:80px 0 40px;color:#334155;font-size:13px;font-family:'Inter'">
+  VSP Mobile React Native Design System · v1.0 · March 2026<br>
+  <span style="color:#475569">41 Screens · React Native · Expo · TypeScript · NativeWind</span>
+</div>
+</div>
+</body>
+</html>

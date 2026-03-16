@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VSP Admin — Design System Reference</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* CORE PALETTE */
+  --navy:       #0A0F1E;
+  --navy-2:     #111827;
+  --navy-3:     #1E293B;
+  --sidebar:    #0A0F1E;
+  --sidebar-item-hover: #131929;
+  --primary:    #1D4ED8;
+  --primary-h:  #1E40AF;
+  --primary-l:  #DBEAFE;
+  --primary-xl: #EFF6FF;
+  --success:    #10B981;
+  --success-bg: #D1FAE5;
+  --success-tx: #065F46;
+  --warn:       #F59E0B;
+  --warn-bg:    #FEF3C7;
+  --warn-tx:    #92400E;
+  --danger:     #EF4444;
+  --danger-bg:  #FEE2E2;
+  --danger-tx:  #991B1B;
+  --purple:     #8B5CF6;
+  --purple-bg:  #EDE9FE;
+  --purple-tx:  #5B21B6;
+  --indigo:     #6366F1;
+  --indigo-bg:  #E0E7FF;
+  --indigo-tx:  #3730A3;
+  --orange:     #F97316;
+  --orange-bg:  #FFEDD5;
+  --orange-tx:  #9A3412;
+  --gray-bg:    #F3F4F6;
+  --gray-tx:    #374151;
+  /* CONTENT AREA */
+  --content-bg: #F0F4FF;
+  --card-bg:    #FFFFFF;
+  --border:     #E2E8F0;
+  --border-2:   #CBD5E1;
+  /* TEXT */
+  --text-1:     #0F172A;
+  --text-2:     #334155;
+  --text-3:     #64748B;
+  --text-4:     #94A3B8;
+  /* FONT */
+  --font:       'Plus Jakarta Sans', system-ui, sans-serif;
+  --mono:       'JetBrains Mono', monospace;
+  /* SHADOW */
+  --shadow-sm:  0 1px 2px rgba(0,0,0,.06);
+  --shadow:     0 2px 8px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,.12);
+  /* RADIUS */
+  --r-sm: 6px; --r: 10px; --r-lg: 14px; --r-xl: 20px;
+}
+body { font-family: var(--font); background: #0A0F1E; color: var(--text-1); line-height: 1.5; }
+h1,h2,h3,h4 { font-weight: 700; }
+
+/* ── DOC LAYOUT ───────────────────────────────────────────────────────────── */
+.doc { max-width: 1200px; margin: 0 auto; padding: 48px 32px 120px; }
+.doc-header { text-align: center; padding: 80px 0 64px; }
+.doc-header h1 { font-size: 52px; font-weight: 800; color: #fff; letter-spacing: -1.5px; line-height: 1.1; }
+.doc-header h1 span { color: #60A5FA; }
+.doc-header p { color: #94A3B8; font-size: 18px; margin-top: 16px; }
+.doc-header .badge-row { display: flex; gap: 10px; justify-content: center; margin-top: 24px; flex-wrap: wrap; }
+.doc-badge { background: #1E293B; border: 1px solid #334155; color: #CBD5E1; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 999px; font-family: var(--mono); letter-spacing: .4px; }
+
+.section { margin-top: 72px; }
+.section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #60A5FA; margin-bottom: 16px; }
+.section-title { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -.5px; }
+.section-desc { font-size: 15px; color: #64748B; margin-bottom: 32px; }
+.divider { height: 1px; background: linear-gradient(90deg, transparent, #1E293B 20%, #1E293B 80%, transparent); margin: 64px 0; }
+
+/* ── CARDS ────────────────────────────────────────────────────────────────── */
+.card { background: #111827; border: 1px solid #1E293B; border-radius: var(--r-lg); padding: 24px; }
+.card-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #475569; margin-bottom: 16px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* ── COLOUR TOKENS ─────────────────────────────────────────────────────────── */
+.swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.swatch { border-radius: var(--r); overflow: hidden; border: 1px solid #1E293B; }
+.swatch-color { height: 64px; }
+.swatch-info { background: #111827; padding: 10px 12px; }
+.swatch-name { font-size: 12px; font-weight: 600; color: #E2E8F0; }
+.swatch-val  { font-size: 11px; color: #64748B; font-family: var(--mono); margin-top: 2px; }
+
+/* ── TYPOGRAPHY ───────────────────────────────────────────────────────────── */
+.type-demo { background: #111827; border: 1px solid #1E293B; border-radius: var(--r-lg); padding: 32px; display: flex; flex-direction: column; gap: 20px; }
+.type-row { display: flex; align-items: baseline; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid #1E293B; }
+.type-row:last-child { border-bottom: none; padding-bottom: 0; }
+.type-meta { width: 160px; flex-shrink: 0; }
+.type-meta .t-label { font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #475569; }
+.type-meta .t-spec  { font-size: 11px; color: #334155; font-family: var(--mono); margin-top: 4px; line-height: 1.6; }
+
+/* ── STATUS BADGES ────────────────────────────────────────────────────────── */
+.badge-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; letter-spacing: .2px; }
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .8; }
+.b-approved  { background: #D1FAE5; color: #065F46; }
+.b-active    { background: #D1FAE5; color: #065F46; }
+.b-completed { background: #D1FAE5; color: #065F46; }
+.b-submitted { background: #FEF3C7; color: #92400E; }
+.b-pending   { background: #FEF3C7; color: #92400E; }
+.b-expiring  { background: #FFEDD5; color: #9A3412; }
+.b-inreview  { background: #DBEAFE; color: #1E40AF; }
+.b-confirmed { background: #DBEAFE; color: #1E40AF; }
+.b-matched   { background: #EDE9FE; color: #5B21B6; }
+.b-inprogress{ background: #E0E7FF; color: #3730A3; }
+.b-rejected  { background: #FEE2E2; color: #991B1B; }
+.b-suspended { background: #FEE2E2; color: #991B1B; }
+.b-cancelled { background: #FEE2E2; color: #991B1B; }
+.b-expired   { background: #F3F4F6; color: #374151; }
+.b-draft     { background: #F3F4F6; color: #374151; }
+.b-closed    { background: #F3F4F6; color: #374151; }
+.b-open      { background: #DBEAFE; color: #1E40AF; }
+.b-critical  { background: #FEE2E2; color: #991B1B; }
+.b-high      { background: #FFEDD5; color: #9A3412; }
+.b-medium    { background: #FEF3C7; color: #92400E; }
+.b-low       { background: #F3F4F6; color: #374151; }
+.b-super     { background: #EDE9FE; color: #5B21B6; }
+.b-admin     { background: #DBEAFE; color: #1E40AF; }
+.b-moderator { background: #FEF3C7; color: #92400E; }
+.b-support   { background: #D1FAE5; color: #065F46; }
+
+/* ── BUTTONS ──────────────────────────────────────────────────────────────── */
+.btn-demo { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font); font-size: 14px; font-weight: 600; padding: 9px 18px; border-radius: var(--r-sm); border: none; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.btn-primary  { background: #1D4ED8; color: #fff; }
+.btn-primary:hover { background: #1E40AF; }
+.btn-danger   { background: #EF4444; color: #fff; }
+.btn-danger:hover { background: #DC2626; }
+.btn-success  { background: #10B981; color: #fff; }
+.btn-outline  { background: transparent; color: #1D4ED8; border: 1.5px solid #1D4ED8; }
+.btn-outline-danger { background: transparent; color: #EF4444; border: 1.5px solid #EF4444; }
+.btn-ghost    { background: transparent; color: #94A3B8; border: 1.5px solid #1E293B; }
+.btn-sm       { font-size: 12px; padding: 5px 12px; }
+.btn-icon     { padding: 8px; border-radius: var(--r-sm); background: #1E293B; color: #94A3B8; border: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ── INPUTS ───────────────────────────────────────────────────────────────── */
+.input-demo { display: flex; flex-direction: column; gap: 16px; }
+.input-group { display: flex; flex-direction: column; gap: 6px; }
+.input-label { font-size: 13px; font-weight: 600; color: #94A3B8; }
+.input { width: 100%; background: #0A0F1E; border: 1.5px solid #1E293B; border-radius: var(--r-sm); color: #E2E8F0; font-family: var(--font); font-size: 14px; padding: 9px 14px; outline: none; transition: border-color .15s; }
+.input:focus { border-color: #1D4ED8; box-shadow: 0 0 0 3px rgba(29,78,216,.15); }
+.input::placeholder { color: #334155; }
+.input-with-icon { position: relative; }
+.input-with-icon .input { padding-left: 40px; }
+.input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #475569; }
+.select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+/* ── SIDEBAR PREVIEW ──────────────────────────────────────────────────────── */
+.sidebar-preview { background: #0A0F1E; border-radius: var(--r-lg); border: 1px solid #1E293B; width: 240px; padding: 20px 0; overflow: hidden; }
+.sb-logo { display: flex; align-items: center; gap: 10px; padding: 0 16px 20px; border-bottom: 1px solid #1E293B; margin-bottom: 16px; }
+.sb-logo-icon { width: 36px; height: 36px; background: #1D4ED8; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: #fff; }
+.sb-logo-text { font-size: 16px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+.sb-logo-text span { color: #60A5FA; }
+.sb-section { padding: 0 8px; margin-bottom: 4px; }
+.sb-section-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #334155; padding: 8px 8px 6px; }
+.sb-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: all .1s; margin-bottom: 2px; }
+.sb-item:hover { background: #131929; }
+.sb-item.active { background: #1D4ED8; }
+.sb-item-left { display: flex; align-items: center; gap: 10px; }
+.sb-item-icon { width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+.sb-item-icon svg { width: 15px; height: 15px; }
+.sb-item:not(.active) .sb-item-icon { color: #475569; }
+.sb-item.active .sb-item-icon { color: #fff; }
+.sb-item-text { font-size: 13px; font-weight: 500; }
+.sb-item:not(.active) .sb-item-text { color: #94A3B8; }
+.sb-item.active .sb-item-text { color: #fff; }
+.sb-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.sb-badge-amber { background: #92400E; color: #FEF3C7; }
+.sb-badge-red   { background: #991B1B; color: #FEE2E2; }
+.sb-badge-blue  { background: #1E40AF; color: #DBEAFE; }
+.sb-footer { margin-top: 16px; padding: 16px 16px 0; border-top: 1px solid #1E293B; display: flex; align-items: center; gap: 10px; }
+.sb-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,#1D4ED8,#7C3AED); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.sb-user-name { font-size: 13px; font-weight: 600; color: #E2E8F0; }
+.sb-user-role { font-size: 11px; color: #475569; }
+
+/* ── TOP BAR ─────────────────────────────────────────────────────────────── */
+.topbar-preview { background: #fff; border-radius: var(--r-lg); border: 1px solid #E2E8F0; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.topbar-left { display: flex; flex-direction: column; }
+.topbar-title { font-size: 18px; font-weight: 700; color: #0F172A; letter-spacing: -.3px; }
+.topbar-crumb { font-size: 12px; color: #94A3B8; }
+.topbar-search { flex: 1; max-width: 360px; position: relative; }
+.topbar-search input { width: 100%; background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 8px 12px 8px 36px; font-family: var(--font); font-size: 13px; color: #334155; outline: none; }
+.topbar-search input:focus { border-color: #1D4ED8; background: #fff; }
+.topbar-search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94A3B8; width: 16px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.topbar-icon-btn { width: 36px; height: 36px; border-radius: 8px; background: #F8FAFC; border: 1.5px solid #E2E8F0; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; color: #64748B; }
+.notif-dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid #fff; }
+.mfa-chip { display: flex; align-items: center; gap: 6px; background: #D1FAE5; color: #065F46; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; }
+.topbar-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#1D4ED8,#7C3AED); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; }
+
+/* ── STAT CARDS ───────────────────────────────────────────────────────────── */
+.stat-card { background: #fff; border: 1px solid #E2E8F0; border-radius: var(--r-lg); padding: 20px 22px; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+.stat-blue::before   { background: #1D4ED8; }
+.stat-green::before  { background: #10B981; }
+.stat-amber::before  { background: #F59E0B; }
+.stat-purple::before { background: #8B5CF6; }
+.stat-red::before    { background: #EF4444; }
+.stat-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.stat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stat-icon svg { width: 20px; height: 20px; }
+.stat-icon-blue   { background: #EFF6FF; color: #1D4ED8; }
+.stat-icon-green  { background: #ECFDF5; color: #10B981; }
+.stat-icon-amber  { background: #FFFBEB; color: #F59E0B; }
+.stat-icon-purple { background: #F5F3FF; color: #8B5CF6; }
+.stat-icon-red    { background: #FEF2F2; color: #EF4444; }
+.stat-trend { font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+.stat-trend-up   { background: #D1FAE5; color: #065F46; }
+.stat-trend-down { background: #FEE2E2; color: #991B1B; }
+.stat-value { font-size: 28px; font-weight: 800; color: #0F172A; letter-spacing: -1px; }
+.stat-label { font-size: 13px; color: #64748B; margin-top: 4px; font-weight: 500; }
+
+/* ── DATA TABLE ───────────────────────────────────────────────────────────── */
+.table-wrap { background: #fff; border: 1px solid #E2E8F0; border-radius: var(--r-lg); overflow: hidden; }
+.table-header { padding: 18px 20px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; }
+.table-title { font-size: 15px; font-weight: 700; color: #0F172A; }
+.table-actions { display: flex; align-items: center; gap: 8px; }
+table { width: 100%; border-collapse: collapse; }
+thead th { background: #F8FAFC; font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748B; padding: 10px 16px; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid #F1F5F9; transition: background .1s; }
+tbody tr:hover { background: #F8FAFC; }
+tbody tr:last-child { border-bottom: none; }
+td { padding: 13px 16px; font-size: 13px; color: #334155; vertical-align: middle; }
+.td-user { display: flex; align-items: center; gap: 10px; }
+.td-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.td-name { font-size: 13px; font-weight: 600; color: #0F172A; }
+.td-sub  { font-size: 12px; color: #94A3B8; margin-top: 1px; }
+.td-mono { font-family: var(--mono); font-size: 12px; color: #475569; }
+.rating { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #0F172A; }
+.rating-star { color: #F59E0B; }
+.trade-chip { display: inline-flex; align-items: center; background: #EFF6FF; color: #1E40AF; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
+.action-btn { background: transparent; border: none; cursor: pointer; color: #94A3B8; padding: 6px; border-radius: 6px; display: inline-flex; align-items: center; }
+.action-btn:hover { background: #F1F5F9; color: #334155; }
+
+/* ── FILTER BAR ───────────────────────────────────────────────────────────── */
+.filter-bar { background: #fff; border: 1px solid #E2E8F0; border-radius: var(--r-lg); padding: 14px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.filter-search { position: relative; flex: 1; min-width: 220px; }
+.filter-search input { width: 100%; background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: var(--r-sm); padding: 8px 12px 8px 36px; font-family: var(--font); font-size: 13px; color: #0F172A; outline: none; }
+.filter-search input:focus { border-color: #1D4ED8; }
+.filter-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: #94A3B8; }
+.filter-select { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: var(--r-sm); padding: 8px 32px 8px 12px; font-family: var(--font); font-size: 13px; color: #334155; appearance: none; outline: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; }
+.filter-reset { font-size: 13px; color: #94A3B8; background: none; border: none; cursor: pointer; font-family: var(--font); padding: 8px 4px; }
+.filter-reset:hover { color: #EF4444; }
+
+/* ── TABS ─────────────────────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 2px; background: #F1F5F9; border-radius: 8px; padding: 3px; width: fit-content; }
+.tab { font-size: 13px; font-weight: 500; padding: 6px 16px; border-radius: 6px; cursor: pointer; color: #64748B; border: none; background: none; font-family: var(--font); transition: all .15s; }
+.tab.active { background: #fff; color: #0F172A; font-weight: 600; box-shadow: var(--shadow-sm); }
+.tabs-line { display: flex; gap: 0; border-bottom: 2px solid #E2E8F0; }
+.tab-line { font-size: 13px; font-weight: 500; padding: 10px 18px; cursor: pointer; color: #64748B; border: none; background: none; font-family: var(--font); border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+.tab-line.active { color: #1D4ED8; font-weight: 600; border-bottom-color: #1D4ED8; }
+.tab-count { display: inline-flex; align-items: center; background: #E2E8F0; color: #475569; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-left: 6px; }
+.tab-line.active .tab-count { background: #DBEAFE; color: #1D4ED8; }
+
+/* ── MODALS ───────────────────────────────────────────────────────────────── */
+.modal-overlay { background: rgba(0,0,0,.6); border-radius: var(--r-xl); padding: 40px; display: flex; align-items: center; justify-content: center; }
+.modal { background: #fff; border-radius: var(--r-xl); width: 520px; overflow: hidden; box-shadow: var(--shadow-lg); }
+.modal-head { padding: 20px 24px 16px; border-bottom: 1px solid #F1F5F9; display: flex; align-items: center; justify-content: space-between; }
+.modal-head.danger { background: #FEF2F2; border-bottom-color: #FEE2E2; }
+.modal-head.success { background: #ECFDF5; border-bottom-color: #D1FAE5; }
+.modal-head-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.modal-head-icon.danger { background: #FEE2E2; color: #EF4444; }
+.modal-head-icon.success { background: #D1FAE5; color: #10B981; }
+.modal-title { font-size: 16px; font-weight: 700; color: #0F172A; margin-top: 6px; }
+.modal-subtitle { font-size: 13px; color: #64748B; margin-top: 2px; }
+.modal-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+.modal-foot { padding: 16px 24px; border-top: 1px solid #F1F5F9; display: flex; justify-content: flex-end; gap: 10px; }
+.impact-box { background: #FFFBEB; border: 1px solid #FDE68A; border-radius: var(--r-sm); padding: 12px 14px; }
+.impact-title { font-size: 12px; font-weight: 700; color: #92400E; margin-bottom: 8px; }
+.impact-item { font-size: 12px; color: #78350F; display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+.impact-item::before { content: '•'; color: #F59E0B; flex-shrink: 0; }
+.mfa-field { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: var(--r-sm); padding: 14px; }
+.mfa-label { font-size: 12px; font-weight: 600; color: #64748B; margin-bottom: 10px; }
+.otp-inputs { display: flex; gap: 8px; }
+.otp-box { width: 44px; height: 48px; background: #fff; border: 2px solid #E2E8F0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #0F172A; }
+.otp-box.filled { border-color: #1D4ED8; }
+
+/* ── PAGE HEADER ──────────────────────────────────────────────────────────── */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+.page-title { font-size: 26px; font-weight: 800; color: #0F172A; letter-spacing: -.5px; }
+.page-sub { font-size: 14px; color: #64748B; margin-top: 4px; }
+.page-actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── VERIFICATION CARD ────────────────────────────────────────────────────── */
+.verif-card { background: #fff; border: 1px solid #E2E8F0; border-left: 4px solid #F59E0B; border-radius: var(--r-lg); padding: 18px 20px; display: flex; align-items: center; gap: 16px; }
+.verif-card.new { border-left-color: #1D4ED8; }
+.verif-card.reviewing { border-left-color: #8B5CF6; opacity: .85; }
+.verif-card-avatar { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.verif-card-info { flex: 1; min-width: 0; }
+.verif-card-name { font-size: 14px; font-weight: 700; color: #0F172A; }
+.verif-card-meta { font-size: 12px; color: #64748B; margin-top: 3px; display: flex; gap: 12px; flex-wrap: wrap; }
+.verif-card-meta span { display: flex; align-items: center; gap: 4px; }
+.verif-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+/* ── SYSTEM STATUS ────────────────────────────────────────────────────────── */
+.sys-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #F1F5F9; }
+.sys-item:last-child { border-bottom: none; }
+.sys-left { display: flex; align-items: center; gap: 10px; }
+.sys-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sys-dot.green { background: #10B981; box-shadow: 0 0 6px rgba(16,185,129,.5); }
+.sys-dot.amber { background: #F59E0B; box-shadow: 0 0 6px rgba(245,158,11,.5); }
+.sys-dot.red   { background: #EF4444; box-shadow: 0 0 6px rgba(239,68,68,.5); }
+.sys-name { font-size: 13px; font-weight: 600; color: #0F172A; }
+.sys-detail { font-size: 12px; color: #64748B; }
+.sys-value { font-size: 12px; font-family: var(--mono); color: #475569; }
+
+/* ── FRAUD SIGNAL ─────────────────────────────────────────────────────────── */
+.score-pill { display: inline-flex; align-items: center; font-size: 13px; font-weight: 800; padding: 4px 12px; border-radius: 999px; font-family: var(--mono); }
+.score-critical { background: #FEE2E2; color: #991B1B; }
+.score-high     { background: #FFEDD5; color: #9A3412; }
+.score-medium   { background: #FEF3C7; color: #92400E; }
+.score-low      { background: #F3F4F6; color: #374151; }
+
+/* ── CHART PLACEHOLDER ────────────────────────────────────────────────────── */
+.chart-placeholder { background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: var(--r); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.chart-placeholder-label { font-size: 12px; color: #94A3B8; font-weight: 500; }
+
+/* ── TIMELINE ─────────────────────────────────────────────────────────────── */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl-item { display: flex; gap: 14px; padding-bottom: 20px; position: relative; }
+.tl-item:not(:last-child)::before { content: ''; position: absolute; left: 9px; top: 20px; bottom: 0; width: 2px; background: #E2E8F0; }
+.tl-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.tl-dot-green  { background: #D1FAE5; border: 2px solid #10B981; }
+.tl-dot-blue   { background: #DBEAFE; border: 2px solid #1D4ED8; }
+.tl-dot-amber  { background: #FEF3C7; border: 2px solid #F59E0B; }
+.tl-dot-purple { background: #EDE9FE; border: 2px solid #8B5CF6; }
+.tl-dot-gray   { background: #F1F5F9; border: 2px solid #CBD5E1; }
+.tl-content { flex: 1; }
+.tl-label { font-size: 13px; font-weight: 600; color: #0F172A; }
+.tl-meta  { font-size: 12px; color: #94A3B8; margin-top: 2px; }
+
+/* ── PAGE SECTIONS ────────────────────────────────────────────────────────── */
+.demo-wrap { background: #F0F4FF; border-radius: var(--r-xl); padding: 24px; border: 1px solid #1E293B; }
+.demo-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #475569; margin-bottom: 14px; }
+.screen-note { background: #0F172A; border: 1px solid #1E293B; border-radius: var(--r); padding: 12px 16px; font-size: 13px; color: #64748B; line-height: 1.6; margin-bottom: 16px; }
+.screen-note strong { color: #60A5FA; }
+
+/* ── CODEX REFERENCE BOX ─────────────────────────────────────────────────── */
+.codex-box { background: #020617; border: 1px solid #1E293B; border-left: 3px solid #1D4ED8; border-radius: var(--r); padding: 14px 18px; margin-top: 16px; }
+.codex-box-title { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #1D4ED8; margin-bottom: 8px; }
+.codex-box pre { font-family: var(--mono); font-size: 12px; color: #94A3B8; line-height: 1.7; white-space: pre-wrap; }
+.codex-box pre .k { color: #60A5FA; }
+.codex-box pre .s { color: #34D399; }
+.codex-box pre .c { color: #475569; }
+
+/* ── NAV PILLS ────────────────────────────────────────────────────────────── */
+.toc { position: sticky; top: 24px; }
+.toc-item { display: block; font-size: 13px; color: #475569; padding: 6px 12px; border-radius: var(--r-sm); text-decoration: none; font-weight: 500; transition: all .1s; }
+.toc-item:hover { background: #1E293B; color: #E2E8F0; }
+.toc-item.active { background: #1D4ED8; color: #fff; }
+</style>
+</head>
+<body>
+
+<div class="doc">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <h1>VSP Admin<br><span>Design System</span></h1>
+    <p>Visual reference for Cursor + ChatGPT Codex · All 48 admin screens</p>
+    <div class="badge-row">
+      <span class="doc-badge">React + TypeScript</span>
+      <span class="doc-badge">Tailwind CSS</span>
+      <span class="doc-badge">shadcn/ui</span>
+      <span class="doc-badge">48 Pages</span>
+      <span class="doc-badge">195 Endpoints</span>
+      <span class="doc-badge">41 Permissions</span>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 1 — COLOUR TOKENS ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 1</div>
+    <div class="section-title">Colour Tokens</div>
+    <div class="section-desc">Use these exact values everywhere. No deviations. Define as CSS variables and Tailwind config extensions.</div>
+    <div class="card">
+      <div class="card-label">Core Palette</div>
+      <div class="swatch-grid">
+        <div class="swatch"><div class="swatch-color" style="background:#0A0F1E"></div><div class="swatch-info"><div class="swatch-name">Sidebar</div><div class="swatch-val">#0A0F1E</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#111827"></div><div class="swatch-info"><div class="swatch-name">Navy 2</div><div class="swatch-val">#111827</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1E293B"></div><div class="swatch-info"><div class="swatch-name">Navy 3</div><div class="swatch-val">#1E293B</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1D4ED8"></div><div class="swatch-info"><div class="swatch-name">Primary</div><div class="swatch-val">#1D4ED8</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#1E40AF"></div><div class="swatch-info"><div class="swatch-name">Primary Hover</div><div class="swatch-val">#1E40AF</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#DBEAFE"></div><div class="swatch-info"><div class="swatch-name">Primary Light</div><div class="swatch-val">#DBEAFE</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#10B981"></div><div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-val">#10B981</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#D1FAE5"></div><div class="swatch-info"><div class="swatch-name">Success BG</div><div class="swatch-val">#D1FAE5</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#F59E0B"></div><div class="swatch-info"><div class="swatch-name">Warning</div><div class="swatch-val">#F59E0B</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#FEF3C7"></div><div class="swatch-info"><div class="swatch-name">Warning BG</div><div class="swatch-val">#FEF3C7</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#EF4444"></div><div class="swatch-info"><div class="swatch-name">Danger</div><div class="swatch-val">#EF4444</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#FEE2E2"></div><div class="swatch-info"><div class="swatch-name">Danger BG</div><div class="swatch-val">#FEE2E2</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#8B5CF6"></div><div class="swatch-info"><div class="swatch-name">Purple</div><div class="swatch-val">#8B5CF6</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#6366F1"></div><div class="swatch-info"><div class="swatch-name">Indigo</div><div class="swatch-val">#6366F1</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#F0F4FF"></div><div class="swatch-info"><div class="swatch-name">Content BG</div><div class="swatch-val">#F0F4FF</div></div></div>
+        <div class="swatch"><div class="swatch-color" style="background:#E2E8F0; border:1px solid #CBD5E1"></div><div class="swatch-info"><div class="swatch-name">Border</div><div class="swatch-val">#E2E8F0</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 2 — TYPOGRAPHY ════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 2</div>
+    <div class="section-title">Typography</div>
+    <div class="section-desc">Plus Jakarta Sans for all UI. JetBrains Mono for code, IDs, tokens, and monospace values.</div>
+    <div class="type-demo">
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Page Title</div><div class="t-spec">800 weight<br>26px / -0.5px<br>color: #0F172A</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:26px;font-weight:800;color:#0F172A;letter-spacing:-.5px;">Workers List</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Section Title</div><div class="t-spec">700 weight<br>20px / -0.3px<br>color: #0F172A</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:20px;font-weight:700;color:#0F172A;letter-spacing:-.3px;">Verification Queue</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Card Title</div><div class="t-spec">700 weight<br>15px<br>color: #0F172A</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:15px;font-weight:700;color:#0F172A;">Recent Verification Requests</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Body / Table</div><div class="t-spec">400–500 weight<br>13px<br>color: #334155</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:13px;color:#334155;">Bob Williams submitted verification documents for review 3 hours ago.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Caption / Meta</div><div class="t-spec">500 weight<br>12px<br>color: #94A3B8</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:12px;color:#94A3B8;">Last updated 5 minutes ago · Accra, Ghana</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Table Header</div><div class="t-spec">700 weight<br>11px / +0.8px<br>UPPERCASE #64748B</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#64748B;">WORKER NAME &nbsp;&nbsp;&nbsp; TRADE &nbsp;&nbsp;&nbsp; STATUS &nbsp;&nbsp;&nbsp; RATING</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Monospace</div><div class="t-spec">JetBrains Mono<br>12px<br>color: #475569</div></div>
+        <div style="font-family:'JetBrains Mono';font-size:12px;color:#475569;">wp_bbbbbbbb-0001 &nbsp; · &nbsp; pi_3NxQz2...</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta"><div class="t-label">Section Label</div><div class="t-spec">700 weight<br>10px / +2px<br>UPPERCASE #60A5FA</div></div>
+        <div style="font-family:'Plus Jakarta Sans';font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#60A5FA;">WORKER MANAGEMENT</div>
+      </div>
+    </div>
+    <div class="codex-box" style="margin-top:20px">
+      <div class="codex-box-title">Codex Reference — Font Import</div>
+      <pre><span class="c">// globals.css</span>
+<span class="k">@import url</span>(<span class="s">'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap'</span>);
+
+<span class="c">// tailwind.config.ts</span>
+fontFamily: {
+  sans: [<span class="s">'Plus Jakarta Sans'</span>, <span class="s">'system-ui'</span>, <span class="s">'sans-serif'</span>],
+  mono: [<span class="s">'JetBrains Mono'</span>, <span class="s">'monospace'</span>],
+}</pre>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 3 — STATUS BADGES ════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 3</div>
+    <div class="section-title">Status Badges</div>
+    <div class="section-desc">One <code style="background:#1E293B;color:#94A3B8;padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:12px">StatusBadge</code> component, variant prop. Use everywhere — never hardcode colours inline.</div>
+    <div class="card">
+      <div class="card-label">User & Worker Status</div>
+      <div class="badge-grid" style="margin-bottom:20px">
+        <span class="badge b-active">Active</span>
+        <span class="badge b-suspended">Suspended</span>
+        <span class="badge b-draft">Deleted</span>
+        <span class="badge b-approved">Approved</span>
+        <span class="badge b-submitted">Submitted</span>
+        <span class="badge b-inreview">Under Review</span>
+        <span class="badge b-rejected">Rejected</span>
+        <span class="badge b-expired">Expired</span>
+        <span class="badge b-draft">Draft</span>
+      </div>
+      <div class="card-label">Booking & Request Status</div>
+      <div class="badge-grid" style="margin-bottom:20px">
+        <span class="badge b-open">Open</span>
+        <span class="badge b-matched">Matched</span>
+        <span class="badge b-confirmed">Accepted</span>
+        <span class="badge b-inprogress">In Progress</span>
+        <span class="badge b-completed">Completed</span>
+        <span class="badge b-cancelled">Cancelled</span>
+        <span class="badge b-expired">Expired</span>
+        <span class="badge b-pending">Pending</span>
+        <span class="badge b-confirmed">Confirmed</span>
+        <span class="badge b-expiring">Expiring Soon</span>
+      </div>
+      <div class="card-label">Moderation & Support</div>
+      <div class="badge-grid" style="margin-bottom:20px">
+        <span class="badge b-open">Open</span>
+        <span class="badge b-inreview">In Review</span>
+        <span class="badge b-approved">Actioned</span>
+        <span class="badge b-draft">Dismissed</span>
+        <span class="badge b-closed">Closed</span>
+        <span class="badge b-critical">Critical</span>
+        <span class="badge b-high">High</span>
+        <span class="badge b-medium">Medium</span>
+        <span class="badge b-low">Low</span>
+        <span class="badge b-pending">Waiting User</span>
+        <span class="badge b-matched">Waiting Internal</span>
+        <span class="badge b-completed">Resolved</span>
+      </div>
+      <div class="card-label">Admin Roles</div>
+      <div class="badge-grid">
+        <span class="badge b-super">Super Admin</span>
+        <span class="badge b-admin">Admin</span>
+        <span class="badge b-moderator">Moderator</span>
+        <span class="badge b-support">Support</span>
+      </div>
+    </div>
+    <div class="codex-box">
+      <div class="codex-box-title">Codex Reference — StatusBadge Component</div>
+      <pre><span class="k">const</span> variants = {
+  active:      { bg: <span class="s">'bg-emerald-100'</span>, text: <span class="s">'text-emerald-800'</span> },
+  approved:    { bg: <span class="s">'bg-emerald-100'</span>, text: <span class="s">'text-emerald-800'</span> },
+  submitted:   { bg: <span class="s">'bg-amber-100'</span>,   text: <span class="s">'text-amber-800'</span>   },
+  under_review:{ bg: <span class="s">'bg-blue-100'</span>,    text: <span class="s">'text-blue-800'</span>    },
+  rejected:    { bg: <span class="s">'bg-red-100'</span>,     text: <span class="s">'text-red-800'</span>     },
+  suspended:   { bg: <span class="s">'bg-red-100'</span>,     text: <span class="s">'text-red-800'</span>     },
+  completed:   { bg: <span class="s">'bg-emerald-100'</span>, text: <span class="s">'text-emerald-800'</span> },
+  in_progress: { bg: <span class="s">'bg-indigo-100'</span>,  text: <span class="s">'text-indigo-800'</span>  },
+  matched:     { bg: <span class="s">'bg-purple-100'</span>,  text: <span class="s">'text-purple-800'</span>  },
+  cancelled:   { bg: <span class="s">'bg-red-100'</span>,     text: <span class="s">'text-red-800'</span>     },
+  expired:     { bg: <span class="s">'bg-slate-100'</span>,   text: <span class="s">'text-slate-600'</span>   },
+  open:        { bg: <span class="s">'bg-blue-100'</span>,    text: <span class="s">'text-blue-800'</span>    },
+  critical:    { bg: <span class="s">'bg-red-100'</span>,     text: <span class="s">'text-red-800'</span>     },
+  high:        { bg: <span class="s">'bg-orange-100'</span>,  text: <span class="s">'text-orange-800'</span>  },
+  medium:      { bg: <span class="s">'bg-amber-100'</span>,   text: <span class="s">'text-amber-800'</span>   },
+  low:         { bg: <span class="s">'bg-slate-100'</span>,   text: <span class="s">'text-slate-600'</span>   },
+}</pre>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 4 — GLOBAL SHELL ══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 4</div>
+    <div class="section-title">Global Shell — Sidebar + Top Bar</div>
+    <div class="section-desc">Every page uses this exact shell. The sidebar is always 240px, always <code style="background:#1E293B;color:#94A3B8;padding:2px 6px;border-radius:4px;font-size:12px">#0A0F1E</code>. The top bar is always 64px, always white.</div>
+
+    <div class="grid-2" style="align-items:start">
+      <!-- SIDEBAR -->
+      <div>
+        <div class="screen-note"><strong>Sidebar — 240px fixed, full height.</strong> Sections are grouped with uppercase 10px labels. Active item is <strong>#1D4ED8</strong> blue with white text. Badge counts update every 30s via polling.</div>
+        <div class="sidebar-preview">
+          <div class="sb-logo">
+            <div class="sb-logo-icon">V</div>
+            <div><div class="sb-logo-text">VSP <span>Admin</span></div></div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-section-label">Overview</div>
+            <div class="sb-item active">
+              <div class="sb-item-left">
+                <div class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+                <span class="sb-item-text">Dashboard</span>
+              </div>
+            </div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-section-label">Workers</div>
+            <div class="sb-item">
+              <div class="sb-item-left">
+                <div class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                <span class="sb-item-text">Workers List</span>
+              </div>
+            </div>
+            <div class="sb-item">
+              <div class="sb-item-left">
+                <div class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+                <span class="sb-item-text">Verification Queue</span>
+              </div>
+              <span class="sb-badge sb-badge-amber">12</span>
+            </div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-section-label">Moderation</div>
+            <div class="sb-item">
+              <div class="sb-item-left">
+                <div class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                <span class="sb-item-text">Reports Queue</span>
+              </div>
+              <span class="sb-badge sb-badge-red">34</span>
+            </div>
+            <div class="sb-item">
+              <div class="sb-item-left">
+                <div class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                <span class="sb-item-text">Fraud Signals</span>
+              </div>
+              <span class="sb-badge sb-badge-red">8</span>
+            </div>
+          </div>
+          <div class="sb-section">
+            <div class="sb-section-label">Support</div>
+            <div class="sb-item">
+              <div class="sb-item-left">
+                <div class="sb-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+                <span class="sb-item-text">Support Tickets</span>
+              </div>
+              <span class="sb-badge sb-badge-blue">7</span>
+            </div>
+          </div>
+          <div class="sb-footer">
+            <div class="sb-avatar">DM</div>
+            <div>
+              <div class="sb-user-name">David Mensah</div>
+              <div class="sb-user-role">ADMIN</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOP BAR -->
+      <div>
+        <div class="screen-note"><strong>Top Bar — 64px, white, sticky.</strong> Left: page title + breadcrumb. Center: global search with Cmd+K hint. Right: date filter, notifications bell, MFA status chip, avatar dropdown.</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="topbar-preview">
+            <div class="topbar-left">
+              <div class="topbar-title">Workers List</div>
+              <div class="topbar-crumb">Workers · All Workers</div>
+            </div>
+            <div class="topbar-search">
+              <svg class="topbar-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input placeholder="Search  ⌘K" style="width:100%">
+            </div>
+            <div class="topbar-right">
+              <div class="topbar-icon-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              </div>
+              <div class="topbar-icon-btn" style="position:relative">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <div class="notif-dot"></div>
+              </div>
+              <div class="mfa-chip">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                MFA Active
+              </div>
+              <div class="topbar-avatar">DM</div>
+            </div>
+          </div>
+          <div class="codex-box" style="margin-top:0">
+            <div class="codex-box-title">Codex Reference — Shell Layout</div>
+            <pre><span class="c">// Layout: sidebar (240px fixed) + main (flex-1)</span>
+<span class="k">&lt;div</span> className=<span class="s">"flex h-screen overflow-hidden bg-[#F0F4FF]"</span><span class="k">&gt;</span>
+  <span class="k">&lt;Sidebar</span> className=<span class="s">"w-60 flex-shrink-0 bg-[#0A0F1E]"</span> <span class="k">/&gt;</span>
+  <span class="k">&lt;div</span> className=<span class="s">"flex flex-col flex-1 overflow-hidden"</span><span class="k">&gt;</span>
+    <span class="k">&lt;TopBar</span> className=<span class="s">"h-16 bg-white border-b sticky top-0 z-30"</span> <span class="k">/&gt;</span>
+    <span class="k">&lt;main</span> className=<span class="s">"flex-1 overflow-y-auto p-6"</span><span class="k">&gt;</span>
+      <span class="k">{children}</span>
+    <span class="k">&lt;/main&gt;</span>
+  <span class="k">&lt;/div&gt;</span>
+<span class="k">&lt;/div&gt;</span></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 5 — SHARED COMPONENTS ════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 5</div>
+    <div class="section-title">Shared Components</div>
+    <div class="section-desc">Build these once, reuse everywhere. Every page uses at least 3 of these.</div>
+
+    <!-- STAT CARDS -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Stat Cards</h3>
+    <div class="grid-4" style="margin-bottom:32px">
+      <div class="stat-card stat-blue">
+        <div class="stat-top">
+          <div class="stat-icon stat-icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <span class="stat-trend stat-trend-up">+12%</span>
+        </div>
+        <div class="stat-value">52,847</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+      <div class="stat-card stat-green">
+        <div class="stat-top">
+          <div class="stat-icon stat-icon-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5z"/><path d="M20.5 10H19V8.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/><path d="M9.5 14c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5z"/><path d="M3.5 14H5v1.5c0 .83-.67 1.5-1.5 1.5S2 16.33 2 15.5 2.67 14 3.5 14z"/><path d="M14 14.5c0-.83.67-1.5 1.5-1.5h5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5z"/><path d="M15.5 19H14v1.5c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5-.67-1.5-1.5-1.5z"/><path d="M10 9.5C10 8.67 9.33 8 8.5 8h-5C2.67 8 2 8.67 2 9.5S2.67 11 3.5 11h5c.83 0 1.5-.67 1.5-1.5z"/><path d="M8.5 5H10V3.5C10 2.67 9.33 2 8.5 2S7 2.67 7 3.5 7.67 5 8.5 5z"/></svg></div>
+          <span class="stat-trend stat-trend-up">+8%</span>
+        </div>
+        <div class="stat-value">4,231</div>
+        <div class="stat-label">Active Workers</div>
+      </div>
+      <div class="stat-card stat-amber">
+        <div class="stat-top">
+          <div class="stat-icon stat-icon-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <span class="stat-trend stat-trend-up">+23%</span>
+        </div>
+        <div class="stat-value">1,847</div>
+        <div class="stat-label">Open Bookings</div>
+      </div>
+      <div class="stat-card stat-red">
+        <div class="stat-top">
+          <div class="stat-icon stat-icon-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <span class="stat-trend stat-trend-down">+2</span>
+        </div>
+        <div class="stat-value">34</div>
+        <div class="stat-label">Open Cases</div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Filter Bar</h3>
+    <div class="demo-wrap" style="margin-bottom:32px">
+      <div class="filter-bar">
+        <div class="filter-search" style="min-width:260px">
+          <svg class="filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="input" placeholder="Search workers by name or trade...">
+        </div>
+        <select class="filter-select">
+          <option>All Statuses</option>
+          <option>Approved</option>
+          <option>Submitted</option>
+        </select>
+        <select class="filter-select">
+          <option>All Trades</option>
+          <option>Electrician</option>
+          <option>Plumber</option>
+        </select>
+        <select class="filter-select">
+          <option>All Cities</option>
+          <option>Accra</option>
+          <option>Lagos</option>
+        </select>
+        <button class="filter-reset">Reset filters</button>
+        <div style="margin-left:auto">
+          <button class="btn btn-primary btn-sm">+ Add Worker</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Tabs</h3>
+    <div class="demo-wrap" style="margin-bottom:32px">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div>
+          <div class="demo-label">Pill Tabs (for page-level content switching)</div>
+          <div class="tabs">
+            <button class="tab active">Profile</button>
+            <button class="tab">Services</button>
+            <button class="tab">Portfolio</button>
+            <button class="tab">Verification</button>
+            <button class="tab">Subscription</button>
+          </div>
+        </div>
+        <div>
+          <div class="demo-label">Line Tabs with Counts (for list filtering)</div>
+          <div class="tabs-line">
+            <button class="tab-line active">All <span class="tab-count">4,231</span></button>
+            <button class="tab-line">Submitted <span class="tab-count">12</span></button>
+            <button class="tab-line">Under Review <span class="tab-count">6</span></button>
+            <button class="tab-line">Approved <span class="tab-count">3,847</span></button>
+            <button class="tab-line">Rejected <span class="tab-count">89</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Buttons</h3>
+    <div class="demo-wrap" style="margin-bottom:32px">
+      <div class="btn-demo">
+        <button class="btn btn-primary">Verify Worker</button>
+        <button class="btn btn-danger">Suspend User</button>
+        <button class="btn btn-success">Approve</button>
+        <button class="btn btn-outline">Edit Config</button>
+        <button class="btn btn-outline-danger">Reject</button>
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-primary btn-sm">+ Add City</button>
+        <button class="btn btn-ghost btn-sm">Export CSV</button>
+      </div>
+    </div>
+
+    <!-- DATA TABLE -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Data Table — Workers List</h3>
+    <div class="table-wrap" style="margin-bottom:32px">
+      <div class="table-header">
+        <div>
+          <div class="table-title">Workers</div>
+        </div>
+        <div class="table-actions">
+          <button class="btn btn-ghost btn-sm">Export CSV</button>
+          <button class="btn btn-primary btn-sm">+ Invite Worker</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px"><input type="checkbox" style="accent-color:#1D4ED8"></th>
+            <th>Worker</th><th>Trade</th><th>City</th><th>Status</th><th>Rating</th><th>Jobs</th><th>Response</th><th>Joined</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#1D4ED8"></td>
+            <td><div class="td-user"><div class="td-avatar" style="background:linear-gradient(135deg,#1D4ED8,#7C3AED)">BW</div><div><div class="td-name">Bob Williams</div><div class="td-sub">bob@example.com</div></div></div></td>
+            <td><span class="trade-chip">⚡ Electrician</span></td>
+            <td style="color:#64748B;font-size:13px">🇬🇭 Accra</td>
+            <td><span class="badge b-approved">Approved</span></td>
+            <td><div class="rating"><span class="rating-star">★</span>4.8</div></td>
+            <td style="font-weight:600">47</td>
+            <td style="font-weight:600;color:#10B981">94%</td>
+            <td style="color:#94A3B8;font-size:12px">Jan 2024</td>
+            <td><button class="action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#1D4ED8"></td>
+            <td><div class="td-user"><div class="td-avatar" style="background:linear-gradient(135deg,#10B981,#059669)">AK</div><div><div class="td-name">Ama Kojo</div><div class="td-sub">ama@example.com</div></div></div></td>
+            <td><span class="trade-chip">🔧 Plumber</span></td>
+            <td style="color:#64748B;font-size:13px">🇬🇭 Accra</td>
+            <td><span class="badge b-submitted">Submitted</span></td>
+            <td><div class="rating"><span class="rating-star">★</span>4.6</div></td>
+            <td style="font-weight:600">23</td>
+            <td style="font-weight:600;color:#F59E0B">78%</td>
+            <td style="color:#94A3B8;font-size:12px">Mar 2024</td>
+            <td><button class="action-btn" style="color:#1D4ED8;font-size:12px;font-weight:600;gap:4px;padding:5px 10px;background:#EFF6FF;border-radius:6px">Review →</button></td>
+          </tr>
+          <tr>
+            <td><input type="checkbox" style="accent-color:#1D4ED8"></td>
+            <td><div class="td-user"><div class="td-avatar" style="background:linear-gradient(135deg,#F59E0B,#D97706)">KM</div><div><div class="td-name">Kwame Mensah</div><div class="td-sub">kwame@example.com</div></div></div></td>
+            <td><span class="trade-chip">🪚 Carpenter</span></td>
+            <td style="color:#64748B;font-size:13px">🇳🇬 Lagos</td>
+            <td><span class="badge b-approved">Approved</span></td>
+            <td><div class="rating"><span class="rating-star">★</span>4.9</div></td>
+            <td style="font-weight:600">112</td>
+            <td style="font-weight:600;color:#10B981">97%</td>
+            <td style="color:#94A3B8;font-size:12px">Aug 2023</td>
+            <td><button class="action-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:14px 16px;border-top:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;color:#64748B">Showing 1–20 of 4,231 workers</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm">← Prev</button>
+          <button class="btn btn-primary btn-sm">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL EXAMPLE -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Modal — Suspend User (Danger Pattern)</h3>
+    <div class="demo-wrap" style="margin-bottom:32px">
+      <div class="modal-overlay">
+        <div class="modal">
+          <div class="modal-head danger">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div class="modal-head-icon danger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                <div>
+                  <div class="modal-title">Suspend User Account</div>
+                  <div class="modal-subtitle">This action will immediately block platform access</div>
+                </div>
+              </div>
+            </div>
+            <button style="background:none;border:none;cursor:pointer;color:#94A3B8;padding:4px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <div class="modal-body">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0">
+              <div class="td-avatar" style="background:linear-gradient(135deg,#1D4ED8,#7C3AED);width:40px;height:40px">AJ</div>
+              <div><div class="td-name">Alice Johnson</div><div class="td-sub">alice@example.com · Active</div></div>
+              <span class="badge b-active" style="margin-left:auto">Active</span>
+            </div>
+            <div class="impact-box">
+              <div class="impact-title">⚠ This action will immediately:</div>
+              <div class="impact-item">End their active session (1 active session)</div>
+              <div class="impact-item">Block all future logins</div>
+              <div class="impact-item">Cancel 2 pending booking requests</div>
+              <div class="impact-item">Notify the user by email</div>
+            </div>
+            <div class="input-group">
+              <div class="input-label">Reason for suspension *</div>
+              <textarea class="input" rows="3" placeholder="Describe the reason for this suspension..."></textarea>
+            </div>
+            <div class="mfa-field">
+              <div class="mfa-label">🔒 Enter your 6-digit MFA code to confirm</div>
+              <div class="otp-inputs">
+                <div class="otp-box filled">2</div>
+                <div class="otp-box filled">4</div>
+                <div class="otp-box filled">1</div>
+                <div class="otp-box">_</div>
+                <div class="otp-box">_</div>
+                <div class="otp-box">_</div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost">Cancel</button>
+            <button class="btn btn-danger">Suspend Account</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIMELINE -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">Status Timeline</h3>
+    <div class="demo-wrap" style="margin-bottom:32px">
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot tl-dot-green"></div>
+          <div class="tl-content"><div class="tl-label"><span class="badge b-completed" style="margin-right:8px">Completed</span>Job finished successfully</div><div class="tl-meta">Worker marked complete · Jan 12, 2026 13:00</div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tl-dot-blue"></div>
+          <div class="tl-content"><div class="tl-label"><span class="badge b-inprogress" style="margin-right:8px">In Progress</span>Worker started the job</div><div class="tl-meta">Jan 12, 2026 10:05</div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tl-dot-purple"></div>
+          <div class="tl-content"><div class="tl-label"><span class="badge b-matched" style="margin-right:8px">Accepted</span>Bob Williams accepted the request</div><div class="tl-meta">Jan 10, 2026 09:20</div></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot tl-dot-amber"></div>
+          <div class="tl-content"><div class="tl-label"><span class="badge b-open" style="margin-right:8px">Open</span>Request created by Alice Johnson</div><div class="tl-meta">Jan 10, 2026 09:00</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SYSTEM STATUS -->
+    <h3 style="color:#94A3B8;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px">System Status Panel</h3>
+    <div class="demo-wrap">
+      <div style="background:#fff;border-radius:12px;border:1px solid #E2E8F0;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:15px;font-weight:700;color:#0F172A">System Status</div>
+          <span class="badge b-active">All Operational</span>
+        </div>
+        <div class="sys-item"><div class="sys-left"><div class="sys-dot green"></div><div><div class="sys-name">Database</div><div class="sys-detail">PostgreSQL · Supabase</div></div></div><div class="sys-value">4ms</div></div>
+        <div class="sys-item"><div class="sys-left"><div class="sys-dot green"></div><div><div class="sys-name">Redis Cache</div><div class="sys-detail">340MB / 2GB · 17%</div></div></div><div class="sys-value">1ms</div></div>
+        <div class="sys-item"><div class="sys-left"><div class="sys-dot green"></div><div><div class="sys-name">Typesense</div><div class="sys-detail">4,231 workers indexed</div></div></div><div class="sys-value">8ms</div></div>
+        <div class="sys-item"><div class="sys-left"><div class="sys-dot green"></div><div><div class="sys-name">Notifications Queue</div><div class="sys-detail">12 pending</div></div></div><div class="sys-value">✓</div></div>
+        <div class="sys-item"><div class="sys-left"><div class="sys-dot amber"></div><div><div class="sys-name">Media Queue</div><div class="sys-detail">4 processing · 1 failed</div></div></div><div class="sys-value" style="color:#F59E0B">⚠</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 6 — PAGE LAYOUT PATTERNS ═════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 6</div>
+    <div class="section-title">Page Layout Patterns</div>
+    <div class="section-desc">Six reusable layout patterns cover all 48 pages. Identify the pattern, apply it, fill with the correct content.</div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Pattern 1 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:32px;height:32px;background:#1D4ED8;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px">1</div>
+          <div><div style="font-size:15px;font-weight:700;color:#E2E8F0">List Page</div><div style="font-size:12px;color:#64748B">Pages 7,11,16,18,20,21,25,42,43 and more</div></div>
+        </div>
+        <div style="background:#0A0F1E;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;color:#64748B;line-height:1.8">
+          <span style="color:#60A5FA">PageHeader</span> (title + count + actions)<br>
+          <span style="color:#34D399">FilterBar</span> (search + selects + reset)<br>
+          <span style="color:#34D399">TabsLine</span> (status filter tabs with counts)<br>
+          <span style="color:#F59E0B">DataTable</span> (sortable cols + row hover + actions dropdown)<br>
+          <span style="color:#94A3B8">Pagination</span> (showing X-Y of Z + prev/next)
+        </div>
+      </div>
+
+      <!-- Pattern 2 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:32px;height:32px;background:#10B981;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px">2</div>
+          <div><div style="font-size:15px;font-weight:700;color:#E2E8F0">Detail Page (2-Column)</div><div style="font-size:12px;color:#64748B">Pages 8,12,17,19,22,26 and more</div></div>
+        </div>
+        <div style="background:#0A0F1E;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;color:#64748B;line-height:1.8">
+          <span style="color:#60A5FA">HeroCard</span> (avatar + key stats + action buttons full-width)<br>
+          <span style="color:#34D399">TabsLine</span> (Profile | Services | Bookings | Reviews | etc.)<br>
+          <span style="color:#F59E0B">Left 60%</span>: main content (description, timeline, thread)<br>
+          <span style="color:#F59E0B">Right 40%</span>: metadata sidebar (linked entities, actions, stats)
+        </div>
+      </div>
+
+      <!-- Pattern 3 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:32px;height:32px;background:#8B5CF6;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px">3</div>
+          <div><div style="font-size:15px;font-weight:700;color:#E2E8F0">Dashboard / Analytics</div><div style="font-size:12px;color:#64748B">Pages 4, 30, 31, 32, 33, 44</div></div>
+        </div>
+        <div style="background:#0A0F1E;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;color:#64748B;line-height:1.8">
+          <span style="color:#60A5FA">DateRangePicker</span> (top-right, 7d/30d/90d/custom)<br>
+          <span style="color:#34D399">StatCards row</span> (4–6 cards, grid-cols-4 or 6)<br>
+          <span style="color:#F59E0B">Charts row</span> (2 cols: recharts LineChart + BarChart)<br>
+          <span style="color:#F59E0B">Charts row 2</span> (2 cols: DonutChart + secondary)<br>
+          <span style="color:#94A3B8">Supporting table</span> (top items, leaderboard, or log)
+        </div>
+      </div>
+
+      <!-- Pattern 4 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:32px;height:32px;background:#F59E0B;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px">4</div>
+          <div><div style="font-size:15px;font-weight:700;color:#E2E8F0">Split-Panel (Verification / Review)</div><div style="font-size:12px;color:#64748B">Pages 14, 24, 40, 48</div></div>
+        </div>
+        <div style="background:#0A0F1E;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;color:#64748B;line-height:1.8">
+          <span style="color:#60A5FA">Left 45%</span>: subject profile / content preview<br>
+          <span style="color:#34D399">Right 55%</span>: document viewer / evidence / actions<br>
+          <span style="color:#F59E0B">Decision bar</span> (full-width bottom): action buttons + MFA field<br>
+          Both panels scroll independently
+        </div>
+      </div>
+
+      <!-- Pattern 5 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:32px;height:32px;background:#EF4444;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px">5</div>
+          <div><div style="font-size:15px;font-weight:700;color:#E2E8F0">Card Grid (Queue / Flags / Cities)</div><div style="font-size:12px;color:#64748B">Pages 13, 15, 36, 37, 38, 39</div></div>
+        </div>
+        <div style="background:#0A0F1E;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;color:#64748B;line-height:1.8">
+          <span style="color:#60A5FA">PageHeader</span> (title + count badge + primary action)<br>
+          <span style="color:#34D399">Filter chips or tabs</span><br>
+          <span style="color:#F59E0B">grid-cols-2</span> (or 3) card layout<br>
+          Each card: left-border accent colour + icon + stats + action buttons
+        </div>
+      </div>
+
+      <!-- Pattern 6 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <div style="width:32px;height:32px;background:#6366F1;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px">6</div>
+          <div><div style="font-size:15px;font-weight:700;color:#E2E8F0">Compose / Form Page</div><div style="font-size:12px;color:#64748B">Pages 35, 40, 41, 45, 46, 47</div></div>
+        </div>
+        <div style="background:#0A0F1E;border-radius:8px;padding:16px;font-family:var(--mono);font-size:12px;color:#64748B;line-height:1.8">
+          <span style="color:#60A5FA">Left 60%</span>: form fields (React Hook Form + Zod validation)<br>
+          <span style="color:#34D399">Right 40%</span>: live preview / summary / history<br>
+          <span style="color:#F59E0B">Sticky footer</span>: Cancel + Submit (disabled until valid + MFA if needed)<br>
+          MFA field in amber box above submit when required
+        </div>
+      </div>
+    </div>
+
+    <div class="codex-box" style="margin-top:20px">
+      <div class="codex-box-title">Codex Reference — Content Area Wrapper</div>
+      <pre><span class="c">// Every page content area — wrap all page content in this</span>
+<span class="k">&lt;div</span> className=<span class="s">"p-6 space-y-6 min-h-full"</span><span class="k">&gt;</span>
+  <span class="c">// PageHeader always first</span>
+  <span class="k">&lt;div</span> className=<span class="s">"flex items-start justify-between"</span><span class="k">&gt;</span>
+    <span class="k">&lt;div&gt;</span>
+      <span class="k">&lt;h1</span> className=<span class="s">"text-2xl font-extrabold text-slate-900 tracking-tight"</span><span class="k">&gt;</span>Page Title<span class="k">&lt;/h1&gt;</span>
+      <span class="k">&lt;p</span> className=<span class="s">"text-sm text-slate-500 mt-1"</span><span class="k">&gt;</span>Subtitle / count<span class="k">&lt;/p&gt;</span>
+    <span class="k">&lt;/div&gt;</span>
+    <span class="k">&lt;div</span> className=<span class="s">"flex items-center gap-2"</span><span class="k">&gt;</span> {/* Action buttons */} <span class="k">&lt;/div&gt;</span>
+  <span class="k">&lt;/div&gt;</span>
+  <span class="c">// Page content follows</span>
+<span class="k">&lt;/div&gt;</span></pre>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 7 — CODEX PROMPT TEMPLATE ════════════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 7</div>
+    <div class="section-title">Cursor + Codex Prompt Template</div>
+    <div class="section-desc">Copy this template for every page. Fill in the bracketed sections. Paste with the relevant module context file.</div>
+    <div class="card">
+      <div class="card-label">Master Prompt Template</div>
+      <div style="background:#020617;border-radius:10px;padding:20px;font-family:var(--mono);font-size:13px;color:#94A3B8;line-height:1.9">
+        <div style="color:#60A5FA;margin-bottom:8px">// PASTE WITH: 00_ARCHITECTURE.md + relevant module context file</div>
+        <br>
+        Generate the <span style="color:#F59E0B">[PAGE NAME]</span> page for VSP Admin.<br><br>
+
+        <span style="color:#34D399">DESIGN SYSTEM:</span><br>
+        - Font: Plus Jakarta Sans (all UI) + JetBrains Mono (IDs, tokens)<br>
+        - Sidebar: bg-[#0A0F1E] w-60 fixed — already built, import from @/components/admin/Sidebar<br>
+        - Top bar: bg-white h-16 sticky — import from @/components/admin/TopBar<br>
+        - Content area: bg-[#F0F4FF] p-6<br>
+        - Primary: #1D4ED8 | Success: #10B981 | Warning: #F59E0B | Danger: #EF4444<br>
+        - Use StatusBadge component from @/components/admin/ui/StatusBadge<br>
+        - Use DataTable component from @/components/admin/ui/DataTable<br><br>
+
+        <span style="color:#34D399">LAYOUT PATTERN:</span> <span style="color:#F59E0B">[Pattern 1–6 from design system reference]</span><br><br>
+
+        <span style="color:#34D399">PAGE CONTENT:</span><br>
+        <span style="color:#F59E0B">[Describe the specific sections, columns, data shown]</span><br><br>
+
+        <span style="color:#34D399">API:</span><br>
+        - Endpoint: <span style="color:#F59E0B">[e.g. GET /api/v1/admin/workers]</span><br>
+        - Hook: useQuery with queryKey <span style="color:#F59E0B">['admin-workers', filters]</span><br>
+        - Show skeleton loader while isLoading=true<br>
+        - Show error state with retry if isError=true<br><br>
+
+        <span style="color:#34D399">PERMISSION GUARD:</span><br>
+        - Wrap with: &lt;RequirePermission permission="<span style="color:#F59E0B">WORKER_VIEW</span>"&gt;<br><br>
+
+        <span style="color:#34D399">EMPTY STATE:</span><br>
+        - Show: <span style="color:#F59E0B">[Icon + "No workers found" + clear filters button]</span><br><br>
+
+        Use shadcn/ui components. TypeScript. No inline styles — Tailwind classes only.
+      </div>
+    </div>
+
+    <!-- PAGE-SPECIFIC EXAMPLES -->
+    <div style="margin-top:24px;display:flex;flex-direction:column;gap:16px">
+      <div class="card">
+        <div class="card-label">Example — Workers List (Page 11)</div>
+        <div style="background:#020617;border-radius:10px;padding:20px;font-family:var(--mono);font-size:12px;color:#94A3B8;line-height:1.8">
+          Generate the Workers List admin page for VSP Admin.<br>
+          LAYOUT PATTERN: Pattern 1 (List Page)<br>
+          CONTENT: PageHeader "Workers" + count chip + "Export CSV" button<br>
+          FilterBar: search by name/trade + Status select + Trade select + City select + Featured toggle<br>
+          TabsLine: All | Submitted (12) | Under Review (6) | Approved | Rejected<br>
+          DataTable cols: checkbox | Avatar+Name+email | Trade badges | City | StatusBadge |<br>
+          &nbsp;&nbsp;Rating (★ 4.8) | Jobs | Response% | Joined | Actions dropdown<br>
+          Row with status=SUBMITTED gets inline "Review →" amber chip instead of actions dropdown<br>
+          API: GET /api/v1/admin/workers — useAdminWorkers hook — WORKER_VIEW permission<br>
+          Empty: HardHat icon + "No workers match your filters" + Reset button
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-label">Example — Verification Review (Page 14)</div>
+        <div style="background:#020617;border-radius:10px;padding:16px;font-family:var(--mono);font-size:12px;color:#94A3B8;line-height:1.8">
+          Generate the Worker Verification Review page for VSP Admin.<br>
+          LAYOUT PATTERN: Pattern 4 (Split Panel)<br>
+          LEFT 45%: Worker avatar + name + headline + trade badges + bio (scrollable)<br>
+          &nbsp;&nbsp;Service area + stats row (portfolio items, certs)<br>
+          RIGHT 55%: Document viewer — tab per document, PDF/image frame,<br>
+          &nbsp;&nbsp;toolbar (zoom/rotate/download), document type label + file info<br>
+          DECISION BAR (full width, fixed bottom): Notes textarea left +<br>
+          &nbsp;&nbsp;"✓ Approve" (green btn) + "✗ Reject" (red btn) right +<br>
+          &nbsp;&nbsp;MFA field (amber box) under buttons<br>
+          API: GET /admin/workers/:id/verification-documents (signed URLs)<br>
+          &nbsp;&nbsp;POST /admin/workers/:id/verify | POST /admin/workers/:id/reject-verification<br>
+          PERMISSION: WORKER_VERIFY + mfaVerified=true required
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SECTION 8 — ALL 48 PAGES QUICK REFERENCE ═════════════════════════ -->
+  <div class="section">
+    <div class="section-label">Section 8</div>
+    <div class="section-title">All 48 Pages — Pattern + Endpoint Quick Reference</div>
+    <div class="section-desc">Use this table to identify the layout pattern and primary endpoint for each page before writing the Codex prompt.</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Page</th><th>Pattern</th><th>Primary Endpoint</th><th>Permission</th></tr></thead>
+        <tbody>
+          <tr><td class="td-mono">01</td><td style="font-weight:600">Admin Login</td><td><span class="trade-chip">Auth</span></td><td class="td-mono">POST /auth/login</td><td class="td-mono">Public</td></tr>
+          <tr><td class="td-mono">02</td><td style="font-weight:600">Password Reset</td><td><span class="trade-chip">Auth</span></td><td class="td-mono">POST /auth/reset-password</td><td class="td-mono">Public</td></tr>
+          <tr><td class="td-mono">03</td><td style="font-weight:600">Session Expired</td><td><span class="trade-chip">Auth</span></td><td class="td-mono">POST /auth/refresh</td><td class="td-mono">Public</td></tr>
+          <tr><td class="td-mono">04</td><td style="font-weight:600">Overview Dashboard</td><td><span class="badge b-matched" style="font-size:11px">3 — Dashboard</span></td><td class="td-mono">GET /admin/analytics/overview</td><td class="td-mono">Any role</td></tr>
+          <tr><td class="td-mono">05</td><td style="font-weight:600">Notifications Center</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /notifications</td><td class="td-mono">Any role</td></tr>
+          <tr><td class="td-mono">06</td><td style="font-weight:600">My Profile</td><td><span class="badge b-confirmed" style="font-size:11px">6 — Form</span></td><td class="td-mono">GET /users/me</td><td class="td-mono">Any role</td></tr>
+          <tr><td class="td-mono">07</td><td style="font-weight:600">Users List</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/users</td><td class="td-mono">USER_VIEW</td></tr>
+          <tr><td class="td-mono">08</td><td style="font-weight:600">User Detail</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail</span></td><td class="td-mono">GET /admin/users/:id</td><td class="td-mono">USER_VIEW</td></tr>
+          <tr><td class="td-mono">09</td><td style="font-weight:600">Suspend User</td><td><span class="trade-chip">Modal</span></td><td class="td-mono">POST /admin/users/:id/suspend</td><td class="td-mono">USER_SUSPEND+MFA</td></tr>
+          <tr><td class="td-mono">10</td><td style="font-weight:600">Reactivate User</td><td><span class="trade-chip">Modal</span></td><td class="td-mono">POST /admin/users/:id/reactivate</td><td class="td-mono">USER_REACTIVATE</td></tr>
+          <tr><td class="td-mono">11</td><td style="font-weight:600">Workers List</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/workers</td><td class="td-mono">WORKER_VIEW</td></tr>
+          <tr><td class="td-mono">12</td><td style="font-weight:600">Worker Detail</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail</span></td><td class="td-mono">GET /admin/workers/:id</td><td class="td-mono">WORKER_VIEW</td></tr>
+          <tr><td class="td-mono">13</td><td style="font-weight:600">Verification Queue</td><td><span class="badge b-purple" style="font-size:11px;background:#EDE9FE;color:#5B21B6">5 — Card Grid</span></td><td class="td-mono">GET /admin/workers?status=SUBMITTED</td><td class="td-mono">WORKER_VERIFY</td></tr>
+          <tr><td class="td-mono">14</td><td style="font-weight:600">Verification Review</td><td><span class="badge b-amber" style="font-size:11px;background:#FEF3C7;color:#92400E">4 — Split Panel</span></td><td class="td-mono">GET /admin/workers/:id/verification-documents</td><td class="td-mono">WORKER_VERIFY+MFA</td></tr>
+          <tr><td class="td-mono">15</td><td style="font-weight:600">Featured Workers</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/featured-workers</td><td class="td-mono">FEATURED_WORKER_MANAGE</td></tr>
+          <tr><td class="td-mono">16</td><td style="font-weight:600">Service Requests List</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/service-requests</td><td class="td-mono">SERVICE_REQUEST_VIEW</td></tr>
+          <tr><td class="td-mono">17</td><td style="font-weight:600">Service Request Detail</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail</span></td><td class="td-mono">GET /admin/service-requests/:id</td><td class="td-mono">SERVICE_REQUEST_VIEW</td></tr>
+          <tr><td class="td-mono">18</td><td style="font-weight:600">Bookings List</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/bookings</td><td class="td-mono">BOOKING_VIEW</td></tr>
+          <tr><td class="td-mono">19</td><td style="font-weight:600">Booking Detail</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail</span></td><td class="td-mono">GET /admin/bookings/:id</td><td class="td-mono">BOOKING_VIEW</td></tr>
+          <tr><td class="td-mono">20</td><td style="font-weight:600">Reports Queue</td><td><span class="badge b-purple" style="font-size:11px;background:#EDE9FE;color:#5B21B6">5 — Card Grid</span></td><td class="td-mono">GET /admin/reports</td><td class="td-mono">REPORT_VIEW</td></tr>
+          <tr><td class="td-mono">21</td><td style="font-weight:600">Moderation Cases</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/moderation-cases</td><td class="td-mono">REPORT_VIEW</td></tr>
+          <tr><td class="td-mono">22</td><td style="font-weight:600">Moderation Case Detail</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail</span></td><td class="td-mono">GET /admin/moderation-cases/:id</td><td class="td-mono">MODERATION_CASE_ACTION</td></tr>
+          <tr><td class="td-mono">23</td><td style="font-weight:600">Moderation Action Panel</td><td><span class="trade-chip">Sheet/Drawer</span></td><td class="td-mono">POST /admin/moderation-cases/:id/actions</td><td class="td-mono">MODERATION_CASE_ACTION</td></tr>
+          <tr><td class="td-mono">24</td><td style="font-weight:600">Reported Content Viewer</td><td><span class="badge b-amber" style="font-size:11px;background:#FEF3C7;color:#92400E">4 — Split Panel</span></td><td class="td-mono">GET /admin/content/:type/:id</td><td class="td-mono">CONTENT_VIEW</td></tr>
+          <tr><td class="td-mono">25</td><td style="font-weight:600">Support Tickets List</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/support-tickets</td><td class="td-mono">SUPPORT_TICKET_VIEW</td></tr>
+          <tr><td class="td-mono">26</td><td style="font-weight:600">Ticket Detail</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail</span></td><td class="td-mono">GET /support/tickets/:id</td><td class="td-mono">SUPPORT_TICKET_VIEW</td></tr>
+          <tr><td class="td-mono">27–29</td><td style="font-weight:600">Ticket Reply / Assign / Status</td><td><span class="trade-chip">Inline</span></td><td class="td-mono">POST/PATCH /support/tickets/:id/...</td><td class="td-mono">SUPPORT_TICKET_RESPOND</td></tr>
+          <tr><td class="td-mono">30</td><td style="font-weight:600">Analytics Overview</td><td><span class="badge b-matched" style="font-size:11px">3 — Dashboard</span></td><td class="td-mono">GET /admin/analytics/overview</td><td class="td-mono">ANALYTICS_VIEW_OVERVIEW</td></tr>
+          <tr><td class="td-mono">31</td><td style="font-weight:600">Search Analytics</td><td><span class="badge b-matched" style="font-size:11px">3 — Dashboard</span></td><td class="td-mono">GET /admin/analytics/search</td><td class="td-mono">ANALYTICS_VIEW_SEARCH</td></tr>
+          <tr><td class="td-mono">32</td><td style="font-weight:600">Engagement Analytics</td><td><span class="badge b-matched" style="font-size:11px">3 — Dashboard</span></td><td class="td-mono">GET /admin/analytics/engagement</td><td class="td-mono">ANALYTICS_VIEW_ENGAGEMENT</td></tr>
+          <tr><td class="td-mono">33</td><td style="font-weight:600">Marketplace Analytics</td><td><span class="badge b-matched" style="font-size:11px">3 — Dashboard</span></td><td class="td-mono">GET /admin/analytics/marketplace</td><td class="td-mono">ANALYTICS_VIEW_MARKETPLACE</td></tr>
+          <tr><td class="td-mono">34</td><td style="font-weight:600">Configurations List</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/configs</td><td class="td-mono">CONFIG_VIEW</td></tr>
+          <tr><td class="td-mono">35</td><td style="font-weight:600">Config Editor</td><td><span class="badge b-confirmed" style="font-size:11px">6 — Form</span></td><td class="td-mono">PATCH /admin/configs/:key</td><td class="td-mono">CONFIG_UPDATE+MFA</td></tr>
+          <tr><td class="td-mono">36</td><td style="font-weight:600">Feature Flags</td><td><span class="badge b-purple" style="font-size:11px;background:#EDE9FE;color:#5B21B6">5 — Card Grid</span></td><td class="td-mono">GET/PATCH /admin/feature-flags</td><td class="td-mono">FEATURE_FLAG_VIEW</td></tr>
+          <tr><td class="td-mono">37</td><td style="font-weight:600">Cities Settings</td><td><span class="badge b-purple" style="font-size:11px;background:#EDE9FE;color:#5B21B6">5 — Card Grid</span></td><td class="td-mono">GET/POST/PATCH /admin/cities</td><td class="td-mono">CITY_VIEW</td></tr>
+          <tr><td class="td-mono">38</td><td style="font-weight:600">Roles List</td><td><span class="badge b-purple" style="font-size:11px;background:#EDE9FE;color:#5B21B6">5 — Card Grid</span></td><td class="td-mono">GET /admin/roles</td><td class="td-mono">ROLE_VIEW</td></tr>
+          <tr><td class="td-mono">39</td><td style="font-weight:600">Permissions Catalog</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/permissions</td><td class="td-mono">PERMISSION_VIEW</td></tr>
+          <tr><td class="td-mono">40</td><td style="font-weight:600">Role Permission Editor</td><td><span class="badge b-amber" style="font-size:11px;background:#FEF3C7;color:#92400E">4 — Split Panel</span></td><td class="td-mono">PATCH /admin/roles/:id/permissions</td><td class="td-mono">ROLE_PERMISSION_UPDATE+MFA</td></tr>
+          <tr><td class="td-mono">41</td><td style="font-weight:600">Admin Role Assignment</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">POST/DELETE /admin/users/:id/roles</td><td class="td-mono">ADMIN_ROLE_ASSIGN+MFA</td></tr>
+          <tr><td class="td-mono">42</td><td style="font-weight:600">Audit Logs</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/audit-logs</td><td class="td-mono">AUDIT_LOG_VIEW</td></tr>
+          <tr><td class="td-mono">43</td><td style="font-weight:600">Fraud & Risk Signals</td><td><span class="badge b-inreview" style="font-size:11px">1 — List</span></td><td class="td-mono">GET /admin/fraud-signals</td><td class="td-mono">FRAUD_SIGNAL_VIEW</td></tr>
+          <tr><td class="td-mono">44</td><td style="font-weight:600">System Health</td><td><span class="badge b-matched" style="font-size:11px">3 — Dashboard</span></td><td class="td-mono">GET /admin/system/health</td><td class="td-mono">SYSTEM_HEALTH_VIEW</td></tr>
+          <tr><td class="td-mono">45</td><td style="font-weight:600">Admin MFA Setup</td><td><span class="badge b-confirmed" style="font-size:11px">6 — Form</span></td><td class="td-mono">POST /auth/mfa/setup</td><td class="td-mono">Authenticated</td></tr>
+          <tr><td class="td-mono">46</td><td style="font-weight:600">Broadcast Notification</td><td><span class="badge b-confirmed" style="font-size:11px">6 — Form</span></td><td class="td-mono">POST /admin/notifications/broadcast</td><td class="td-mono">NOTIFICATION_BROADCAST+MFA</td></tr>
+          <tr><td class="td-mono">47</td><td style="font-weight:600">Worker Subscription Mgmt</td><td><span class="badge b-indigo" style="font-size:11px;background:#E0E7FF;color:#3730A3">2 — Detail tab</span></td><td class="td-mono">GET/PATCH /admin/workers/:id/subscription</td><td class="td-mono">FEATURED_WORKER_MANAGE</td></tr>
+          <tr><td class="td-mono">48</td><td style="font-weight:600">Reported Content Viewer</td><td><span class="badge b-amber" style="font-size:11px;background:#FEF3C7;color:#92400E">4 — Split Panel</span></td><td class="td-mono">GET /admin/content/:type/:id</td><td class="td-mono">REPORT_VIEW+CONTENT_VIEW</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:80px 0 40px;color:#334155;font-size:13px">
+    VSP Admin Design System Reference · v1.0 · March 2026<br>
+    <span style="color:#475569">Companion: Complete System Specification v2 · Admin Frontend Integration Spec v1</span>
+  </div>
+</div>
+</body>
+</html>
