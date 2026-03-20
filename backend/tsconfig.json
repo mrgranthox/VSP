@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "ignoreDeprecations": "6.0",
     "module": "CommonJS",
     "moduleResolution": "node",
     "rootDir": ".",
@@ -11,9 +12,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
   "include": [
     "scripts/**/*.ts",
@@ -21,8 +20,5 @@
     "src/**/*.d.ts",
     "prisma/**/*.ts"
   ],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
+  "exclude": ["dist", "node_modules"]
 }
