@@ -85,6 +85,8 @@ npm run ops:restore:verify
 - `release:gate` verifies `health`, `ready`, the internal metrics endpoint, and the auth smoke flow against a running server.
 - `ops:tracing:verify` starts a local OTLP receiver, boots the built API with tracing enabled, runs the release gate, and fails unless real spans are exported. Run `npm run build` first when invoking it manually.
 - `ops:error-reporting:verify` starts a local Sentry-compatible receiver, emits a test exception through the runtime error-reporting path, and fails unless an envelope is delivered.
+- `api:contracts:generate` emits `contracts/openapi.json`, `reports/route-inventory.json`, and the static HTTP test coverage reports.
+- `api:contracts:check` verifies those generated artifacts are up to date.
 
 Minimal operational alerting is also supported:
 
@@ -112,6 +114,7 @@ Optional Sentry-compatible error reporting is also supported:
 - `ops:tracing:verify` is the local proof that the traced runtime exports OTLP spans, not just that tracing config exists.
 - `ops:error-reporting:verify` is the local proof that runtime exceptions are delivered to a Sentry-compatible ingestion endpoint.
 - Prometheus now exposes dependency check timing/failure metrics and operational alert delivery metrics, so alerting and readiness are themselves observable.
+- API contract artifacts now live under `backend/contracts/` and `backend/reports/`, including a generated OpenAPI 3.1 document and a static HTTP route coverage report.
 
 The metrics surface includes:
 
@@ -271,6 +274,6 @@ cd backend
 ./scripts/run-ci.sh
 ```
 
-The script loads `.env` and `.env.local` when they exist, provisions ephemeral JWT and MFA secrets when they are not already set, and then runs Prisma validation, Prisma generate, `migrate deploy`, deterministic seed, typecheck, tests, the production build, traced-runtime export verification, and error-reporting delivery verification against the built server.
+The script loads `.env` and `.env.local` when they exist, provisions ephemeral JWT and MFA secrets when they are not already set, and then runs Prisma validation, Prisma generate, `migrate deploy`, deterministic seed, typecheck, API artifact drift checks, tests, the production build, traced-runtime export verification, and error-reporting delivery verification against the built server.
 
 It now also verifies the backup and restore path by creating a dump, restoring it into a scratch database, and checking Prisma migration status against the restored copy.

@@ -131,6 +131,14 @@ cd backend
 npm run ops:error-reporting:verify
 ```
 
+For API contract and route coverage artifacts:
+
+```bash
+cd backend
+npm run api:contracts:generate
+npm run api:contracts:check
+```
+
 The release gate checks:
 
 1. API metrics endpoint
@@ -140,6 +148,12 @@ The release gate checks:
 
 The tracing verifier reuses the release gate and then asserts that a real OTLP receiver observed exported spans, including the `USER_REGISTERED` domain-event span.
 The error-reporting verifier emits a test exception through the runtime integration and asserts that a Sentry-compatible envelope was delivered.
+The API contract generator emits:
+
+- `backend/contracts/openapi.json`
+- `backend/reports/route-inventory.json`
+- `backend/reports/http-test-coverage.json`
+- `backend/reports/http-test-coverage.md`
 
 Additional observability signals now exposed in Prometheus:
 

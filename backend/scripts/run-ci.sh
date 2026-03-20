@@ -84,6 +84,9 @@ npm run db:seed
 echo "[ci] typechecking"
 npm run typecheck
 
+echo "[ci] checking API contract artifacts"
+npm run api:contracts:check
+
 echo "[ci] running tests"
 npm test
 

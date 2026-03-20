@@ -1,0 +1,3847 @@
+{
+  "routeCount": 201,
+  "routes": [
+    {
+      "method": "get",
+      "path": "/api/v1/admin/analytics/engagement",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getAnalyticsEngagement",
+      "middlewares": [
+        "requirePermission(\"ANALYTICS_VIEW_ENGAGEMENT\")",
+        "validate(AdminAnalyticsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminAnalyticsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ANALYTICS_VIEW_ENGAGEMENT",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_analytics_engagement"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/analytics/marketplace",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getMarketplaceAnalytics",
+      "middlewares": [
+        "requirePermission(\"ANALYTICS_VIEW_MARKETPLACE\")",
+        "validate(AdminAnalyticsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminAnalyticsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ANALYTICS_VIEW_MARKETPLACE",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_analytics_marketplace"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/analytics/overview",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getAnalyticsOverview",
+      "middlewares": [
+        "requirePermission(\"ANALYTICS_VIEW_OVERVIEW\")",
+        "validate(AdminAnalyticsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminAnalyticsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ANALYTICS_VIEW_OVERVIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_analytics_overview"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/analytics/search",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getAnalyticsSearch",
+      "middlewares": [
+        "requirePermission(\"ANALYTICS_VIEW_SEARCH\")",
+        "validate(AdminAnalyticsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminAnalyticsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ANALYTICS_VIEW_SEARCH",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_analytics_search"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/audit-logs",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listAuditLogs",
+      "middlewares": [
+        "requirePermission(\"AUDIT_LOG_VIEW\")",
+        "validate(AdminAuditLogQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminAuditLogQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "AUDIT_LOG_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_audit_logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/bookings",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listBookings",
+      "middlewares": [
+        "requirePermission(\"BOOKING_VIEW\")",
+        "validate(AdminBookingsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminBookingsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "BOOKING_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_bookings"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/bookings/:bookingId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getBooking",
+      "middlewares": [
+        "requirePermission(\"BOOKING_VIEW\")",
+        "validate(BookingIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "BookingIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "BOOKING_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_bookings_by_bookingId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/cities",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listCities",
+      "middlewares": [
+        "requirePermission(\"CITY_VIEW\")",
+        "validate(AdminCitiesQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminCitiesQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "CITY_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_cities"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/cities",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.createCity",
+      "middlewares": [
+        "requirePermission(\"CITY_CREATE\")",
+        "validate(CreateCityBody)"
+      ],
+      "validation": {
+        "body": "CreateCityBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "CITY_CREATE",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_cities"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/cities/:cityId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.updateCity",
+      "middlewares": [
+        "requirePermission(\"CITY_UPDATE\")",
+        "validate(CityIdParams, \"params\")",
+        "validate(UpdateCityBody)"
+      ],
+      "validation": {
+        "params": "CityIdParams",
+        "body": "UpdateCityBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "CITY_UPDATE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_cities_by_cityId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/admin/comments/:commentId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.deleteComment",
+      "middlewares": [
+        "requirePermission(\"COMMENT_DELETE\")",
+        "validate(CommentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "CommentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "COMMENT_DELETE",
+      "optionalAuth": false,
+      "operationId": "admin_delete_admin_comments_by_commentId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/configs",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listConfigs",
+      "middlewares": [
+        "requirePermission(\"CONFIG_VIEW\")"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "CONFIG_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_configs"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/configs/:configKey",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.updateConfig",
+      "middlewares": [
+        "requirePermission(\"CONFIG_UPDATE\")",
+        "requireMfa",
+        "validate(ConfigKeyParams, \"params\")",
+        "validate(UpdateConfigBody)"
+      ],
+      "validation": {
+        "params": "ConfigKeyParams",
+        "body": "UpdateConfigBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "CONFIG_UPDATE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_configs_by_configKey"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/content/:entityType/:entityId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getContent",
+      "middlewares": [
+        "requirePermission(\"CONTENT_VIEW\")",
+        "validate(ContentViewerParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ContentViewerParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "CONTENT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_content_by_entityType_by_entityId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/feature-flags",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listFeatureFlags",
+      "middlewares": [
+        "requirePermission(\"FEATURE_FLAG_VIEW\")"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FEATURE_FLAG_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_feature_flags"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/feature-flags/:flagKey",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.updateFeatureFlag",
+      "middlewares": [
+        "requirePermission(\"FEATURE_FLAG_UPDATE\")",
+        "validate(FlagKeyParams, \"params\")",
+        "validate(UpdateFeatureFlagBody)"
+      ],
+      "validation": {
+        "params": "FlagKeyParams",
+        "body": "UpdateFeatureFlagBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FEATURE_FLAG_UPDATE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_feature_flags_by_flagKey"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/featured-workers",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listFeaturedWorkers",
+      "middlewares": [
+        "requirePermission(\"FEATURED_WORKER_MANAGE\")",
+        "validate(FeaturedWorkersQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "FeaturedWorkersQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FEATURED_WORKER_MANAGE",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_featured_workers"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/featured-workers/:workerId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.actionFeaturedWorker",
+      "middlewares": [
+        "requirePermission(\"FEATURED_WORKER_MANAGE\")",
+        "validate(AdminWorkerIdParams, \"params\")",
+        "validate(FeaturedWorkerActionBody)"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams",
+        "body": "FeaturedWorkerActionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FEATURED_WORKER_MANAGE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_featured_workers_by_workerId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/fraud-signals",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listFraudSignals",
+      "middlewares": [
+        "requirePermission(\"FRAUD_SIGNAL_VIEW\")",
+        "validate(AdminFraudSignalsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminFraudSignalsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FRAUD_SIGNAL_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_fraud_signals"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/fraud-signals/:signalId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.actionFraudSignal",
+      "middlewares": [
+        "requirePermission(\"FRAUD_SIGNAL_ACTION\")",
+        "validate(SignalIdParams, \"params\")",
+        "validate(FraudSignalActionBody)"
+      ],
+      "validation": {
+        "params": "SignalIdParams",
+        "body": "FraudSignalActionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FRAUD_SIGNAL_ACTION",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_fraud_signals_by_signalId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/moderation-cases",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listModerationCases",
+      "middlewares": [
+        "requirePermission(\"REPORT_VIEW\")",
+        "validate(AdminListModerationCasesQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListModerationCasesQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_moderation_cases"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/moderation-cases/:caseId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getModerationCase",
+      "middlewares": [
+        "requirePermission(\"REPORT_VIEW\")",
+        "validate(ModerationCaseIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ModerationCaseIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_moderation_cases_by_caseId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/moderation-cases/:caseId/actions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.addModerationAction",
+      "middlewares": [
+        "requirePermission(\"MODERATION_CASE_ACTION\")",
+        "validate(ModerationCaseIdParams, \"params\")",
+        "validate(AddModerationActionBody)"
+      ],
+      "validation": {
+        "params": "ModerationCaseIdParams",
+        "body": "AddModerationActionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "MODERATION_CASE_ACTION",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_moderation_cases_by_caseId_actions"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/notifications/broadcast",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.broadcastNotification",
+      "middlewares": [
+        "requirePermission(\"NOTIFICATION_BROADCAST\")",
+        "requireMfa",
+        "validate(BroadcastNotificationBody)"
+      ],
+      "validation": {
+        "body": "BroadcastNotificationBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "NOTIFICATION_BROADCAST",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_notifications_broadcast"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/permissions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listPermissions",
+      "middlewares": [
+        "requirePermission(\"PERMISSION_VIEW\")"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "PERMISSION_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_permissions"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/posts",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listPosts",
+      "middlewares": [
+        "requirePermission(\"POST_DELETE\")",
+        "validate(AdminPostsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminPostsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "POST_DELETE",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_posts"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/admin/posts/:postId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.deletePost",
+      "middlewares": [
+        "requirePermission(\"POST_DELETE\")",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "POST_DELETE",
+      "optionalAuth": false,
+      "operationId": "admin_delete_admin_posts_by_postId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/reports",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listReports",
+      "middlewares": [
+        "requirePermission(\"REPORT_VIEW\")",
+        "validate(AdminListReportsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListReportsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_reports"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/reports/:reportId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getReport",
+      "middlewares": [
+        "requirePermission(\"REPORT_VIEW\")",
+        "validate(ReportIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ReportIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_reports_by_reportId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/admin/reviews/:reviewId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.deleteReview",
+      "middlewares": [
+        "requirePermission(\"REVIEW_DELETE\")",
+        "validate(ReviewIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ReviewIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REVIEW_DELETE",
+      "optionalAuth": false,
+      "operationId": "admin_delete_admin_reviews_by_reviewId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/roles",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listRoles",
+      "middlewares": [
+        "requirePermission(\"ROLE_VIEW\")"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ROLE_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_roles"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/roles/:roleId/permissions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.updateRolePermissions",
+      "middlewares": [
+        "requirePermission(\"ROLE_PERMISSION_UPDATE\")",
+        "requireMfa",
+        "validate(RoleIdParams, \"params\")",
+        "validate(UpdateRolePermissionsBody)"
+      ],
+      "validation": {
+        "params": "RoleIdParams",
+        "body": "UpdateRolePermissionsBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ROLE_PERMISSION_UPDATE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_roles_by_roleId_permissions"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/service-requests",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listServiceRequests",
+      "middlewares": [
+        "requirePermission(\"SERVICE_REQUEST_VIEW\")",
+        "validate(AdminServiceRequestsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminServiceRequestsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SERVICE_REQUEST_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_service_requests"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/service-requests/:requestId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getServiceRequest",
+      "middlewares": [
+        "requirePermission(\"SERVICE_REQUEST_VIEW\")",
+        "validate(ServiceRequestIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ServiceRequestIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SERVICE_REQUEST_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_service_requests_by_requestId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/support-tickets",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listSupportTickets",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_VIEW\")",
+        "validate(AdminListSupportTicketsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListSupportTicketsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_support_tickets"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/support-tickets/:ticketId/assign",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.assignSupportTicket",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_ASSIGN\")",
+        "validate(TicketIdParams, \"params\")",
+        "validate(AssignTicketBody)"
+      ],
+      "validation": {
+        "params": "TicketIdParams",
+        "body": "AssignTicketBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_ASSIGN",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_support_tickets_by_ticketId_assign"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/support-tickets/:ticketId/status",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.updateSupportTicketStatus",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_ASSIGN\")",
+        "validate(TicketIdParams, \"params\")",
+        "validate(UpdateTicketStatusBody)"
+      ],
+      "validation": {
+        "params": "TicketIdParams",
+        "body": "UpdateTicketStatusBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_ASSIGN",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_support_tickets_by_ticketId_status"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/system/health",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getSystemHealth",
+      "middlewares": [
+        "requirePermission(\"SYSTEM_HEALTH_VIEW\")"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SYSTEM_HEALTH_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_system_health"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/system/metrics",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getSystemMetrics",
+      "middlewares": [
+        "requirePermission(\"SYSTEM_HEALTH_VIEW\")"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SYSTEM_HEALTH_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_system_metrics"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/users",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listUsers",
+      "middlewares": [
+        "requirePermission(\"USER_VIEW\")",
+        "validate(AdminListUsersQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListUsersQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "USER_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_users"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/users/:userId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getUser",
+      "middlewares": [
+        "requirePermission(\"USER_VIEW\")",
+        "validate(AdminUserIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AdminUserIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "USER_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_users_by_userId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/users/:userId/reactivate",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.reactivateUser",
+      "middlewares": [
+        "requirePermission(\"USER_REACTIVATE\")",
+        "validate(AdminUserIdParams, \"params\")",
+        "validate(ReactivateUserBody)"
+      ],
+      "validation": {
+        "params": "AdminUserIdParams",
+        "body": "ReactivateUserBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "USER_REACTIVATE",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_users_by_userId_reactivate"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/users/:userId/roles",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.assignAdminRole",
+      "middlewares": [
+        "requirePermission(\"ADMIN_ROLE_ASSIGN\")",
+        "requireMfa",
+        "validate(AdminUserIdParams, \"params\")",
+        "validate(AssignAdminRoleBody)"
+      ],
+      "validation": {
+        "params": "AdminUserIdParams",
+        "body": "AssignAdminRoleBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ADMIN_ROLE_ASSIGN",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_users_by_userId_roles"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/admin/users/:userId/roles/:roleId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.removeAdminRole",
+      "middlewares": [
+        "requirePermission(\"ADMIN_ROLE_REMOVE\")",
+        "requireMfa",
+        "validate(RemoveAdminRoleParams, \"params\")"
+      ],
+      "validation": {
+        "params": "RemoveAdminRoleParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "ADMIN_ROLE_REMOVE",
+      "optionalAuth": false,
+      "operationId": "admin_delete_admin_users_by_userId_roles_by_roleId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/users/:userId/suspend",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.suspendUser",
+      "middlewares": [
+        "requirePermission(\"USER_SUSPEND\")",
+        "requireMfa",
+        "validate(AdminUserIdParams, \"params\")",
+        "validate(SuspendUserBody)"
+      ],
+      "validation": {
+        "params": "AdminUserIdParams",
+        "body": "SuspendUserBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "USER_SUSPEND",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_users_by_userId_suspend"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/workers",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.listWorkers",
+      "middlewares": [
+        "requirePermission(\"WORKER_VIEW\")",
+        "validate(AdminListWorkersQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListWorkersQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "WORKER_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_workers"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/workers/:workerId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getWorker",
+      "middlewares": [
+        "requirePermission(\"WORKER_VIEW\")",
+        "validate(AdminWorkerIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "WORKER_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_workers_by_workerId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/workers/:workerId/reject-verification",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.rejectWorker",
+      "middlewares": [
+        "requirePermission(\"WORKER_REJECT_VERIFICATION\")",
+        "requireMfa",
+        "validate(AdminWorkerIdParams, \"params\")",
+        "validate(RejectVerificationBody)"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams",
+        "body": "RejectVerificationBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "WORKER_REJECT_VERIFICATION",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_workers_by_workerId_reject_verification"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/workers/:workerId/subscription",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getWorkerSubscription",
+      "middlewares": [
+        "requirePermission(\"FEATURED_WORKER_MANAGE\")",
+        "validate(AdminWorkerIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FEATURED_WORKER_MANAGE",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_workers_by_workerId_subscription"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/workers/:workerId/subscription",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.updateWorkerSubscription",
+      "middlewares": [
+        "requirePermission(\"FEATURED_WORKER_MANAGE\")",
+        "validate(AdminWorkerIdParams, \"params\")",
+        "validate(FeaturedWorkerActionBody)"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams",
+        "body": "FeaturedWorkerActionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FEATURED_WORKER_MANAGE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_workers_by_workerId_subscription"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/workers/:workerId/verification-documents",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getWorkerVerificationDocuments",
+      "middlewares": [
+        "requirePermission(\"WORKER_VERIFY\")",
+        "validate(AdminWorkerIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "WORKER_VERIFY",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_workers_by_workerId_verification_documents"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/workers/:workerId/verify",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.verifyWorker",
+      "middlewares": [
+        "requirePermission(\"WORKER_VERIFY\")",
+        "requireMfa",
+        "validate(AdminWorkerIdParams, \"params\")",
+        "validate(VerifyWorkerBody)"
+      ],
+      "validation": {
+        "params": "AdminWorkerIdParams",
+        "body": "VerifyWorkerBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "WORKER_VERIFY",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_workers_by_workerId_verify"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/login",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.login",
+      "middlewares": [
+        "rateLimit(\n    (req) =>\n      `login:${req.ip}:${req.get(\"x-device-type\") ?? req.get(\"x-device\") ?? \"unknown\"}`,\n    5 * 60 * 1000,\n    5,\n  )",
+        "validate(LoginBody)"
+      ],
+      "validation": {
+        "body": "LoginBody"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_login"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/logout",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.logout",
+      "middlewares": [
+        "authenticate",
+        "validate(LogoutBody)"
+      ],
+      "validation": {
+        "body": "LogoutBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_logout"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/auth/me",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.me",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_get_auth_me"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/auth/mfa/backup-codes",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.getMfaBackupCodes",
+      "middlewares": [
+        "authenticate",
+        "requireMfa"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_get_auth_mfa_backup_codes"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/mfa/challenge",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.challengeMfa",
+      "middlewares": [
+        "authenticate",
+        "validate(MFAChallengeBody)"
+      ],
+      "validation": {
+        "body": "MFAChallengeBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_mfa_challenge"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/mfa/challenge/request",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.requestMfaChallenge",
+      "middlewares": [
+        "authenticate",
+        "validate(MFAChallengeRequestBody)"
+      ],
+      "validation": {
+        "body": "MFAChallengeRequestBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_mfa_challenge_request"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/mfa/disable",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.disableMfa",
+      "middlewares": [
+        "authenticate",
+        "requireMfa",
+        "validate(MFADisableBody)"
+      ],
+      "validation": {
+        "body": "MFADisableBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_mfa_disable"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/mfa/setup",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.setupMfa",
+      "middlewares": [
+        "authenticate",
+        "validate(MFASetupBody)"
+      ],
+      "validation": {
+        "body": "MFASetupBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_mfa_setup"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/mfa/verify-setup",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.verifyMfaSetup",
+      "middlewares": [
+        "authenticate",
+        "validate(MFAVerifyBody)"
+      ],
+      "validation": {
+        "body": "MFAVerifyBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_mfa_verify_setup"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/refresh",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.refresh",
+      "middlewares": [
+        "validate(RefreshBody)"
+      ],
+      "validation": {
+        "body": "RefreshBody"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_refresh"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/register",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.register",
+      "middlewares": [
+        "rateLimit((req) => `register:${req.ip}`, 60 * 60 * 1000, 3)",
+        "validate(RegisterBody)"
+      ],
+      "validation": {
+        "body": "RegisterBody"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_register"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/request-password-reset",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.requestPasswordReset",
+      "middlewares": [
+        "validate(RequestPasswordResetBody)"
+      ],
+      "validation": {
+        "body": "RequestPasswordResetBody"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_request_password_reset"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/reset-password",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.resetPassword",
+      "middlewares": [
+        "validate(ResetPasswordBody)"
+      ],
+      "validation": {
+        "body": "ResetPasswordBody"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_reset_password"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/sessions/revoke",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.revokeSession",
+      "middlewares": [
+        "authenticate",
+        "validate(RevokeSessionBody)"
+      ],
+      "validation": {
+        "body": "RevokeSessionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_sessions_revoke"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/verify-email",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.verifyEmail",
+      "middlewares": [
+        "validate(VerifyEmailBody)"
+      ],
+      "validation": {
+        "body": "VerifyEmailBody"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_verify_email"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/auth/verify-phone",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "handler": "authController.verifyPhone",
+      "middlewares": [
+        "authenticate",
+        "validate(VerifyPhoneBody)"
+      ],
+      "validation": {
+        "body": "VerifyPhoneBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "auth_post_auth_verify_phone"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/billing/invoices/me",
+      "module": "billing",
+      "sourceFile": "src/modules/billing/billing.routes.ts",
+      "handler": "billingController.getMyInvoices",
+      "middlewares": [
+        "authenticate",
+        "validate(BillingInvoicesQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "BillingInvoicesQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "billing_get_billing_invoices_me"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/billing/payment-intents",
+      "module": "billing",
+      "sourceFile": "src/modules/billing/billing.routes.ts",
+      "handler": "billingController.createPaymentIntent",
+      "middlewares": [
+        "authenticate",
+        "validate(CreatePaymentIntentBody)"
+      ],
+      "validation": {
+        "body": "CreatePaymentIntentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "billing_post_billing_payment_intents"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/billing/payment-intents/:paymentIntentId",
+      "module": "billing",
+      "sourceFile": "src/modules/billing/billing.routes.ts",
+      "handler": "billingController.getPaymentIntent",
+      "middlewares": [
+        "authenticate",
+        "validate(PaymentIntentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PaymentIntentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "billing_get_billing_payment_intents_by_paymentIntentId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/billing/payment-intents/:paymentIntentId/confirm",
+      "module": "billing",
+      "sourceFile": "src/modules/billing/billing.routes.ts",
+      "handler": "billingController.confirmPaymentIntent",
+      "middlewares": [
+        "authenticate",
+        "validate(PaymentIntentIdParams, \"params\")",
+        "validate(ConfirmPaymentIntentBody)"
+      ],
+      "validation": {
+        "params": "PaymentIntentIdParams",
+        "body": "ConfirmPaymentIntentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "billing_post_billing_payment_intents_by_paymentIntentId_confirm"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/billing/subscriptions/me",
+      "module": "billing",
+      "sourceFile": "src/modules/billing/billing.routes.ts",
+      "handler": "billingController.getMySubscription",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "billing_get_billing_subscriptions_me"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/billing/webhooks/provider",
+      "module": "billing",
+      "sourceFile": "src/modules/billing/billing.routes.ts",
+      "handler": "billingController.handleProviderWebhook",
+      "middlewares": [
+        "validate(BillingWebhookQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "BillingWebhookQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "billing_post_billing_webhooks_provider"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/bookings",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.getBookings",
+      "middlewares": [
+        "authenticate",
+        "validate(GetBookingsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "GetBookingsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_get_bookings"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.createBooking",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateBookingBody)"
+      ],
+      "validation": {
+        "body": "CreateBookingBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/bookings/:bookingId",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.getBooking",
+      "middlewares": [
+        "authenticate",
+        "validate(BookingIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "BookingIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_get_bookings_by_bookingId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings/:bookingId/cancel",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.cancelBooking",
+      "middlewares": [
+        "authenticate",
+        "validate(BookingIdParams, \"params\")",
+        "validate(CancelBookingBody)"
+      ],
+      "validation": {
+        "params": "BookingIdParams",
+        "body": "CancelBookingBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings_by_bookingId_cancel"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings/:bookingId/complete",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.completeBooking",
+      "middlewares": [
+        "authenticate",
+        "validate(BookingIdParams, \"params\")",
+        "validate(CompleteBookingBody)"
+      ],
+      "validation": {
+        "params": "BookingIdParams",
+        "body": "CompleteBookingBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings_by_bookingId_complete"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings/:bookingId/confirm",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.confirmBooking",
+      "middlewares": [
+        "authenticate",
+        "validate(BookingIdParams, \"params\")",
+        "validate(ConfirmBookingBody)"
+      ],
+      "validation": {
+        "params": "BookingIdParams",
+        "body": "ConfirmBookingBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings_by_bookingId_confirm"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings/:bookingId/reschedule",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.createReschedule",
+      "middlewares": [
+        "authenticate",
+        "validate(BookingIdParams, \"params\")",
+        "validate(RescheduleBookingBody)"
+      ],
+      "validation": {
+        "params": "BookingIdParams",
+        "body": "RescheduleBookingBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings_by_bookingId_reschedule"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings/:bookingId/reschedule/:rescheduleId/respond",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.respondToReschedule",
+      "middlewares": [
+        "authenticate",
+        "validate(RescheduleIdParams, \"params\")",
+        "validate(RescheduleResponseBody)"
+      ],
+      "validation": {
+        "params": "RescheduleIdParams",
+        "body": "RescheduleResponseBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings_by_bookingId_reschedule_by_rescheduleId_respond"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/bookings/:bookingId/start",
+      "module": "bookings",
+      "sourceFile": "src/modules/bookings/bookings.routes.ts",
+      "handler": "bookingsController.startBooking",
+      "middlewares": [
+        "authenticate",
+        "validate(BookingIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "BookingIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "bookings_post_bookings_by_bookingId_start"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/cities",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.getCities",
+      "middlewares": [],
+      "validation": {},
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_cities"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/comments/:commentId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.deleteComment",
+      "middlewares": [
+        "authenticate",
+        "validate(CommentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "CommentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_delete_comments_by_commentId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/comments/:commentId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.updateComment",
+      "middlewares": [
+        "authenticate",
+        "validate(CommentIdParams, \"params\")",
+        "validate(UpdateCommentBody)"
+      ],
+      "validation": {
+        "params": "CommentIdParams",
+        "body": "UpdateCommentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_patch_comments_by_commentId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/comments/:commentId/likes",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.unlikeComment",
+      "middlewares": [
+        "authenticate",
+        "validate(CommentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "CommentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_delete_comments_by_commentId_likes"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/comments/:commentId/likes",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.likeComment",
+      "middlewares": [
+        "authenticate",
+        "validate(CommentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "CommentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_comments_by_commentId_likes"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/comments/:commentId/reports",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.reportComment",
+      "middlewares": [
+        "authenticate",
+        "validate(CommentIdParams, \"params\")",
+        "validate(ReportCommentBody)"
+      ],
+      "validation": {
+        "params": "CommentIdParams",
+        "body": "ReportCommentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_comments_by_commentId_reports"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/conversations",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.getConversations",
+      "middlewares": [
+        "authenticate",
+        "validate(GetConversationsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "GetConversationsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_get_conversations"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/conversations",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.createConversation",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateConversationBody)"
+      ],
+      "validation": {
+        "body": "CreateConversationBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_post_conversations"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/conversations/:conversationId",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.getConversation",
+      "middlewares": [
+        "authenticate",
+        "validate(ConversationIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ConversationIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_get_conversations_by_conversationId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/conversations/:conversationId/messages",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.getMessages",
+      "middlewares": [
+        "authenticate",
+        "validate(ConversationIdParams, \"params\")",
+        "validate(GetMessagesQuery, \"query\")"
+      ],
+      "validation": {
+        "params": "ConversationIdParams",
+        "query": "GetMessagesQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_get_conversations_by_conversationId_messages"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/conversations/:conversationId/messages",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.sendMessage",
+      "middlewares": [
+        "authenticate",
+        "rateLimit((req) => `msg:${req.actor?.userId ?? \"anonymous\"}:${req.params.conversationId}`, 60_000, 30)",
+        "validate(ConversationIdParams, \"params\")",
+        "validate(SendMessageBody)"
+      ],
+      "validation": {
+        "params": "ConversationIdParams",
+        "body": "SendMessageBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_post_conversations_by_conversationId_messages"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/conversations/:conversationId/messages/:messageId/attachments",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.addAttachment",
+      "middlewares": [
+        "authenticate",
+        "validate(ConversationMessageParams, \"params\")",
+        "validate(AddAttachmentBody)"
+      ],
+      "validation": {
+        "params": "ConversationMessageParams",
+        "body": "AddAttachmentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_post_conversations_by_conversationId_messages_by_messageId_attachments"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/conversations/:conversationId/participants",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.addParticipant",
+      "middlewares": [
+        "authenticate",
+        "validate(ConversationIdParams, \"params\")",
+        "validate(AddParticipantBody)"
+      ],
+      "validation": {
+        "params": "ConversationIdParams",
+        "body": "AddParticipantBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_post_conversations_by_conversationId_participants"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/conversations/:conversationId/participants/:userId",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.removeParticipant",
+      "middlewares": [
+        "authenticate",
+        "validate(ConversationParticipantParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ConversationParticipantParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_delete_conversations_by_conversationId_participants_by_userId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/conversations/:conversationId/read",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.markRead",
+      "middlewares": [
+        "authenticate",
+        "validate(ConversationIdParams, \"params\")",
+        "validate(MarkReadBody)"
+      ],
+      "validation": {
+        "params": "ConversationIdParams",
+        "body": "MarkReadBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_post_conversations_by_conversationId_read"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/discovery/featured-workers",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.getFeaturedWorkers",
+      "middlewares": [
+        "validate(DiscoveryQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "DiscoveryQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_discovery_featured_workers"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/discovery/recent-posts",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.getRecentPosts",
+      "middlewares": [
+        "validate(DiscoveryQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "DiscoveryQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_discovery_recent_posts"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/discovery/recommended-workers",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.getRecommendedWorkers",
+      "middlewares": [
+        "optionalAuthenticate",
+        "validate(DiscoveryQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "DiscoveryQuery"
+      },
+      "security": [],
+      "optionalAuth": true,
+      "operationId": "search_get_discovery_recommended_workers"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/health",
+      "module": "platform",
+      "sourceFile": "src/routes/index.ts",
+      "handler": "(req: Request, res: Response) => {\n  res.status(200).json(\n    success(\n      {\n        status: \"ok\",\n        version: getVersion()\n      },\n      { requestId: getRequestId(req) }\n    )\n  );\n}",
+      "middlewares": [],
+      "validation": {},
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "platform_get_health"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/health/ready",
+      "module": "platform",
+      "sourceFile": "src/routes/index.ts",
+      "handler": "async (req: Request, res: Response) => {\n  const readiness = await runApiReadinessChecks();\n  setReadinessState(\"api_database\", readiness.checks.database);\n  setReadinessState(\"api_redis\", readiness.checks.redis);\n  setReadinessState(\"api_runtime\", readiness.ready);\n\n  res.status(readiness.ready ? 200 : 503).json(\n    success(\n      {\n        status: readiness.ready ? \"ready\" : \"degraded\",\n        version: getVersion(),\n        checks: readiness.checks,\n        ...(Object.keys(readiness.errors).length > 0 ? { errors: readiness.errors } : {})\n      },\n      { requestId: getRequestId(req) }\n    )\n  );\n}",
+      "middlewares": [],
+      "validation": {},
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "platform_get_health_ready"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/inbox/unread-count",
+      "module": "chat",
+      "sourceFile": "src/modules/chat/chat.routes.ts",
+      "handler": "chatController.getUnreadCount",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "chat_get_inbox_unread_count"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/internal/analytics/events",
+      "module": "analytics",
+      "sourceFile": "src/modules/analytics/analytics.routes.ts",
+      "handler": "analyticsController.ingestEvents",
+      "middlewares": [
+        "internalAccess",
+        "validate(BatchAnalyticsEventsBody)"
+      ],
+      "validation": {
+        "body": "BatchAnalyticsEventsBody"
+      },
+      "security": [
+        "internalBearerAuth",
+        "internalHeaderAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "analytics_post_internal_analytics_events"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/internal/jobs/run",
+      "module": "analytics",
+      "sourceFile": "src/modules/analytics/analytics.routes.ts",
+      "handler": "analyticsController.runJob",
+      "middlewares": [
+        "internalAccess",
+        "validate(TriggerJobBody)"
+      ],
+      "validation": {
+        "body": "TriggerJobBody"
+      },
+      "security": [
+        "internalBearerAuth",
+        "internalHeaderAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "analytics_post_internal_jobs_run"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/internal/metrics",
+      "module": "observability",
+      "sourceFile": "src/modules/observability/observability.routes.ts",
+      "handler": "async (_req: Request, res: Response) => {\n  const readiness = await runApiReadinessChecks();\n  setReadinessState(\"api_database\", readiness.checks.database);\n  setReadinessState(\"api_redis\", readiness.checks.redis);\n  setReadinessState(\"api_runtime\", true);\n\n  res.setHeader(\"Content-Type\", getMetricsContentType());\n  res.status(200).send(await renderMetrics({ includeQueueMetrics: true }));\n}",
+      "middlewares": [
+        "internalAccess"
+      ],
+      "validation": {},
+      "security": [
+        "internalBearerAuth",
+        "internalHeaderAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "observability_get_internal_metrics"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/media/:mediaId",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "handler": "mediaController.getAsset",
+      "middlewares": [
+        "authenticate",
+        "validate(MediaIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "MediaIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "media_get_media_by_mediaId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/media/confirm",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "handler": "mediaController.confirmUpload",
+      "middlewares": [
+        "authenticate",
+        "validate(ConfirmUploadBody, \"body\")"
+      ],
+      "validation": {
+        "body": "ConfirmUploadBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "media_post_media_confirm"
+    },
+    {
+      "method": "put",
+      "path": "/api/v1/media/mock-upload/:mediaId",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "handler": "mediaController.acceptMockUpload",
+      "middlewares": [
+        "raw({ type: \"*/*\", limit: \"210mb\" })",
+        "validate(MediaIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "MediaIdParams"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "media_put_media_mock_upload_by_mediaId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/media/private/read",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "handler": "mediaController.readPrivateMedia",
+      "middlewares": [
+        "validate(PrivateReadQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "PrivateReadQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "media_get_media_private_read"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/media/upload-url",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "handler": "mediaController.requestUploadUrl",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestUploadUrlBody, \"body\")"
+      ],
+      "validation": {
+        "body": "RequestUploadUrlBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "media_post_media_upload_url"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/notifications",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.list",
+      "middlewares": [
+        "authenticate",
+        "validate(GetNotificationsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "GetNotificationsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_get_notifications"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/notifications/:notificationId/read",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.markRead",
+      "middlewares": [
+        "authenticate",
+        "validate(NotificationIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "NotificationIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_post_notifications_by_notificationId_read"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/notifications/preferences",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.getPreferences",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_get_notifications_preferences"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/notifications/preferences",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.updatePreferences",
+      "middlewares": [
+        "authenticate",
+        "validate(UpdateNotificationPreferencesBody)"
+      ],
+      "validation": {
+        "body": "UpdateNotificationPreferencesBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_patch_notifications_preferences"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/notifications/read-all",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.markAllRead",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_post_notifications_read_all"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/posts",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.getFeed",
+      "middlewares": [
+        "optionalAuthenticate",
+        "validate(GetFeedQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "GetFeedQuery"
+      },
+      "security": [],
+      "optionalAuth": true,
+      "operationId": "social_get_posts"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/posts",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.createPost",
+      "middlewares": [
+        "authenticate",
+        "validate(CreatePostBody)"
+      ],
+      "validation": {
+        "body": "CreatePostBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_posts"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/posts/:postId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.deletePost",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_delete_posts_by_postId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/posts/:postId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.getPost",
+      "middlewares": [
+        "optionalAuthenticate",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [],
+      "optionalAuth": true,
+      "operationId": "social_get_posts_by_postId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/posts/:postId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.updatePost",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")",
+        "validate(UpdatePostBody)"
+      ],
+      "validation": {
+        "params": "PostIdParams",
+        "body": "UpdatePostBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_patch_posts_by_postId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/posts/:postId/comments",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.getComments",
+      "middlewares": [
+        "optionalAuthenticate",
+        "validate(PostIdParams, \"params\")",
+        "validate(GetCommentsQuery, \"query\")"
+      ],
+      "validation": {
+        "params": "PostIdParams",
+        "query": "GetCommentsQuery"
+      },
+      "security": [],
+      "optionalAuth": true,
+      "operationId": "social_get_posts_by_postId_comments"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/posts/:postId/comments",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.createComment",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")",
+        "validate(CreateCommentBody)"
+      ],
+      "validation": {
+        "params": "PostIdParams",
+        "body": "CreateCommentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_posts_by_postId_comments"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/posts/:postId/likes",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.unlikePost",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_delete_posts_by_postId_likes"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/posts/:postId/likes",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.likePost",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_posts_by_postId_likes"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/posts/:postId/media/:mediaId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.removePostMedia",
+      "middlewares": [
+        "authenticate",
+        "validate(MediaIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "MediaIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_delete_posts_by_postId_media_by_mediaId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/posts/:postId/media/:mediaId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.addPostMedia",
+      "middlewares": [
+        "authenticate",
+        "validate(MediaIdParams, \"params\")",
+        "validate(AddPostMediaBody)"
+      ],
+      "validation": {
+        "params": "MediaIdParams",
+        "body": "AddPostMediaBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_posts_by_postId_media_by_mediaId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/posts/:postId/saves",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.unsavePost",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_delete_posts_by_postId_saves"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/posts/:postId/saves",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "handler": "socialController.savePost",
+      "middlewares": [
+        "authenticate",
+        "validate(PostIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "PostIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "social_post_posts_by_postId_saves"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/push-devices",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.registerPushDevice",
+      "middlewares": [
+        "authenticate",
+        "validate(RegisterPushDeviceBody)"
+      ],
+      "validation": {
+        "body": "RegisterPushDeviceBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_post_push_devices"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/push-devices/:deviceId",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.deletePushDevice",
+      "middlewares": [
+        "authenticate",
+        "validate(DeviceIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "DeviceIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_delete_push_devices_by_deviceId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/reviews",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.createReview",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateReviewBody)"
+      ],
+      "validation": {
+        "body": "CreateReviewBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "reviews_post_reviews"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/reviews/:reviewId",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.getReview",
+      "middlewares": [
+        "validate(ReviewIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ReviewIdParams"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "reviews_get_reviews_by_reviewId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/reviews/:reviewId/dimensions",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.addDimensions",
+      "middlewares": [
+        "authenticate",
+        "validate(ReviewIdParams, \"params\")",
+        "validate(AddDimensionsBody)"
+      ],
+      "validation": {
+        "params": "ReviewIdParams",
+        "body": "AddDimensionsBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "reviews_post_reviews_by_reviewId_dimensions"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/reviews/:reviewId/replies",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.createReply",
+      "middlewares": [
+        "authenticate",
+        "validate(ReviewIdParams, \"params\")",
+        "validate(CreateReviewReplyBody)"
+      ],
+      "validation": {
+        "params": "ReviewIdParams",
+        "body": "CreateReviewReplyBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "reviews_post_reviews_by_reviewId_replies"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/reviews/:reviewId/replies/:replyId",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.deleteReply",
+      "middlewares": [
+        "authenticate",
+        "validate(ReplyIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "ReplyIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "reviews_delete_reviews_by_reviewId_replies_by_replyId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/reviews/:reviewId/replies/:replyId",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.updateReply",
+      "middlewares": [
+        "authenticate",
+        "validate(ReplyIdParams, \"params\")",
+        "validate(UpdateReviewReplyBody)"
+      ],
+      "validation": {
+        "params": "ReplyIdParams",
+        "body": "UpdateReviewReplyBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "reviews_patch_reviews_by_reviewId_replies_by_replyId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/reviews/:reviewId/report",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.reportReview",
+      "middlewares": [
+        "authenticate",
+        "validate(ReviewIdParams, \"params\")",
+        "validate(ReportReviewBody)"
+      ],
+      "validation": {
+        "params": "ReviewIdParams",
+        "body": "ReportReviewBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "reviews_post_reviews_by_reviewId_report"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/search/impressions",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.logImpression",
+      "middlewares": [
+        "optionalAuthenticate",
+        "validate(LogImpressionBody)"
+      ],
+      "validation": {
+        "body": "LogImpressionBody"
+      },
+      "security": [],
+      "optionalAuth": true,
+      "operationId": "search_post_search_impressions"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/search/suggestions",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.getSuggestions",
+      "middlewares": [
+        "validate(SuggestionsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "SuggestionsQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_search_suggestions"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/search/workers",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.searchWorkers",
+      "middlewares": [
+        "validate(SearchWorkersQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "SearchWorkersQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_search_workers"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/search/workers/map",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.searchWorkersMap",
+      "middlewares": [
+        "validate(MapSearchQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "MapSearchQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_search_workers_map"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/search/workers/nearby",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.searchWorkersNearby",
+      "middlewares": [
+        "validate(SearchWorkersQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "SearchWorkersQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_search_workers_nearby"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/service-requests",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.getRequests",
+      "middlewares": [
+        "authenticate",
+        "validate(GetServiceRequestsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "GetServiceRequestsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_get_service_requests"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.createRequest",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateServiceRequestBody)"
+      ],
+      "validation": {
+        "body": "CreateServiceRequestBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/service-requests/:requestId",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.getRequest",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "RequestIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_get_service_requests_by_requestId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/service-requests/:requestId",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.updateRequest",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")",
+        "validate(UpdateServiceRequestBody)"
+      ],
+      "validation": {
+        "params": "RequestIdParams",
+        "body": "UpdateServiceRequestBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_patch_service_requests_by_requestId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests/:requestId/assignments",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.createAssignment",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")",
+        "validate(CreateAssignmentBody)"
+      ],
+      "validation": {
+        "params": "RequestIdParams",
+        "body": "CreateAssignmentBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests_by_requestId_assignments"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests/:requestId/assignments/:assignmentId/accept",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.acceptAssignment",
+      "middlewares": [
+        "authenticate",
+        "validate(AssignmentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AssignmentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests_by_requestId_assignments_by_assignmentId_accept"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests/:requestId/assignments/:assignmentId/decline",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.declineAssignment",
+      "middlewares": [
+        "authenticate",
+        "validate(AssignmentIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AssignmentIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests_by_requestId_assignments_by_assignmentId_decline"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests/:requestId/cancel",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.cancelRequest",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")",
+        "validate(CancelRequestBody)"
+      ],
+      "validation": {
+        "params": "RequestIdParams",
+        "body": "CancelRequestBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests_by_requestId_cancel"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests/:requestId/expire",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.expireRequest",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "RequestIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests_by_requestId_expire"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/service-requests/:requestId/items",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.addItem",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")",
+        "validate(CreateRequestItemBody)"
+      ],
+      "validation": {
+        "params": "RequestIdParams",
+        "body": "CreateRequestItemBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_post_service_requests_by_requestId_items"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/service-requests/:requestId/items/:itemId",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.removeItem",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestItemParams, \"params\")"
+      ],
+      "validation": {
+        "params": "RequestItemParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_delete_service_requests_by_requestId_items_by_itemId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/service-requests/:requestId/items/:itemId",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.updateItem",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestItemParams, \"params\")",
+        "validate(UpdateRequestItemBody)"
+      ],
+      "validation": {
+        "params": "RequestItemParams",
+        "body": "UpdateRequestItemBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_patch_service_requests_by_requestId_items_by_itemId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/service-requests/:requestId/status-history",
+      "module": "requests",
+      "sourceFile": "src/modules/requests/requests.routes.ts",
+      "handler": "requestsController.getStatusHistory",
+      "middlewares": [
+        "authenticate",
+        "validate(RequestIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "RequestIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "requests_get_service_requests_by_requestId_status_history"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/support/tickets",
+      "module": "support",
+      "sourceFile": "src/modules/support/support.routes.ts",
+      "handler": "supportController.getTickets",
+      "middlewares": [
+        "authenticate",
+        "validate(SupportTicketsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "SupportTicketsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "support_get_support_tickets"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/support/tickets",
+      "module": "support",
+      "sourceFile": "src/modules/support/support.routes.ts",
+      "handler": "supportController.createTicket",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateSupportTicketBody)"
+      ],
+      "validation": {
+        "body": "CreateSupportTicketBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "support_post_support_tickets"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/support/tickets/:ticketId",
+      "module": "support",
+      "sourceFile": "src/modules/support/support.routes.ts",
+      "handler": "supportController.getTicket",
+      "middlewares": [
+        "authenticate",
+        "validate(TicketIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "TicketIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "support_get_support_tickets_by_ticketId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/support/tickets/:ticketId",
+      "module": "support",
+      "sourceFile": "src/modules/support/support.routes.ts",
+      "handler": "supportController.updateTicket",
+      "middlewares": [
+        "authenticate",
+        "validate(TicketIdParams, \"params\")",
+        "validate(UpdateTicketBody)"
+      ],
+      "validation": {
+        "params": "TicketIdParams",
+        "body": "UpdateTicketBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "support_patch_support_tickets_by_ticketId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/support/tickets/:ticketId/messages",
+      "module": "support",
+      "sourceFile": "src/modules/support/support.routes.ts",
+      "handler": "supportController.addMessage",
+      "middlewares": [
+        "authenticate",
+        "validate(TicketIdParams, \"params\")",
+        "validate(AddTicketMessageBody)"
+      ],
+      "validation": {
+        "params": "TicketIdParams",
+        "body": "AddTicketMessageBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "support_post_support_tickets_by_ticketId_messages"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/trade-categories",
+      "module": "search",
+      "sourceFile": "src/modules/search/search.routes.ts",
+      "handler": "searchController.getTradeCategories",
+      "middlewares": [],
+      "validation": {},
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "search_get_trade_categories"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/users/:userId/profile",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.publicProfile",
+      "middlewares": [
+        "validate(UserIdPathParam, \"params\")"
+      ],
+      "validation": {
+        "params": "UserIdPathParam"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "users_get_users_by_userId_profile"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/users/me",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.deleteMe",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_delete_users_me"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/users/me",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.me",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_get_users_me"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/users/me",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.updateMe",
+      "middlewares": [
+        "authenticate",
+        "validate(UpdateUserMeBody)"
+      ],
+      "validation": {
+        "body": "UpdateUserMeBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_patch_users_me"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/users/me/follows",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.getFollows",
+      "middlewares": [
+        "authenticate",
+        "validate(PaginationQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "PaginationQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_get_users_me_follows"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/users/me/follows",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.followTarget",
+      "middlewares": [
+        "authenticate",
+        "validate(AddFollowBody)"
+      ],
+      "validation": {
+        "body": "AddFollowBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_post_users_me_follows"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/users/me/follows/:targetType/:targetId",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.unfollowTarget",
+      "middlewares": [
+        "authenticate",
+        "validate(FollowParams, \"params\")"
+      ],
+      "validation": {
+        "params": "FollowParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_delete_users_me_follows_by_targetType_by_targetId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/users/me/preferences",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.getPreferences",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_get_users_me_preferences"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/users/me/preferences",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.updatePreferences",
+      "middlewares": [
+        "authenticate",
+        "validate(UpdateNotificationPreferencesBody)"
+      ],
+      "validation": {
+        "body": "UpdateNotificationPreferencesBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_patch_users_me_preferences"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/users/me/saved-workers",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.getSavedWorkers",
+      "middlewares": [
+        "authenticate",
+        "validate(PaginationQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "PaginationQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_get_users_me_saved_workers"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/users/me/saved-workers/:workerId",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.unsaveWorker",
+      "middlewares": [
+        "authenticate",
+        "validate(WorkerIdPathParam, \"params\")"
+      ],
+      "validation": {
+        "params": "WorkerIdPathParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_delete_users_me_saved_workers_by_workerId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/users/me/saved-workers/:workerId",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "handler": "usersController.saveWorker",
+      "middlewares": [
+        "authenticate",
+        "validate(WorkerIdPathParam, \"params\")"
+      ],
+      "validation": {
+        "params": "WorkerIdPathParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "users_post_users_me_saved_workers_by_workerId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.create",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateWorkerProfileBody)"
+      ],
+      "validation": {
+        "body": "CreateWorkerProfileBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/worker-profiles/:workerId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.getById",
+      "middlewares": [
+        "validate(WorkerIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "WorkerIdParam"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_get_worker_profiles_by_workerId"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/worker-profiles/me",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.me",
+      "middlewares": [
+        "authenticate"
+      ],
+      "validation": {},
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_get_worker_profiles_me"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updateMe",
+      "middlewares": [
+        "authenticate",
+        "validate(UpdateWorkerProfileBody)"
+      ],
+      "validation": {
+        "body": "UpdateWorkerProfileBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/availability/exceptions",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.createAvailabilityException",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateAvailabilityExceptionBody)"
+      ],
+      "validation": {
+        "body": "CreateAvailabilityExceptionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_availability_exceptions"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/availability/exceptions/:exceptionId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.deleteAvailabilityException",
+      "middlewares": [
+        "authenticate",
+        "validate(ExceptionIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "ExceptionIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_availability_exceptions_by_exceptionId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me/availability/exceptions/:exceptionId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updateAvailabilityException",
+      "middlewares": [
+        "authenticate",
+        "validate(ExceptionIdParam, \"params\")",
+        "validate(UpdateAvailabilityExceptionBody)"
+      ],
+      "validation": {
+        "params": "ExceptionIdParam",
+        "body": "UpdateAvailabilityExceptionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me_availability_exceptions_by_exceptionId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/availability/rules",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.createAvailabilityRule",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateAvailabilityRuleBody)"
+      ],
+      "validation": {
+        "body": "CreateAvailabilityRuleBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_availability_rules"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/availability/rules/:ruleId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.deleteAvailabilityRule",
+      "middlewares": [
+        "authenticate",
+        "validate(RuleIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "RuleIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_availability_rules_by_ruleId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me/availability/rules/:ruleId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updateAvailabilityRule",
+      "middlewares": [
+        "authenticate",
+        "validate(RuleIdParam, \"params\")",
+        "validate(UpdateAvailabilityRuleBody)"
+      ],
+      "validation": {
+        "params": "RuleIdParam",
+        "body": "UpdateAvailabilityRuleBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me_availability_rules_by_ruleId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/certifications",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.createCertification",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateCertificationBody)"
+      ],
+      "validation": {
+        "body": "CreateCertificationBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_certifications"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/certifications/:certId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.deleteCertification",
+      "middlewares": [
+        "authenticate",
+        "validate(CertificationIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "CertificationIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_certifications_by_certId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me/certifications/:certId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updateCertification",
+      "middlewares": [
+        "authenticate",
+        "validate(CertificationIdParam, \"params\")",
+        "validate(UpdateCertificationBody)"
+      ],
+      "validation": {
+        "params": "CertificationIdParam",
+        "body": "UpdateCertificationBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me_certifications_by_certId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/portfolio",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.createPortfolioItem",
+      "middlewares": [
+        "authenticate",
+        "validate(CreatePortfolioItemBody)"
+      ],
+      "validation": {
+        "body": "CreatePortfolioItemBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_portfolio"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/portfolio/:itemId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.deletePortfolioItem",
+      "middlewares": [
+        "authenticate",
+        "validate(PortfolioItemIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "PortfolioItemIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_portfolio_by_itemId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me/portfolio/:itemId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updatePortfolioItem",
+      "middlewares": [
+        "authenticate",
+        "validate(PortfolioItemIdParam, \"params\")",
+        "validate(UpdatePortfolioItemBody)"
+      ],
+      "validation": {
+        "params": "PortfolioItemIdParam",
+        "body": "UpdatePortfolioItemBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me_portfolio_by_itemId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/service-areas",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.createServiceArea",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateServiceAreaBody)"
+      ],
+      "validation": {
+        "body": "CreateServiceAreaBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_service_areas"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/service-areas/:areaId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.deleteServiceArea",
+      "middlewares": [
+        "authenticate",
+        "validate(AreaIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "AreaIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_service_areas_by_areaId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me/service-areas/:areaId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updateServiceArea",
+      "middlewares": [
+        "authenticate",
+        "validate(AreaIdParam, \"params\")",
+        "validate(UpdateServiceAreaBody)"
+      ],
+      "validation": {
+        "params": "AreaIdParam",
+        "body": "UpdateServiceAreaBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me_service_areas_by_areaId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/services",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.createService",
+      "middlewares": [
+        "authenticate",
+        "validate(CreateWorkerServiceBody)"
+      ],
+      "validation": {
+        "body": "CreateWorkerServiceBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_services"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/services/:serviceId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.deleteService",
+      "middlewares": [
+        "authenticate",
+        "validate(ServiceIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "ServiceIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_services_by_serviceId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/worker-profiles/me/services/:serviceId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.updateService",
+      "middlewares": [
+        "authenticate",
+        "validate(ServiceIdParam, \"params\")",
+        "validate(UpdateWorkerServiceBody)"
+      ],
+      "validation": {
+        "params": "ServiceIdParam",
+        "body": "UpdateWorkerServiceBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_patch_worker_profiles_me_services_by_serviceId"
+    },
+    {
+      "method": "delete",
+      "path": "/api/v1/worker-profiles/me/trades/:tradeId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.removeTrade",
+      "middlewares": [
+        "authenticate",
+        "validate(TradeIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "TradeIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_delete_worker_profiles_me_trades_by_tradeId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/trades/:tradeId",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.addTrade",
+      "middlewares": [
+        "authenticate",
+        "validate(TradeIdParam, \"params\")"
+      ],
+      "validation": {
+        "params": "TradeIdParam"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_trades_by_tradeId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/worker-profiles/me/verification-requests",
+      "module": "worker-profiles",
+      "sourceFile": "src/modules/worker-profiles/worker-profiles.routes.ts",
+      "handler": "workerProfilesController.submitVerificationRequest",
+      "middlewares": [
+        "authenticate",
+        "validate(SubmitVerificationBody)"
+      ],
+      "validation": {
+        "body": "SubmitVerificationBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "worker_profiles_post_worker_profiles_me_verification_requests"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/workers/:workerId/reviews",
+      "module": "reviews",
+      "sourceFile": "src/modules/reviews/reviews.routes.ts",
+      "handler": "reviewsController.getWorkerReviews",
+      "middlewares": [
+        "validate(GetWorkerReviewsParams, \"params\")",
+        "validate(GetWorkerReviewsQuery, \"query\")"
+      ],
+      "validation": {
+        "params": "GetWorkerReviewsParams",
+        "query": "GetWorkerReviewsQuery"
+      },
+      "security": [],
+      "optionalAuth": false,
+      "operationId": "reviews_get_workers_by_workerId_reviews"
+    }
+  ]
+}
