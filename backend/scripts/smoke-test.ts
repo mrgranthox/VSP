@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-
 interface SmokeTestOptions {
   baseUrl?: string;
   password?: string;
@@ -93,9 +92,11 @@ const main = async (): Promise<void> => {
   await runSmokeTest();
 };
 
-void main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+if (require.main === module) {
+  void main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
 
 export { runSmokeTest };

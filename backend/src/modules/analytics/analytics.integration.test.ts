@@ -14,6 +14,9 @@ import { prisma } from "../../lib/prisma";
 import { redis, redisQueue } from "../../lib/redis";
 
 const api = request(app);
+const internalHeaders = {
+  "x-internal-key": process.env.INTERNAL_API_KEY ?? "test-internal-key"
+};
 
 const cleanupAnalyticsData = async (): Promise<void> => {
   await prisma.analyticsEvent.deleteMany({
@@ -36,7 +39,7 @@ after(async () => {
 });
 
 test("internal analytics flow covers ingestion and manual rollup job execution", async () => {
-  const ingestResponse = await api.post("/api/v1/internal/analytics/events").send({
+  const ingestResponse = await api.post("/api/v1/internal/analytics/events").set(internalHeaders).send({
     events: [
       {
         eventName: "itest.analytics.search",
@@ -56,7 +59,7 @@ test("internal analytics flow covers ingestion and manual rollup job execution",
   assert.equal(ingestResponse.status, 202);
   assert.equal(ingestResponse.body.data.accepted, 2);
 
-  const rollupResponse = await api.post("/api/v1/internal/jobs/run").send({
+  const rollupResponse = await api.post("/api/v1/internal/jobs/run").set(internalHeaders).send({
     jobName: "analytics_rollup",
     payload: {
       source: "itest"
@@ -79,7 +82,7 @@ test("internal metrics endpoint exposes readiness and request metrics", async ()
   const healthResponse = await api.get("/api/v1/health");
   assert.equal(healthResponse.status, 200);
 
-  const metricsResponse = await api.get("/api/v1/internal/metrics");
+  const metricsResponse = await api.get("/api/v1/internal/metrics").set(internalHeaders);
 
   assert.equal(metricsResponse.status, 200);
   assert.equal((metricsResponse.headers["content-type"] as string).includes("text/plain"), true);
