@@ -84,6 +84,7 @@ npm run ops:restore:verify
 - `ops:mfa:rewrap` re-encrypts stored MFA secrets with the current `MFA_ENCRYPTION_KEY_BASE64`. Use `--dry-run` first during key rotation.
 - `release:gate` verifies `health`, `ready`, the internal metrics endpoint, and the auth smoke flow against a running server.
 - `ops:tracing:verify` starts a local OTLP receiver, boots the built API with tracing enabled, runs the release gate, and fails unless real spans are exported. Run `npm run build` first when invoking it manually.
+- `ops:error-reporting:verify` starts a local Sentry-compatible receiver, emits a test exception through the runtime error-reporting path, and fails unless an envelope is delivered.
 
 Minimal operational alerting is also supported:
 
@@ -95,6 +96,13 @@ When enabled, the API, workers, and websocket gateway raise alerts on startup fa
 
 JWT verification also supports `JWT_PUBLIC_KEY_BASE64_PREVIOUS` during key rotation, so existing access tokens can remain valid until the access-token TTL expires.
 
+Optional Sentry-compatible error reporting is also supported:
+
+- `SENTRY_ENABLED=true`
+- `SENTRY_DSN=https://public@your-sentry-host/project-id`
+- `SENTRY_ENVIRONMENT=production`
+- `SENTRY_RELEASE=git-sha-or-version`
+
 ## Observability
 
 - API metrics: `GET /api/v1/internal/metrics` with `x-internal-key` or `Authorization: Bearer <INTERNAL_API_KEY>`
@@ -102,6 +110,7 @@ JWT verification also supports `JWT_PUBLIC_KEY_BASE64_PREVIOUS` during key rotat
 - API responses now include `X-Trace-ID` and `Traceparent`, and the standard response envelope includes `meta.traceId` for request-level correlation.
 - Optional OTLP tracing is supported for API, workers, and gateway through `TRACING_ENABLED=true`.
 - `ops:tracing:verify` is the local proof that the traced runtime exports OTLP spans, not just that tracing config exists.
+- `ops:error-reporting:verify` is the local proof that runtime exceptions are delivered to a Sentry-compatible ingestion endpoint.
 - Prometheus now exposes dependency check timing/failure metrics and operational alert delivery metrics, so alerting and readiness are themselves observable.
 
 The metrics surface includes:
@@ -116,6 +125,7 @@ The metrics surface includes:
 The repo also includes a ready-to-run monitoring stack under `backend/observability/`:
 
 - Prometheus scrape config and alert rules
+- Alertmanager routing config and local webhook sink
 - Grafana provisioning and a VSP backend overview dashboard
 - Jaeger can be enabled locally as an OTLP trace backend
 
@@ -130,6 +140,8 @@ The repo root includes [`compose.yml`](/home/edward-nyame/Desktop/VJS/compose.ym
 - `typesense` on `localhost:8108` when the `search` profile is enabled
 - `prometheus` on `localhost:9090` when the `monitoring` profile is enabled
 - `grafana` on `localhost:3001` when the `monitoring` profile is enabled
+- `alertmanager` on `localhost:9093` when the `monitoring` profile is enabled
+- `alert-echo` on `localhost:18080` when the `monitoring` profile is enabled
 - `jaeger` on `localhost:16686` when the `tracing` profile is enabled
 
 If those ports are already taken on your machine, override them at launch time with `API_PORT`, `WS_GATEWAY_PUBLISHED_PORT`, `POSTGRES_PORT`, `REDIS_PORT`, or `TYPESENSE_PUBLISHED_PORT`.
@@ -175,7 +187,7 @@ EVENT_BUS_MODE=queue docker compose --profile workers --profile realtime up --bu
 
 ### Monitoring Stack
 
-This profile starts Prometheus and Grafana against the protected API and gateway metrics endpoints. The compose defaults use the same `INTERNAL_API_KEY` as `.env.compose.example`.
+This profile starts Prometheus, Alertmanager, a local alert webhook sink, and Grafana against the protected API and gateway metrics endpoints. The compose defaults use the same `INTERNAL_API_KEY` as `.env.compose.example`.
 
 ```bash
 EVENT_BUS_MODE=queue docker compose --profile workers --profile realtime --profile monitoring up --build
@@ -186,6 +198,12 @@ Grafana defaults:
 - URL: `http://localhost:3001`
 - username: `admin`
 - password: `admin`
+
+Alertmanager defaults:
+
+- UI: `http://localhost:9093`
+- local webhook sink: `http://localhost:18080`
+- inspect local alert deliveries with `docker compose logs -f alert-echo`
 
 ### Tracing Stack
 
@@ -253,6 +271,6 @@ cd backend
 ./scripts/run-ci.sh
 ```
 
-The script loads `.env` and `.env.local` when they exist, provisions ephemeral JWT and MFA secrets when they are not already set, and then runs Prisma validation, Prisma generate, `migrate deploy`, deterministic seed, typecheck, tests, the production build, and traced-runtime export verification against the built server.
+The script loads `.env` and `.env.local` when they exist, provisions ephemeral JWT and MFA secrets when they are not already set, and then runs Prisma validation, Prisma generate, `migrate deploy`, deterministic seed, typecheck, tests, the production build, traced-runtime export verification, and error-reporting delivery verification against the built server.
 
 It now also verifies the backup and restore path by creating a dump, restoring it into a scratch database, and checking Prisma migration status against the restored copy.

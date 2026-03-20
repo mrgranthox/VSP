@@ -68,6 +68,11 @@ services:
       BACKGROUND_WORKERS_ENABLED: "false"
       CDN_BASE_URL: ${CDN_BASE_URL:-http://localhost:3000}
       EVENT_BUS_MODE: ${EVENT_BUS_MODE:-inline}
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_FLUSH_TIMEOUT_MS: ${SENTRY_FLUSH_TIMEOUT_MS:-2000}
       TRACING_ENABLED: ${TRACING_ENABLED:-false}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
@@ -101,6 +106,11 @@ services:
         condition: service_healthy
     environment:
       EVENT_BUS_MODE: "queue"
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_FLUSH_TIMEOUT_MS: ${SENTRY_FLUSH_TIMEOUT_MS:-2000}
       TRACING_ENABLED: ${TRACING_ENABLED:-false}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
@@ -119,6 +129,11 @@ services:
       redis:
         condition: service_healthy
     environment:
+      SENTRY_ENABLED: ${SENTRY_ENABLED:-false}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_FLUSH_TIMEOUT_MS: ${SENTRY_FLUSH_TIMEOUT_MS:-2000}
       TRACING_ENABLED: ${TRACING_ENABLED:-false}
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
       OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
@@ -148,6 +163,33 @@ services:
       - "${JAEGER_UI_PORT:-16686}:16686"
       - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"
 
+  alert-echo:
+    image: mendhak/http-https-echo:34
+    profiles: ["monitoring"]
+    ports:
+      - "${ALERT_ECHO_PORT:-18080}:8080"
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: ["monitoring"]
+    environment:
+      ALERTMANAGER_WEBHOOK_URL: ${ALERTMANAGER_WEBHOOK_URL:-http://alert-echo:8080/alerts}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sed "s|__ALERTMANAGER_WEBHOOK_URL__|$${ALERTMANAGER_WEBHOOK_URL}|g" /etc/alertmanager/alertmanager.yml.template > /tmp/alertmanager.yml
+        exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager
+    volumes:
+      - ./backend/observability/alertmanager/alertmanager.yml.template:/etc/alertmanager/alertmanager.yml.template:ro
+      - ./backend/observability/alertmanager/templates:/etc/alertmanager/templates:ro
+      - alertmanager-data:/alertmanager
+    ports:
+      - "${ALERTMANAGER_PORT:-9093}:9093"
+    depends_on:
+      alert-echo:
+        condition: service_started
+
   prometheus:
     image: prom/prometheus:v2.54.1
     profiles: ["monitoring"]
@@ -167,6 +209,8 @@ services:
       - "${PROMETHEUS_PORT:-9090}:9090"
     depends_on:
       api:
+        condition: service_started
+      alertmanager:
         condition: service_started
 
   grafana:
@@ -203,3 +247,4 @@ volumes:
   typesense-data:
   prometheus-data:
   grafana-data:
+  alertmanager-data:

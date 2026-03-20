@@ -1,6 +1,7 @@
 import { Worker, type Job } from "bullmq";
 
 import { sendOperationalAlert } from "../lib/alerts";
+import { captureException } from "../lib/errorReporting";
 import { logger } from "../lib/logger";
 import { recordBackgroundJobResult } from "../lib/metrics";
 import { getBullMqConnectionOptions, getBullMqPrefix } from "../lib/redis";
@@ -108,6 +109,20 @@ const createWorker = (queueName: QueueName) => {
     );
 
     if (attemptsMade >= maxAttempts) {
+      captureException(error, {
+        component: `worker:${queueName}`,
+        tags: {
+          queue_name: queueName,
+          job_name: job?.name ?? "unknown",
+          phase: "job_failed_final"
+        },
+        extra: {
+          queueName,
+          jobId: job?.id ?? null,
+          attemptsMade,
+          maxAttempts
+        }
+      });
       void sendOperationalAlert({
         severity: "critical",
         component: `worker:${queueName}`,
@@ -125,6 +140,13 @@ const createWorker = (queueName: QueueName) => {
   });
 
   worker.on("error", (error) => {
+    captureException(error, {
+      component: `worker:${queueName}`,
+      tags: {
+        queue_name: queueName,
+        phase: "worker_runtime_error"
+      }
+    });
     logger.error({ queueName, error }, "Background worker runtime error");
     void sendOperationalAlert({
       severity: "critical",

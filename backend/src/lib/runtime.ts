@@ -1,5 +1,6 @@
 import { logger } from "./logger";
 import { sendOperationalAlert } from "./alerts";
+import { captureException, flushErrorReporting } from "./errorReporting";
 
 type FatalErrorKind = "uncaughtException" | "unhandledRejection";
 
@@ -23,6 +24,15 @@ const registerFatalErrorHandlers = (component: string): void => {
     const error = toError(value);
 
     logger.fatal({ component, kind, error }, "Fatal runtime error");
+    captureException(error, {
+      component,
+      tags: {
+        fatal_error_kind: kind
+      },
+      extra: {
+        kind
+      }
+    });
     await sendOperationalAlert({
       severity: "critical",
       component,
@@ -33,6 +43,7 @@ const registerFatalErrorHandlers = (component: string): void => {
         stack: error.stack ?? null
       }
     });
+    await flushErrorReporting();
 
     process.exit(1);
   };

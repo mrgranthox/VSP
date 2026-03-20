@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ZodError } from "zod";
 
 import { ApiError } from "../lib/errors";
+import { captureException } from "../lib/errorReporting";
 import { logger } from "../lib/logger";
 import { error as errorResponse } from "../lib/response";
 
@@ -47,6 +48,16 @@ const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunc
     }
   }
 
+  captureException(err, {
+    component: "api",
+    requestId: requestIdValue,
+    traceId: traceIdValue,
+    userId: req.actor?.userId,
+    tags: {
+      method: req.method,
+      route: req.originalUrl
+    }
+  });
   logger.error({ err, requestId: requestIdValue, traceId: traceIdValue }, "Unhandled error");
   res.status(500).json(errorResponse("INTERNAL_ERROR", "Internal server error", null, { requestId: requestIdValue }));
 };

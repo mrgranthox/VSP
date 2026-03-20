@@ -19,6 +19,7 @@
     "ops:restore:verify": "tsx scripts/db-restore-verify.ts",
     "ops:secrets:generate": "tsx scripts/generate-secrets.ts",
     "ops:mfa:rewrap": "tsx scripts/mfa-rewrap.ts",
+    "ops:error-reporting:verify": "tsx scripts/verify-error-reporting.ts",
     "ops:tracing:verify": "tsx scripts/verify-tracing.ts",
     "release:gate": "tsx scripts/release-gate.ts",
     "start": "node dist/src/bootstrap/api.js",

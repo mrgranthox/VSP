@@ -95,3 +95,6 @@ npm run ops:restore:verify
 
 echo "[ci] verifying traced runtime export"
 npm run ops:tracing:verify
+
+echo "[ci] verifying error reporting delivery"
+npm run ops:error-reporting:verify

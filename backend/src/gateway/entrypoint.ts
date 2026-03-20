@@ -2,6 +2,7 @@ import { createServer } from "node:http";
 
 import { env } from "../config/env";
 import { Errors } from "../lib/errors";
+import { captureException, initializeErrorReporting, shutdownErrorReporting } from "../lib/errorReporting";
 import { getMetricsContentType, renderMetrics, setReadinessState } from "../lib/metrics";
 import { sendOperationalAlert } from "../lib/alerts";
 import { hasInternalAccess } from "../lib/internalAccess";
@@ -12,6 +13,7 @@ import { WebsocketGateway } from "./websocket";
 
 const port = env.WS_GATEWAY_PORT;
 
+initializeErrorReporting("gateway");
 registerFatalErrorHandlers("gateway");
 
 const server = createServer((req, res) => {
@@ -40,6 +42,13 @@ const server = createServer((req, res) => {
     res.writeHead(404, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "Not Found" }));
   })().catch((error) => {
+    captureException(error, {
+      component: "gateway",
+      tags: {
+        lifecycle: "http_handler",
+        url: req.url ?? "unknown"
+      }
+    });
     logger.error({ error }, "Gateway HTTP handler failed");
     res.writeHead(500, { "content-type": "application/json" });
     res.end(JSON.stringify({ error: "Internal Server Error" }));
@@ -60,6 +69,7 @@ const shutdown = async (signal: string): Promise<void> => {
       resolve();
     });
   });
+  await shutdownErrorReporting();
   await shutdownTracing();
   logger.info({ signal }, "Websocket gateway shutdown completed");
   process.exit(0);
@@ -71,6 +81,12 @@ void (async () => {
     logger.info({ port, path: env.WS_GATEWAY_PATH }, "Websocket gateway listening");
   });
 })().catch((error) => {
+  captureException(error, {
+    component: "gateway",
+    tags: {
+      lifecycle: "startup"
+    }
+  });
   logger.error({ error }, "Failed to start websocket gateway");
   void sendOperationalAlert({
     severity: "critical",

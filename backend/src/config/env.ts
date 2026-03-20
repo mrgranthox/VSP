@@ -111,6 +111,11 @@ const EnvironmentSchema = z
 
         return parsed;
       }),
+    SENTRY_ENABLED: BooleanString.default("false"),
+    SENTRY_DSN: z.string().url().optional(),
+    SENTRY_ENVIRONMENT: z.string().min(1).optional(),
+    SENTRY_RELEASE: z.string().min(1).optional(),
+    SENTRY_FLUSH_TIMEOUT_MS: z.string().default("2000").transform((value) => toInt(value, "SENTRY_FLUSH_TIMEOUT_MS")),
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info")
   })
   .superRefine((value, ctx) => {
@@ -215,6 +220,14 @@ const EnvironmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ["TRACING_ENABLED"],
         message: "Tracing requires OTEL_EXPORTER_OTLP_TRACES_ENDPOINT or OTEL_CONSOLE_EXPORTER_ENABLED=true"
+      });
+    }
+
+    if (value.SENTRY_ENABLED && !value.SENTRY_DSN) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["SENTRY_DSN"],
+        message: "SENTRY_DSN is required when SENTRY_ENABLED=true"
       });
     }
   });

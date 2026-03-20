@@ -96,6 +96,13 @@ Optional OTLP tracing envs:
 - `OTEL_EXPORTER_OTLP_HEADERS=authorization=Bearer token` when your collector requires auth
 - `OTEL_TRACES_SAMPLER_RATIO=1`
 
+Optional Sentry-compatible error-reporting envs:
+
+- `SENTRY_ENABLED=true`
+- `SENTRY_DSN=https://public@your-sentry-host/project-id`
+- `SENTRY_ENVIRONMENT=production`
+- `SENTRY_RELEASE=git-sha-or-version`
+
 For release verification against a running stack:
 
 ```bash
@@ -117,6 +124,13 @@ npm run build
 npm run ops:tracing:verify
 ```
 
+For Sentry-compatible error-reporting verification:
+
+```bash
+cd backend
+npm run ops:error-reporting:verify
+```
+
 The release gate checks:
 
 1. API metrics endpoint
@@ -125,6 +139,7 @@ The release gate checks:
 4. gateway health and metrics when `RELEASE_GATE_GATEWAY_URL` is set
 
 The tracing verifier reuses the release gate and then asserts that a real OTLP receiver observed exported spans, including the `USER_REGISTERED` domain-event span.
+The error-reporting verifier emits a test exception through the runtime integration and asserts that a Sentry-compatible envelope was delivered.
 
 Additional observability signals now exposed in Prometheus:
 
@@ -135,7 +150,7 @@ Additional observability signals now exposed in Prometheus:
 
 ## Monitoring Stack
 
-The repo includes a minimal Prometheus + Grafana stack under `backend/observability/`.
+The repo includes a minimal Prometheus + Alertmanager + Grafana stack under `backend/observability/`.
 
 Start it from the repo root:
 
@@ -147,12 +162,15 @@ Included assets:
 
 - `backend/observability/prometheus/prometheus.yml.template`
 - `backend/observability/prometheus/alerts.yml`
+- `backend/observability/alertmanager/alertmanager.yml.template`
 - `backend/observability/grafana/dashboards/vsp-backend-overview.json`
 
 Default local ports:
 
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3001`
+- Alertmanager: `http://localhost:9093`
+- Local alert webhook sink: `http://localhost:18080`
 
 ## Tracing Stack
 
