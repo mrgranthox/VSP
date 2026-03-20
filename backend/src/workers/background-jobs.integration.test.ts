@@ -66,7 +66,8 @@ after(async () => {
 
 test("queue-mode USER_REGISTERED event creates notification preferences and analytics job ledger entries", async () => {
   const email = buildEmail("register");
-  const registerResponse = await api.post("/api/v1/auth/register").send({
+  const requestId = `itest-request-${randomUUID()}`;
+  const registerResponse = await api.post("/api/v1/auth/register").set("x-request-id", requestId).send({
     email,
     password,
     firstName: "Queue",
@@ -104,6 +105,17 @@ test("queue-mode USER_REGISTERED event creates notification preferences and anal
     assert.ok(analyticsEvent);
     assert.equal(jobRuns.length >= 2, true);
     assert.equal(jobRuns.every((jobRun) => jobRun.status === "SUCCEEDED"), true);
+    assert.equal(
+      jobRuns.some((jobRun) => {
+        const metadata = jobRun.metadataJson as Record<string, unknown> | null;
+        const traceContext = metadata?.traceContext as Record<string, unknown> | undefined;
+        return (
+          traceContext?.requestId === requestId &&
+          (traceContext.traceparent === undefined || typeof traceContext.traceparent === "string")
+        );
+      }),
+      true
+    );
   });
 });
 

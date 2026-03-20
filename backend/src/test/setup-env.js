@@ -6,3 +6,4 @@ process.env.CDN_BASE_URL ??= "https://cdn.integration.test";
 process.env.STORAGE_SIGNING_SECRET ??= "test-storage-secret";
 process.env.CORS_ALLOWED_ORIGINS ??= "http://localhost:3000";
 process.env.INTERNAL_API_KEY ??= "test-internal-key";
+process.env.LOG_LEVEL ??= "warn";

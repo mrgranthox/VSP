@@ -13,6 +13,7 @@ import { error as errorResponse } from "./lib/response";
 import { errorHandler } from "./middleware/errorHandler";
 import { httpMetrics } from "./middleware/httpMetrics";
 import { requestId } from "./middleware/requestId";
+import { requestLogging } from "./middleware/requestLogging";
 import { routes } from "./routes";
 
 const allowedOrigins = env.CORS_ALLOWED_ORIGINS
@@ -36,6 +37,7 @@ const app = express();
 app.disable("x-powered-by");
 app.use(requestId);
 app.use(httpMetrics);
+app.use(requestLogging);
 app.use(
   helmet({
     contentSecurityPolicy,

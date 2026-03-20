@@ -1,0 +1,92 @@
+groups:
+  - name: vsp-platform
+    rules:
+      - alert: VspApiDown
+        expr: up{job="vsp_api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: VSP API target is down
+          description: Prometheus has failed to scrape the API metrics endpoint for 2 minutes.
+
+      - alert: VspApiNotReady
+        expr: min(vsp_app_readiness{job="vsp_api"}) < 1
+        for: 2m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: VSP API readiness degraded
+          description: One or more API readiness components have been unhealthy for at least 2 minutes.
+
+      - alert: VspApiHigh5xxRate
+        expr: sum(rate(vsp_http_requests_total{job="vsp_api",status_class="5xx"}[5m])) / clamp_min(sum(rate(vsp_http_requests_total{job="vsp_api"}[5m])), 0.001) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: VSP API 5xx rate is elevated
+          description: More than 5% of API requests have been failing with 5xx responses for 10 minutes.
+
+      - alert: VspQueueBacklogHigh
+        expr: sum(vsp_bullmq_queue_jobs{job="vsp_api",state=~"waiting|delayed"}) by (queue) > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: workers
+        annotations:
+          summary: VSP queue backlog is elevated
+          description: One or more BullMQ queues have more than 100 waiting or delayed jobs for 10 minutes.
+
+      - alert: VspBackgroundJobFailures
+        expr: sum(increase(vsp_background_jobs_total{job="vsp_api",result="failed"}[10m])) by (queue, job_name) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: workers
+        annotations:
+          summary: VSP background job failures detected
+          description: One or more background jobs have failed in the last 10 minutes.
+
+      - alert: VspDependencyCheckFailures
+        expr: sum(increase(vsp_dependency_checks_total{job="vsp_api",result="failure"}[10m])) by (dependency) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: VSP dependency check failures detected
+          description: Database or Redis readiness checks have reported failures in the last 10 minutes.
+
+      - alert: VspMetricsCollectionFailures
+        expr: sum(increase(vsp_metrics_collection_failures_total{job="vsp_api"}[15m])) by (collector) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: VSP metrics collection is failing
+          description: One or more metrics collectors have failed in the last 15 minutes.
+
+      - alert: VspOperationalAlertDeliveryFailures
+        expr: sum(increase(vsp_operational_alerts_total{result=~"delivery_failed|delivery_error|no_webhook"}[15m])) by (job, component, result) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: observability
+        annotations:
+          summary: VSP operational alert delivery is failing
+          description: The alert delivery path has reported failures, errors, or missing webhook configuration in the last 15 minutes.
+
+      - alert: VspGatewayDown
+        expr: up{job="vsp_gateway"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: gateway
+        annotations:
+          summary: VSP websocket gateway target is down
+          description: Prometheus has failed to scrape the websocket gateway metrics endpoint for 5 minutes.

@@ -76,7 +76,25 @@ Protected metrics endpoints:
 - API: `GET /api/v1/internal/metrics`
 - Gateway: `GET /metrics`
 
-Send `x-internal-key: <INTERNAL_API_KEY>` when the key is configured.
+Send either:
+
+- `x-internal-key: <INTERNAL_API_KEY>`
+- `Authorization: Bearer <INTERNAL_API_KEY>`
+
+Every API response also includes request-correlation data:
+
+- `X-Request-ID`
+- `X-Trace-ID`
+- `Traceparent`
+- `meta.requestId`
+- `meta.traceId`
+
+Optional OTLP tracing envs:
+
+- `TRACING_ENABLED=true`
+- `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4318/v1/traces`
+- `OTEL_EXPORTER_OTLP_HEADERS=authorization=Bearer token` when your collector requires auth
+- `OTEL_TRACES_SAMPLER_RATIO=1`
 
 For release verification against a running stack:
 
@@ -91,12 +109,68 @@ Optional gateway verification:
 RELEASE_GATE_GATEWAY_URL=http://127.0.0.1:3002 npm run release:gate
 ```
 
+For OTLP export verification against a local collector and a traced API runtime:
+
+```bash
+cd backend
+npm run build
+npm run ops:tracing:verify
+```
+
 The release gate checks:
 
 1. API metrics endpoint
 2. API health and readiness
 3. register/login/me/logout smoke flow
 4. gateway health and metrics when `RELEASE_GATE_GATEWAY_URL` is set
+
+The tracing verifier reuses the release gate and then asserts that a real OTLP receiver observed exported spans, including the `USER_REGISTERED` domain-event span.
+
+Additional observability signals now exposed in Prometheus:
+
+- `vsp_dependency_checks_total`
+- `vsp_dependency_check_duration_seconds`
+- `vsp_operational_alerts_total`
+- `vsp_operational_alert_delivery_duration_seconds`
+
+## Monitoring Stack
+
+The repo includes a minimal Prometheus + Grafana stack under `backend/observability/`.
+
+Start it from the repo root:
+
+```bash
+EVENT_BUS_MODE=queue docker compose --profile workers --profile realtime --profile monitoring up --build
+```
+
+Included assets:
+
+- `backend/observability/prometheus/prometheus.yml.template`
+- `backend/observability/prometheus/alerts.yml`
+- `backend/observability/grafana/dashboards/vsp-backend-overview.json`
+
+Default local ports:
+
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
+
+## Tracing Stack
+
+The repo now supports OpenTelemetry trace export for API requests, queued jobs, domain events, and websocket events.
+
+Start a local Jaeger backend from the repo root:
+
+```bash
+TRACING_ENABLED=true \
+OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4318/v1/traces \
+EVENT_BUS_MODE=queue \
+docker compose --profile workers --profile realtime --profile tracing up --build
+```
+
+Endpoints:
+
+- Jaeger UI: `http://localhost:16686`
+- OTLP HTTP collector: `http://localhost:4318/v1/traces`
 
 ## Secrets
 

@@ -466,7 +466,8 @@ const runNamedJobNow = async (
   jobName: NamedJobName,
   payload: Record<string, unknown>,
   queueName: QueueName,
-  trigger: "manual" | "schedule" | "system" = "manual"
-) => runWithJobLedger(jobName, queueName, { payload, trigger }, () => executeNamedJob(jobName, payload));
+  trigger: "manual" | "schedule" | "system" = "manual",
+  metadata: Record<string, unknown> = {}
+) => runWithJobLedger(jobName, queueName, { payload, trigger, ...metadata }, () => executeNamedJob(jobName, payload));
 
 export { runNamedJobNow, runWithJobLedger, toJson, executeNamedJob };

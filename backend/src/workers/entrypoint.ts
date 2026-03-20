@@ -2,6 +2,7 @@ import "../config/env";
 import { sendOperationalAlert } from "../lib/alerts";
 import { logger } from "../lib/logger";
 import { registerFatalErrorHandlers } from "../lib/runtime";
+import { shutdownTracing } from "../lib/tracing";
 import { startBackgroundWorkers, stopBackgroundWorkers } from ".";
 
 registerFatalErrorHandlers("workers");
@@ -9,6 +10,7 @@ registerFatalErrorHandlers("workers");
 const shutdown = async (signal: string) => {
   logger.info({ signal }, "Shutting down background workers");
   await stopBackgroundWorkers();
+  await shutdownTracing();
   process.exit(0);
 };
 

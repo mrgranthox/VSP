@@ -1,5 +1,6 @@
 import { env } from "../config/env";
 import { logger } from "./logger";
+import { recordOperationalAlertResult } from "./metrics";
 
 type OperationalAlertSeverity = "warning" | "critical";
 
@@ -32,6 +33,12 @@ const sendOperationalAlert = async (input: OperationalAlertInput): Promise<Alert
   const payload = buildOperationalAlertPayload(input);
 
   if (!env.ALERTS_ENABLED) {
+    recordOperationalAlertResult({
+      component: payload.component,
+      severity: payload.severity,
+      result: "disabled"
+    });
+
     return {
       delivered: false,
       skipped: true,
@@ -41,6 +48,12 @@ const sendOperationalAlert = async (input: OperationalAlertInput): Promise<Alert
 
   if (!env.ALERT_WEBHOOK_URL) {
     logger.warn({ alert: payload }, "Operational alert raised without webhook destination");
+    recordOperationalAlertResult({
+      component: payload.component,
+      severity: payload.severity,
+      result: "no_webhook"
+    });
+
     return {
       delivered: false,
       skipped: true,
@@ -49,6 +62,7 @@ const sendOperationalAlert = async (input: OperationalAlertInput): Promise<Alert
   }
 
   try {
+    const startedAt = process.hrtime.bigint();
     const headers: Record<string, string> = {
       "content-type": "application/json"
     };
@@ -74,6 +88,12 @@ const sendOperationalAlert = async (input: OperationalAlertInput): Promise<Alert
         },
         "Operational alert delivery failed"
       );
+      recordOperationalAlertResult({
+        component: payload.component,
+        severity: payload.severity,
+        result: "delivery_failed",
+        durationSeconds: Number(process.hrtime.bigint() - startedAt) / 1_000_000_000
+      });
       return {
         delivered: false,
         reason: "delivery_failed"
@@ -81,11 +101,22 @@ const sendOperationalAlert = async (input: OperationalAlertInput): Promise<Alert
     }
 
     logger.info({ alert: payload }, "Operational alert delivered");
+    recordOperationalAlertResult({
+      component: payload.component,
+      severity: payload.severity,
+      result: "delivered",
+      durationSeconds: Number(process.hrtime.bigint() - startedAt) / 1_000_000_000
+    });
     return {
       delivered: true
     };
   } catch (error) {
     logger.error({ alert: payload, error }, "Operational alert delivery errored");
+    recordOperationalAlertResult({
+      component: payload.component,
+      severity: payload.severity,
+      result: "delivery_error"
+    });
     return {
       delivered: false,
       reason: "delivery_error"

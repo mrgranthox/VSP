@@ -9,6 +9,7 @@ import { logger } from "../lib/logger";
 import { recordWebsocketConnectionClosed, recordWebsocketConnectionOpened, recordWebsocketEvent } from "../lib/metrics";
 import { prisma } from "../lib/prisma";
 import { createRedisCacheConnection, redis } from "../lib/redis";
+import { setSpanAttributes, SpanKind, withActiveSpan } from "../lib/tracing";
 import { verifyAccessToken } from "../modules/auth/auth.tokens";
 import { ChatService } from "../modules/chat/chat.service";
 import type { ActorContext } from "../types/actor";
@@ -441,33 +442,47 @@ class WebsocketGateway {
       });
     }
 
-    switch (envelope.event) {
-      case "conversation.join":
-        await this.handleConversationJoin(context, envelope.payload);
-        return;
-      case "conversation.leave":
-        await this.handleConversationLeave(context, envelope.payload);
-        return;
-      case "message.send":
-        await this.handleMessageSend(context, envelope.payload);
-        return;
-      case "message.read":
-        await this.handleMessageRead(context, envelope.payload);
-        return;
-      case "typing.start":
-        await this.handleTypingEvent(context, envelope.payload, "typing.started");
-        return;
-      case "typing.stop":
-        await this.handleTypingEvent(context, envelope.payload, "typing.stopped");
-        return;
-      case "ping":
-        await this.handlePing(context, envelope.payload);
-        return;
-      default:
-        throw Errors.VALIDATION_FAILED({
-          event: ["Unsupported websocket event"]
+    await withActiveSpan(
+      `ws.${envelope.event}`,
+      {
+        kind: SpanKind.CONSUMER
+      },
+      async (span) => {
+        setSpanAttributes(span, {
+          "vsp.ws.event": envelope.event,
+          "vsp.ws.socket_id": context.socketId,
+          "enduser.id": context.actor.userId
         });
-    }
+
+        switch (envelope.event) {
+          case "conversation.join":
+            await this.handleConversationJoin(context, envelope.payload);
+            return;
+          case "conversation.leave":
+            await this.handleConversationLeave(context, envelope.payload);
+            return;
+          case "message.send":
+            await this.handleMessageSend(context, envelope.payload);
+            return;
+          case "message.read":
+            await this.handleMessageRead(context, envelope.payload);
+            return;
+          case "typing.start":
+            await this.handleTypingEvent(context, envelope.payload, "typing.started");
+            return;
+          case "typing.stop":
+            await this.handleTypingEvent(context, envelope.payload, "typing.stopped");
+            return;
+          case "ping":
+            await this.handlePing(context, envelope.payload);
+            return;
+          default:
+            throw Errors.VALIDATION_FAILED({
+              event: ["Unsupported websocket event"]
+            });
+        }
+      }
+    );
   }
 
   private async handleConnection(socket: WebSocket, request: IncomingMessage): Promise<void> {
@@ -539,33 +554,46 @@ class WebsocketGateway {
       return;
     }
 
-    if (envelope.scope === "user") {
-      const socketIds = this.socketIdsByUserId.get(envelope.userId) ?? new Set<string>();
+    await withActiveSpan(
+      `ws.pubsub.${envelope.event}`,
+      {
+        kind: SpanKind.CONSUMER
+      },
+      async (span) => {
+        setSpanAttributes(span, {
+          "vsp.ws.scope": envelope.scope,
+          "vsp.ws.event": envelope.event
+        });
 
-      for (const socketId of socketIds) {
-        const context = this.socketsById.get(socketId);
+        if (envelope.scope === "user") {
+          const socketIds = this.socketIdsByUserId.get(envelope.userId) ?? new Set<string>();
 
-        if (!context || envelope.excludeUserId === context.actor.userId) {
-          continue;
+          for (const socketId of socketIds) {
+            const context = this.socketsById.get(socketId);
+
+            if (!context || envelope.excludeUserId === context.actor.userId) {
+              continue;
+            }
+
+            sendSocketEvent(context.socket, envelope.event, envelope.payload);
+          }
+
+          return;
         }
 
-        sendSocketEvent(context.socket, envelope.event, envelope.payload);
+        const socketIds = this.conversationSocketIds.get(envelope.conversationId) ?? new Set<string>();
+
+        for (const socketId of socketIds) {
+          const context = this.socketsById.get(socketId);
+
+          if (!context || envelope.excludeUserId === context.actor.userId) {
+            continue;
+          }
+
+          sendSocketEvent(context.socket, envelope.event, envelope.payload);
+        }
       }
-
-      return;
-    }
-
-    const socketIds = this.conversationSocketIds.get(envelope.conversationId) ?? new Set<string>();
-
-    for (const socketId of socketIds) {
-      const context = this.socketsById.get(socketId);
-
-      if (!context || envelope.excludeUserId === context.actor.userId) {
-        continue;
-      }
-
-      sendSocketEvent(context.socket, envelope.event, envelope.payload);
-    }
+    );
   }
 
   async start(): Promise<void> {

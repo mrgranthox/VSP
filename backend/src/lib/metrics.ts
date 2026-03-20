@@ -38,6 +38,21 @@ const appReadinessGauge = new Gauge({
   registers: [registry]
 });
 
+const dependencyChecksTotal = new Counter({
+  name: "vsp_dependency_checks_total",
+  help: "Dependency checks executed by the backend readiness path",
+  labelNames: ["dependency", "result"] as const,
+  registers: [registry]
+});
+
+const dependencyCheckDurationSeconds = new Histogram({
+  name: "vsp_dependency_check_duration_seconds",
+  help: "Dependency check duration in seconds",
+  labelNames: ["dependency", "result"] as const,
+  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2, 5],
+  registers: [registry]
+});
+
 const backgroundJobsTotal = new Counter({
   name: "vsp_background_jobs_total",
   help: "Background jobs handled by BullMQ workers",
@@ -77,6 +92,21 @@ const metricsCollectionFailuresTotal = new Counter({
   name: "vsp_metrics_collection_failures_total",
   help: "Metric collection failures grouped by collector",
   labelNames: ["collector"] as const,
+  registers: [registry]
+});
+
+const operationalAlertsTotal = new Counter({
+  name: "vsp_operational_alerts_total",
+  help: "Operational alert attempts grouped by component, severity, and result",
+  labelNames: ["component", "severity", "result"] as const,
+  registers: [registry]
+});
+
+const operationalAlertDeliveryDurationSeconds = new Histogram({
+  name: "vsp_operational_alert_delivery_duration_seconds",
+  help: "Operational alert delivery duration in seconds for alert attempts",
+  labelNames: ["component", "severity", "result"] as const,
+  buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10],
   registers: [registry]
 });
 
@@ -149,6 +179,23 @@ const setReadinessState = (component: string, ready: boolean): void => {
   appReadinessGauge.set({ component }, ready ? 1 : 0);
 };
 
+const recordDependencyCheck = (input: {
+  dependency: string;
+  result: "success" | "failure";
+  durationSeconds: number;
+}): void => {
+  const labels = {
+    dependency: input.dependency,
+    result: input.result
+  } as const;
+
+  dependencyChecksTotal.inc(labels);
+
+  if (Number.isFinite(input.durationSeconds) && input.durationSeconds >= 0) {
+    dependencyCheckDurationSeconds.observe(labels, input.durationSeconds);
+  }
+};
+
 const recordBackgroundJobResult = (input: { queue: string; jobName: string; result: "completed" | "failed"; durationSeconds?: number }): void => {
   const labels = {
     queue: input.queue,
@@ -176,6 +223,25 @@ const recordWebsocketEvent = (event: string, result: "accepted" | "rejected" | "
     event,
     result
   });
+};
+
+const recordOperationalAlertResult = (input: {
+  component: string;
+  severity: "warning" | "critical";
+  result: "delivered" | "disabled" | "no_webhook" | "delivery_failed" | "delivery_error";
+  durationSeconds?: number;
+}): void => {
+  const labels = {
+    component: input.component,
+    severity: input.severity,
+    result: input.result
+  } as const;
+
+  operationalAlertsTotal.inc(labels);
+
+  if (typeof input.durationSeconds === "number" && Number.isFinite(input.durationSeconds) && input.durationSeconds >= 0) {
+    operationalAlertDeliveryDurationSeconds.observe(labels, input.durationSeconds);
+  }
 };
 
 const collectQueueMetrics = async (): Promise<void> => {
@@ -226,8 +292,10 @@ export {
   beginHttpRequest,
   buildRouteLabel,
   getMetricsContentType,
+  recordDependencyCheck,
   recordBackgroundJobResult,
   recordHttpRequest,
+  recordOperationalAlertResult,
   recordWebsocketConnectionClosed,
   recordWebsocketConnectionOpened,
   recordWebsocketEvent,

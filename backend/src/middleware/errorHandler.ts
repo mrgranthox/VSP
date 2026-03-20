@@ -20,7 +20,8 @@ const isPrismaKnownRequestError = (value: unknown): value is PrismaKnownRequestE
 };
 
 const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunction): void => {
-  const requestIdValue = typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : uuidv4();
+  const requestIdValue = req.requestContext?.requestId ?? (typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : uuidv4());
+  const traceIdValue = req.requestContext?.traceId;
 
   if (err instanceof ZodError) {
     res.status(422).json(errorResponse("VALIDATION_FAILED", "Validation failed", err.flatten(), { requestId: requestIdValue }));
@@ -46,7 +47,7 @@ const errorHandler = (err: unknown, req: Request, res: Response, _next: NextFunc
     }
   }
 
-  logger.error({ err, requestId: requestIdValue }, "Unhandled error");
+  logger.error({ err, requestId: requestIdValue, traceId: traceIdValue }, "Unhandled error");
   res.status(500).json(errorResponse("INTERNAL_ERROR", "Internal server error", null, { requestId: requestIdValue }));
 };
 

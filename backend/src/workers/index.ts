@@ -4,6 +4,7 @@ import { sendOperationalAlert } from "../lib/alerts";
 import { logger } from "../lib/logger";
 import { recordBackgroundJobResult } from "../lib/metrics";
 import { getBullMqConnectionOptions, getBullMqPrefix } from "../lib/redis";
+import { runWithExtractedTraceContext, setSpanAttributes, SpanKind, withActiveSpan } from "../lib/tracing";
 import { closeQueues, getQueueForNamedJob, getQueues, registerRecurringJobs, type NamedJobName, type QueueJobData, type QueueName } from "../queues";
 import { runEventJob } from "./event-processors";
 import { runNamedJobNow } from "./system-jobs";
@@ -23,14 +24,38 @@ let activeWorkers: Worker<QueueJobData>[] = [];
 let workersStarted = false;
 
 const processQueueJob = async (queueName: QueueName, job: Job<QueueJobData>) => {
-  if (job.data.kind === "event") {
-    return runEventJob(queueName, job.data.eventName, job.data.payload, {
-      bullmqJobId: job.id,
-      emittedAt: job.data.emittedAt
-    });
-  }
+  return runWithExtractedTraceContext(job.data.traceContext, async () =>
+    withActiveSpan(
+      "bullmq.job.process",
+      {
+        kind: SpanKind.CONSUMER
+      },
+      async (span) => {
+        setSpanAttributes(span, {
+          "messaging.system": "bullmq",
+          "messaging.destination.name": queueName,
+          "messaging.operation": "process",
+          "vsp.job.name": job.name,
+          "vsp.job.kind": job.data.kind,
+          "vsp.job.id": job.id ?? undefined,
+          "vsp.request.id": job.data.traceContext?.requestId
+        });
 
-  return runNamedJobNow(job.data.jobName, job.data.payload, queueName, job.data.triggeredBy);
+        if (job.data.kind === "event") {
+          return runEventJob(queueName, job.data.eventName, job.data.payload, {
+            bullmqJobId: job.id,
+            emittedAt: job.data.emittedAt,
+            traceContext: job.data.traceContext ?? null
+          });
+        }
+
+        return runNamedJobNow(job.data.jobName, job.data.payload, queueName, job.data.triggeredBy, {
+          bullmqJobId: job.id,
+          traceContext: job.data.traceContext ?? null
+        });
+      }
+    )
+  );
 };
 
 const createWorker = (queueName: QueueName) => {

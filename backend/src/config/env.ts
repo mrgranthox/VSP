@@ -95,6 +95,22 @@ const EnvironmentSchema = z
     OPENAI_EMBEDDING_MODEL: z.string().min(1).default("text-embedding-3-small"),
     TYPESENSE_INDEXING_BATCH_SIZE: z.string().default("500").transform((value) => toInt(value, "TYPESENSE_INDEXING_BATCH_SIZE")),
     INTERNAL_API_KEY: z.string().optional(),
+    TRACING_ENABLED: BooleanString.default("false"),
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.string().url().optional(),
+    OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
+    OTEL_CONSOLE_EXPORTER_ENABLED: BooleanString.default("false"),
+    OTEL_TRACES_SAMPLER_RATIO: z
+      .string()
+      .default("1")
+      .transform((value) => {
+        const parsed = Number.parseFloat(value);
+
+        if (!Number.isFinite(parsed)) {
+          throw new Error("OTEL_TRACES_SAMPLER_RATIO must be a valid number");
+        }
+
+        return parsed;
+      }),
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info")
   })
   .superRefine((value, ctx) => {
@@ -183,6 +199,22 @@ const EnvironmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ["TYPESENSE_API_KEY"],
         message: "TYPESENSE_API_KEY is required when TYPESENSE_HOST is set"
+      });
+    }
+
+    if (value.OTEL_TRACES_SAMPLER_RATIO < 0 || value.OTEL_TRACES_SAMPLER_RATIO > 1) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["OTEL_TRACES_SAMPLER_RATIO"],
+        message: "OTEL_TRACES_SAMPLER_RATIO must be between 0 and 1"
+      });
+    }
+
+    if (value.TRACING_ENABLED && !value.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT && !value.OTEL_CONSOLE_EXPORTER_ENABLED) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["TRACING_ENABLED"],
+        message: "Tracing requires OTEL_EXPORTER_OTLP_TRACES_ENDPOINT or OTEL_CONSOLE_EXPORTER_ENABLED=true"
       });
     }
   });

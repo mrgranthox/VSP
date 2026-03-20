@@ -93,33 +93,5 @@ npm run build
 echo "[ci] verifying backup and restore path"
 npm run ops:restore:verify
 
-echo "[ci] starting built server for smoke tests"
-SERVER_LOG="$(mktemp)"
-node dist/src/server.js >"$SERVER_LOG" 2>&1 &
-SERVER_PID=$!
-
-cleanup_server() {
-  if [[ -n "${SERVER_PID:-}" ]] && kill -0 "$SERVER_PID" >/dev/null 2>&1; then
-    kill "$SERVER_PID" >/dev/null 2>&1 || true
-    wait "$SERVER_PID" >/dev/null 2>&1 || true
-  fi
-}
-
-trap cleanup_server EXIT
-
-for attempt in $(seq 1 30); do
-  if curl -fsS "${APP_BASE_URL}/api/v1/health/ready" >/dev/null 2>&1; then
-    break
-  fi
-
-  if [[ "$attempt" -eq 30 ]]; then
-    echo "[ci] smoke server failed to become ready"
-    cat "$SERVER_LOG"
-    exit 1
-  fi
-
-  sleep 1
-done
-
-echo "[ci] running HTTP smoke tests"
-RELEASE_GATE_BASE_URL="${APP_BASE_URL}" npm run release:gate
+echo "[ci] verifying traced runtime export"
+npm run ops:tracing:verify

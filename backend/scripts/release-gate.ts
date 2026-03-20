@@ -1,8 +1,10 @@
 import { runSmokeTest } from "./smoke-test";
 
-const baseUrl = process.env.RELEASE_GATE_BASE_URL ?? process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000";
-const gatewayBaseUrl = process.env.RELEASE_GATE_GATEWAY_URL;
-const internalApiKey = process.env.INTERNAL_API_KEY;
+interface ReleaseGateOptions {
+  baseUrl?: string;
+  gatewayBaseUrl?: string;
+  internalApiKey?: string;
+}
 
 const assert: (condition: unknown, message: string) => asserts condition = (condition, message) => {
   if (!condition) {
@@ -21,7 +23,7 @@ const fetchText = async (url: string, init?: RequestInit) => {
   };
 };
 
-const buildInternalHeaders = (): HeadersInit => {
+const buildInternalHeaders = (internalApiKey?: string): HeadersInit => {
   if (!internalApiKey) {
     return {};
   }
@@ -31,9 +33,9 @@ const buildInternalHeaders = (): HeadersInit => {
   };
 };
 
-const runApiMetricsCheck = async (): Promise<void> => {
+const runApiMetricsCheck = async (baseUrl: string, internalApiKey?: string): Promise<void> => {
   const response = await fetchText(`${baseUrl}/api/v1/internal/metrics`, {
-    headers: buildInternalHeaders()
+    headers: buildInternalHeaders(internalApiKey)
   });
 
   assert(response.status === 200, `metrics failed: ${response.status}`);
@@ -43,7 +45,7 @@ const runApiMetricsCheck = async (): Promise<void> => {
   assert(response.body.includes("vsp_bullmq_queue_jobs"), "metrics missing vsp_bullmq_queue_jobs");
 };
 
-const runGatewayMetricsCheck = async (): Promise<void> => {
+const runGatewayMetricsCheck = async (gatewayBaseUrl?: string, internalApiKey?: string): Promise<void> => {
   if (!gatewayBaseUrl) {
     return;
   }
@@ -52,21 +54,29 @@ const runGatewayMetricsCheck = async (): Promise<void> => {
   assert(health.status === 200, `gateway health failed: ${health.status}`);
 
   const metrics = await fetchText(`${gatewayBaseUrl}/metrics`, {
-    headers: buildInternalHeaders()
+    headers: buildInternalHeaders(internalApiKey)
   });
 
   assert(metrics.status === 200, `gateway metrics failed: ${metrics.status}`);
   assert(metrics.body.includes("vsp_ws_active_connections"), "gateway metrics missing vsp_ws_active_connections");
 };
 
-const main = async (): Promise<void> => {
-  await runApiMetricsCheck();
+const runReleaseGate = async (options: ReleaseGateOptions = {}): Promise<void> => {
+  const baseUrl = options.baseUrl ?? process.env.RELEASE_GATE_BASE_URL ?? process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000";
+  const gatewayBaseUrl = options.gatewayBaseUrl ?? process.env.RELEASE_GATE_GATEWAY_URL;
+  const internalApiKey = options.internalApiKey ?? process.env.INTERNAL_API_KEY;
+
+  await runApiMetricsCheck(baseUrl, internalApiKey);
   await runSmokeTest({ baseUrl });
-  await runGatewayMetricsCheck();
+  await runGatewayMetricsCheck(gatewayBaseUrl, internalApiKey);
   console.log(`Release gate passed against ${baseUrl}${gatewayBaseUrl ? ` and ${gatewayBaseUrl}` : ""}`);
 };
 
-void main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+if (require.main === module) {
+  void runReleaseGate().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}
+
+export { runReleaseGate };

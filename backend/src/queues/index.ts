@@ -1,6 +1,7 @@
 import { Queue, QueueEvents, type JobsOptions } from "bullmq";
 
 import { getBullMqConnectionOptions, getBullMqPrefix } from "../lib/redis";
+import { buildTraceCarrier, type TraceCarrier } from "../lib/tracing";
 
 type EventPayload = Record<string, unknown>;
 
@@ -115,6 +116,7 @@ type QueuedEventData = {
   eventName: string;
   payload: EventPayload;
   emittedAt: string;
+  traceContext?: TraceCarrier;
 };
 
 type QueuedNamedJobData = {
@@ -122,6 +124,7 @@ type QueuedNamedJobData = {
   jobName: NamedJobName;
   payload: Record<string, unknown>;
   triggeredBy: "manual" | "schedule" | "system";
+  traceContext?: TraceCarrier;
 };
 
 type QueueJobData = QueuedEventData | QueuedNamedJobData;
@@ -155,7 +158,7 @@ const recurringJobSchedules: Record<(typeof RECURRING_JOB_NAMES)[number], string
 const getQueueForNamedJob = (jobName: NamedJobName) => getQueues()[namedJobQueues[jobName]];
 const getQueueNameForNamedJob = (jobName: NamedJobName): QueueName => namedJobQueues[jobName];
 
-const addDomainEventJobs = async (eventName: string, payload: EventPayload): Promise<void> => {
+const addDomainEventJobs = async (eventName: string, payload: EventPayload, traceContext?: TraceCarrier): Promise<void> => {
   const routes = domainEventRoutes[eventName] ?? [routeEvent("analytics", { attempts: 3 })];
   const queueMap = getQueues();
 
@@ -165,7 +168,8 @@ const addDomainEventJobs = async (eventName: string, payload: EventPayload): Pro
         kind: "event",
         eventName,
         payload,
-        emittedAt: new Date().toISOString()
+        emittedAt: new Date().toISOString(),
+        traceContext
       } satisfies QueuedEventData, opts)
     )
   );
@@ -183,7 +187,8 @@ const enqueueNamedJob = async (
       kind: "job",
       jobName,
       payload,
-      triggeredBy
+      triggeredBy,
+      traceContext: buildTraceCarrier()
     } satisfies QueuedNamedJobData,
     {
       ...defaultJobOptions,

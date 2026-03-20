@@ -10,12 +10,14 @@ import { after, before, test } from "node:test";
 import request from "supertest";
 
 import { app } from "../../app";
+import { sendOperationalAlert } from "../../lib/alerts";
 import { prisma } from "../../lib/prisma";
 import { redis, redisQueue } from "../../lib/redis";
 
 const api = request(app);
+const internalApiKey = process.env.INTERNAL_API_KEY ?? "test-internal-key";
 const internalHeaders = {
-  "x-internal-key": process.env.INTERNAL_API_KEY ?? "test-internal-key"
+  "x-internal-key": internalApiKey
 };
 
 const cleanupAnalyticsData = async (): Promise<void> => {
@@ -82,11 +84,44 @@ test("internal metrics endpoint exposes readiness and request metrics", async ()
   const healthResponse = await api.get("/api/v1/health");
   assert.equal(healthResponse.status, 200);
 
-  const metricsResponse = await api.get("/api/v1/internal/metrics").set(internalHeaders);
+  const alertResult = await sendOperationalAlert({
+    severity: "warning",
+    component: "itest_metrics_alert_disabled",
+    summary: "intentional test alert"
+  });
+
+  assert.equal(alertResult.delivered, false);
+
+  const metricsResponse = await api.get("/api/v1/internal/metrics").set("authorization", `Bearer ${internalApiKey}`);
 
   assert.equal(metricsResponse.status, 200);
   assert.equal((metricsResponse.headers["content-type"] as string).includes("text/plain"), true);
   assert.equal(metricsResponse.text.includes("vsp_http_requests_total"), true);
   assert.equal(metricsResponse.text.includes("vsp_app_readiness"), true);
   assert.equal(metricsResponse.text.includes("vsp_bullmq_queue_jobs"), true);
+  assert.equal(metricsResponse.text.includes("vsp_dependency_checks_total"), true);
+  assert.equal(metricsResponse.text.includes("vsp_dependency_check_duration_seconds"), true);
+  assert.equal(metricsResponse.text.includes("vsp_operational_alerts_total"), true);
+  assert.equal(
+    metricsResponse.text.includes(
+      'vsp_operational_alerts_total{component="itest_metrics_alert_disabled",severity="warning",result="disabled"} 1'
+    ),
+    true
+  );
+});
+
+test("health route preserves request and trace context in headers and response meta", async () => {
+  const requestId = "itest-request-id";
+  const traceId = "0123456789abcdef0123456789abcdef";
+  const traceparent = `00-${traceId}-0123456789abcdef-01`;
+
+  const response = await api.get("/api/v1/health").set("x-request-id", requestId).set("traceparent", traceparent);
+
+  assert.equal(response.status, 200);
+  assert.equal(response.headers["x-request-id"], requestId);
+  assert.equal(response.headers["x-trace-id"], traceId);
+  assert.equal((response.headers.traceparent as string).startsWith(`00-${traceId}-`), true);
+  assert.notEqual(response.headers.traceparent, traceparent);
+  assert.equal(response.body.meta.requestId, requestId);
+  assert.equal(response.body.meta.traceId, traceId);
 });

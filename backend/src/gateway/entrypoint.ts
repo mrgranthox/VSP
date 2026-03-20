@@ -7,6 +7,7 @@ import { sendOperationalAlert } from "../lib/alerts";
 import { hasInternalAccess } from "../lib/internalAccess";
 import { logger } from "../lib/logger";
 import { registerFatalErrorHandlers } from "../lib/runtime";
+import { shutdownTracing } from "../lib/tracing";
 import { WebsocketGateway } from "./websocket";
 
 const port = env.WS_GATEWAY_PORT;
@@ -59,6 +60,7 @@ const shutdown = async (signal: string): Promise<void> => {
       resolve();
     });
   });
+  await shutdownTracing();
   logger.info({ signal }, "Websocket gateway shutdown completed");
   process.exit(0);
 };

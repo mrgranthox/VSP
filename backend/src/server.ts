@@ -3,6 +3,7 @@ import { env } from "./config/env";
 import { sendOperationalAlert } from "./lib/alerts";
 import { logger } from "./lib/logger";
 import { registerFatalErrorHandlers } from "./lib/runtime";
+import { shutdownTracing } from "./lib/tracing";
 import { startBackgroundWorkers, stopBackgroundWorkers } from "./workers";
 
 const port = env.PORT;
@@ -25,6 +26,7 @@ const shutdown = async (signal: string): Promise<void> => {
     await stopBackgroundWorkers();
   }
 
+  await shutdownTracing();
   logger.info({ signal }, "Server shutdown completed");
   process.exit(0);
 };

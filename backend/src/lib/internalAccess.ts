@@ -19,9 +19,26 @@ const getInternalAccessToken = (headers: IncomingHttpHeaders): string | undefine
   return undefined;
 };
 
+const getBearerToken = (headers: IncomingHttpHeaders): string | undefined => {
+  const authorization = headers.authorization;
+  const value = typeof authorization === "string" ? authorization : Array.isArray(authorization) ? authorization[0] : undefined;
+
+  if (!value) {
+    return undefined;
+  }
+
+  const [scheme, token] = value.trim().split(/\s+/, 2);
+
+  if (scheme?.toLowerCase() !== "bearer" || !token) {
+    return undefined;
+  }
+
+  return token;
+};
+
 const hasInternalAccess = (headers: IncomingHttpHeaders): boolean => {
   const expectedToken = env.INTERNAL_API_KEY;
-  const providedToken = getInternalAccessToken(headers);
+  const providedToken = getInternalAccessToken(headers) ?? getBearerToken(headers);
 
   if (expectedToken) {
     return providedToken === expectedToken;

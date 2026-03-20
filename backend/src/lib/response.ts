@@ -1,7 +1,9 @@
+import { generateTraceId, getRequestContext } from "./requestContext";
 import { v4 as uuidv4 } from "uuid";
 
 interface ResponseMeta {
   requestId?: string;
+  traceId?: string;
   [key: string]: unknown;
 }
 
@@ -13,10 +15,12 @@ interface Pagination {
 }
 
 const buildMeta = (meta?: ResponseMeta) => {
-  const { requestId, ...rest } = meta ?? {};
+  const requestContext = getRequestContext();
+  const { requestId, traceId, ...rest } = meta ?? {};
 
   return {
-    requestId: requestId ?? uuidv4(),
+    requestId: requestId ?? requestContext?.requestId ?? uuidv4(),
+    traceId: traceId ?? requestContext?.traceId ?? generateTraceId(),
     timestamp: new Date().toISOString(),
     ...rest
   };

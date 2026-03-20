@@ -68,6 +68,11 @@ services:
       BACKGROUND_WORKERS_ENABLED: "false"
       CDN_BASE_URL: ${CDN_BASE_URL:-http://localhost:3000}
       EVENT_BUS_MODE: ${EVENT_BUS_MODE:-inline}
+      TRACING_ENABLED: ${TRACING_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_CONSOLE_EXPORTER_ENABLED: ${OTEL_CONSOLE_EXPORTER_ENABLED:-false}
+      OTEL_TRACES_SAMPLER_RATIO: ${OTEL_TRACES_SAMPLER_RATIO:-1}
       TYPESENSE_HOST: ${TYPESENSE_HOST:-}
       TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-dev-typesense-api-key}
     healthcheck:
@@ -96,6 +101,11 @@ services:
         condition: service_healthy
     environment:
       EVENT_BUS_MODE: "queue"
+      TRACING_ENABLED: ${TRACING_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_CONSOLE_EXPORTER_ENABLED: ${OTEL_CONSOLE_EXPORTER_ENABLED:-false}
+      OTEL_TRACES_SAMPLER_RATIO: ${OTEL_TRACES_SAMPLER_RATIO:-1}
       TYPESENSE_HOST: ${TYPESENSE_HOST:-}
       TYPESENSE_API_KEY: ${TYPESENSE_API_KEY:-dev-typesense-api-key}
 
@@ -108,6 +118,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      TRACING_ENABLED: ${TRACING_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:-}
+      OTEL_EXPORTER_OTLP_HEADERS: ${OTEL_EXPORTER_OTLP_HEADERS:-}
+      OTEL_CONSOLE_EXPORTER_ENABLED: ${OTEL_CONSOLE_EXPORTER_ENABLED:-false}
+      OTEL_TRACES_SAMPLER_RATIO: ${OTEL_TRACES_SAMPLER_RATIO:-1}
     healthcheck:
       test:
         [
@@ -122,6 +138,53 @@ services:
       start_period: 20s
     ports:
       - "${WS_GATEWAY_PUBLISHED_PORT:-3002}:3002"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.61.0
+    profiles: ["tracing"]
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "${JAEGER_UI_PORT:-16686}:16686"
+      - "${JAEGER_OTLP_HTTP_PORT:-4318}:4318"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    profiles: ["monitoring"]
+    environment:
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-compose-internal-key}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sed "s|__INTERNAL_API_KEY__|$${INTERNAL_API_KEY}|g" /etc/prometheus/prometheus.yml.template > /tmp/prometheus.yml
+        exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus --web.enable-lifecycle
+    volumes:
+      - ./backend/observability/prometheus/prometheus.yml.template:/etc/prometheus/prometheus.yml.template:ro
+      - ./backend/observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      api:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana-oss:11.1.0
+    profiles: ["monitoring"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./backend/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./backend/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
 
   seed:
     <<: *backend-service
@@ -138,3 +201,5 @@ volumes:
   postgres-data:
   redis-data:
   typesense-data:
+  prometheus-data:
+  grafana-data:

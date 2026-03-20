@@ -1,5 +1,7 @@
 import { addDomainEventJobs } from "../queues";
 import { logger } from "./logger";
+import { getRequestContext } from "./requestContext";
+import { SpanKind, buildTraceCarrier, setSpanAttributes, withActiveSpan } from "./tracing";
 
 type EventPayload = Record<string, unknown>;
 type EventHandler = (payload: EventPayload) => Promise<void> | void;
@@ -40,14 +42,31 @@ const EventBus = {
   },
 
   async emit(eventName: string, payload: EventPayload): Promise<void> {
-    logger.info({ eventName, payload }, "Domain event emitted");
+    const mode = getEventBusMode();
+    const requestContext = getRequestContext();
 
-    if (getEventBusMode() === "queue") {
-      await addDomainEventJobs(eventName, payload);
-      return;
-    }
+    await withActiveSpan(
+      "eventbus.emit",
+      {
+        kind: SpanKind.PRODUCER
+      },
+      async (span) => {
+        setSpanAttributes(span, {
+          "vsp.event.name": eventName,
+          "vsp.event.mode": mode,
+          "vsp.request.id": requestContext?.requestId
+        });
 
-    await dispatch(eventName, payload);
+        logger.info({ eventName, payload, mode }, "Domain event emitted");
+
+        if (mode === "queue") {
+          await addDomainEventJobs(eventName, payload, buildTraceCarrier(requestContext?.requestId));
+          return;
+        }
+
+        await dispatch(eventName, payload);
+      }
+    );
   },
 
   async dispatch(eventName: string, payload: EventPayload): Promise<void> {
