@@ -212,8 +212,10 @@ test("users saved-workers, follows, and staged deletion flow works end to end", 
   assert.equal(followsResponse.status, 200);
   assert.equal(followsResponse.body.data.length, 2);
 
+  const followTargetType = "WORKER";
+
   const unfollowWorkerResponse = await api
-    .delete(`/api/v1/users/me/follows/WORKER/${worker.workerProfile.id}`)
+    .delete(`/api/v1/users/me/follows/${followTargetType}/${worker.workerProfile.id}`)
     .set("Authorization", `Bearer ${accessToken}`);
 
   assert.equal(unfollowWorkerResponse.status, 200);

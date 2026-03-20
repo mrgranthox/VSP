@@ -3,8 +3,8 @@
 {{- end }}
 
 {{ define "vsp.default.body" -}}
-App: {{ .CommonLabels.app | default "vsp-backend" }}
-Component: {{ .CommonLabels.component | default "unknown" }}
+App: {{ if .CommonLabels.app }}{{ .CommonLabels.app }}{{ else }}vsp-backend{{ end }}
+Component: {{ if .CommonLabels.component }}{{ .CommonLabels.component }}{{ else }}unknown{{ end }}
 Status: {{ .Status }}
 Alerts:
 {{- range .Alerts }}

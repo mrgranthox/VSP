@@ -1,335 +1,73 @@
 {
   "summary": {
     "routeCount": 201,
-    "staticHttpInvocationCount": 293,
-    "uniqueStaticHttpInvocationCount": 160,
-    "coveredRouteCount": 156,
-    "uncoveredRouteCount": 45,
-    "coverageRate": 0.7761194029850746
+    "staticHttpInvocationCount": 341,
+    "uniqueStaticHttpInvocationCount": 201,
+    "coveredRouteCount": 201,
+    "uncoveredRouteCount": 0,
+    "coverageRate": 1
   },
   "limitations": [
     "Coverage is derived from static HTTP invocation parsing in *.test.ts files.",
     "Dynamic runtime-generated URLs, websocket traffic, and non-HTTP flows are not included.",
     "A matched route indicates at least one static request invocation, not exhaustive behavioral coverage."
   ],
-  "uncoveredRoutes": [
+  "uncoveredRoutes": [],
+  "coveredRoutes": [
     {
       "method": "GET",
       "path": "/api/v1/admin/analytics/engagement",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_analytics_engagement"
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
     },
     {
       "method": "GET",
       "path": "/api/v1/admin/analytics/marketplace",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_analytics_marketplace"
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
     },
     {
       "method": "GET",
       "path": "/api/v1/admin/analytics/overview",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_analytics_overview"
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
     },
     {
       "method": "GET",
       "path": "/api/v1/admin/analytics/search",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_analytics_search"
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
     },
     {
       "method": "GET",
       "path": "/api/v1/admin/audit-logs",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_audit_logs"
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
     },
     {
       "method": "GET",
       "path": "/api/v1/admin/bookings",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_bookings"
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
     },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/cities",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_cities"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/v1/admin/cities/:cityId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_patch_admin_cities_by_cityId"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/admin/comments/:commentId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_delete_admin_comments_by_commentId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/configs",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_configs"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/v1/admin/configs/:configKey",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_patch_admin_configs_by_configKey"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/content/:entityType/:entityId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_content_by_entityType_by_entityId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/feature-flags",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_feature_flags"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/v1/admin/feature-flags/:flagKey",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_patch_admin_feature_flags_by_flagKey"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/featured-workers",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_featured_workers"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/moderation-cases",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_moderation_cases"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/moderation-cases/:caseId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_moderation_cases_by_caseId"
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/admin/moderation-cases/:caseId/actions",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_post_admin_moderation_cases_by_caseId_actions"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/permissions",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_permissions"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/posts",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_posts"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/admin/posts/:postId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_delete_admin_posts_by_postId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/reports",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_reports"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/reports/:reportId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_reports_by_reportId"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/admin/reviews/:reviewId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_delete_admin_reviews_by_reviewId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/roles",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_roles"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/v1/admin/roles/:roleId/permissions",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_patch_admin_roles_by_roleId_permissions"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/service-requests/:requestId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_service_requests_by_requestId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/system/metrics",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_system_metrics"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/users/:userId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_users_by_userId"
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/admin/users/:userId/roles",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_post_admin_users_by_userId_roles"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/admin/users/:userId/roles/:roleId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_delete_admin_users_by_userId_roles_by_roleId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/workers",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_workers"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/admin/workers/:workerId",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_get_admin_workers_by_workerId"
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/admin/workers/:workerId/reject-verification",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_post_admin_workers_by_workerId_reject_verification"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/v1/admin/workers/:workerId/subscription",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_patch_admin_workers_by_workerId_subscription"
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/admin/workers/:workerId/verify",
-      "module": "admin",
-      "sourceFile": "src/modules/admin/admin.routes.ts",
-      "operationId": "admin_post_admin_workers_by_workerId_verify"
-    },
-    {
-      "method": "POST",
-      "path": "/api/v1/auth/sessions/revoke",
-      "module": "auth",
-      "sourceFile": "src/modules/auth/auth.routes.ts",
-      "operationId": "auth_post_auth_sessions_revoke"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/comments/:commentId/likes",
-      "module": "social",
-      "sourceFile": "src/modules/social/social.routes.ts",
-      "operationId": "social_delete_comments_by_commentId_likes"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/health/ready",
-      "module": "platform",
-      "sourceFile": "src/routes/index.ts",
-      "operationId": "platform_get_health_ready"
-    },
-    {
-      "method": "PUT",
-      "path": "/api/v1/media/mock-upload/:mediaId",
-      "module": "media",
-      "sourceFile": "src/modules/media/media.routes.ts",
-      "operationId": "media_put_media_mock_upload_by_mediaId"
-    },
-    {
-      "method": "GET",
-      "path": "/api/v1/media/private/read",
-      "module": "media",
-      "sourceFile": "src/modules/media/media.routes.ts",
-      "operationId": "media_get_media_private_read"
-    },
-    {
-      "method": "PATCH",
-      "path": "/api/v1/posts/:postId",
-      "module": "social",
-      "sourceFile": "src/modules/social/social.routes.ts",
-      "operationId": "social_patch_posts_by_postId"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/posts/:postId/likes",
-      "module": "social",
-      "sourceFile": "src/modules/social/social.routes.ts",
-      "operationId": "social_delete_posts_by_postId_likes"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/posts/:postId/saves",
-      "module": "social",
-      "sourceFile": "src/modules/social/social.routes.ts",
-      "operationId": "social_delete_posts_by_postId_saves"
-    },
-    {
-      "method": "DELETE",
-      "path": "/api/v1/users/me/follows/:targetType/:targetId",
-      "module": "users",
-      "sourceFile": "src/modules/users/users.routes.ts",
-      "operationId": "users_delete_users_me_follows_by_targetType_by_targetId"
-    }
-  ],
-  "coveredRoutes": [
     {
       "method": "GET",
       "path": "/api/v1/admin/bookings/:bookingId",
@@ -340,8 +78,91 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/v1/admin/cities",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/v1/admin/cities",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/cities/:cityId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/comments/:commentId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/configs",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/configs/:configKey",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/content/:entityType/:entityId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/feature-flags",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/feature-flags/:flagKey",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/featured-workers",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -376,6 +197,33 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/v1/admin/moderation-cases",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/moderation-cases/:caseId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/moderation-cases/:caseId/actions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/v1/admin/notifications/broadcast",
       "module": "admin",
@@ -386,7 +234,89 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/admin/permissions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/posts",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/posts/:postId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reports",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reports/:reportId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/reviews/:reviewId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/roles",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/roles/:roleId/permissions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/admin/service-requests",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/service-requests/:requestId",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -431,7 +361,25 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/admin/system/metrics",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/admin/users",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/users/:userId",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -449,6 +397,24 @@
     },
     {
       "method": "POST",
+      "path": "/api/v1/admin/users/:userId/roles",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/admin/users/:userId/roles/:roleId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
       "path": "/api/v1/admin/users/:userId/suspend",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
@@ -458,6 +424,42 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/admin/workers",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/workers/:workerId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/workers/:workerId/reject-verification",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/workers/:workerId/subscription",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
       "path": "/api/v1/admin/workers/:workerId/subscription",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
@@ -476,12 +478,22 @@
     },
     {
       "method": "POST",
+      "path": "/api/v1/admin/workers/:workerId/verify",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
       "path": "/api/v1/auth/login",
       "module": "auth",
       "sourceFile": "src/modules/auth/auth.routes.ts",
       "coveredBy": [
         "src/gateway/websocket.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts",
+        "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
@@ -520,6 +532,7 @@
       "module": "auth",
       "sourceFile": "src/modules/auth/auth.routes.ts",
       "coveredBy": [
+        "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts"
       ]
@@ -641,6 +654,15 @@
     {
       "method": "POST",
       "path": "/api/v1/auth/reset-password",
+      "module": "auth",
+      "sourceFile": "src/modules/auth/auth.routes.ts",
+      "coveredBy": [
+        "src/modules/auth/auth.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/auth/sessions/revoke",
       "module": "auth",
       "sourceFile": "src/modules/auth/auth.routes.ts",
       "coveredBy": [
@@ -841,11 +863,21 @@
       ]
     },
     {
+      "method": "DELETE",
+      "path": "/api/v1/comments/:commentId/likes",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "coveredBy": [
+        "src/modules/social/social.integration.test.ts"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/v1/comments/:commentId/likes",
       "module": "social",
       "sourceFile": "src/modules/social/social.routes.ts",
       "coveredBy": [
+        "src/modules/social/social.integration.test.ts",
         "src/modules/social/social.integration.test.ts"
       ]
     },
@@ -994,6 +1026,15 @@
     },
     {
       "method": "GET",
+      "path": "/api/v1/health/ready",
+      "module": "platform",
+      "sourceFile": "src/routes/index.ts",
+      "coveredBy": [
+        "src/modules/auth/auth.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
       "path": "/api/v1/inbox/unread-count",
       "module": "chat",
       "sourceFile": "src/modules/chat/chat.routes.ts",
@@ -1048,6 +1089,24 @@
       "coveredBy": [
         "src/modules/media/media.integration.test.ts",
         "src/modules/media/media.integration.test.ts",
+        "src/modules/media/media.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/media/mock-upload/:mediaId",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "coveredBy": [
+        "src/modules/media/media.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/media/private/read",
+      "module": "media",
+      "sourceFile": "src/modules/media/media.routes.ts",
+      "coveredBy": [
         "src/modules/media/media.integration.test.ts"
       ]
     },
@@ -1152,6 +1211,16 @@
         "src/modules/social/social.integration.test.ts",
         "src/modules/social/social.integration.test.ts",
         "src/modules/social/social.integration.test.ts",
+        "src/modules/social/social.integration.test.ts",
+        "src/modules/social/social.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/posts/:postId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "coveredBy": [
         "src/modules/social/social.integration.test.ts"
       ]
     },
@@ -1177,6 +1246,15 @@
       ]
     },
     {
+      "method": "DELETE",
+      "path": "/api/v1/posts/:postId/likes",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "coveredBy": [
+        "src/modules/social/social.integration.test.ts"
+      ]
+    },
+    {
       "method": "POST",
       "path": "/api/v1/posts/:postId/likes",
       "module": "social",
@@ -1198,6 +1276,15 @@
     {
       "method": "POST",
       "path": "/api/v1/posts/:postId/media/:mediaId",
+      "module": "social",
+      "sourceFile": "src/modules/social/social.routes.ts",
+      "coveredBy": [
+        "src/modules/social/social.integration.test.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/posts/:postId/saves",
       "module": "social",
       "sourceFile": "src/modules/social/social.routes.ts",
       "coveredBy": [
@@ -1583,6 +1670,15 @@
         "src/modules/social/social.integration.test.ts",
         "src/modules/users/users.integration.test.ts",
         "src/modules/users/users.integration.test.ts",
+        "src/modules/users/users.integration.test.ts"
+      ]
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/users/me/follows/:targetType/:targetId",
+      "module": "users",
+      "sourceFile": "src/modules/users/users.routes.ts",
+      "coveredBy": [
         "src/modules/users/users.integration.test.ts"
       ]
     },

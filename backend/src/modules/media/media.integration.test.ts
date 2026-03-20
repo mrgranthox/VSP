@@ -77,9 +77,15 @@ const uploadAsset = async (
   assert.equal(requestUploadResponse.status, 201);
   const uploadUrl = new URL(requestUploadResponse.body.data.uploadUrl as string);
   const mediaId = requestUploadResponse.body.data.mediaId as string;
+  const uploadToken = uploadUrl.searchParams.get("token");
+
+  assert.ok(uploadToken);
 
   const uploadResponse = await api
-    .put(`${uploadUrl.pathname}${uploadUrl.search}`)
+    .put(`/api/v1/media/mock-upload/${mediaId}`)
+    .query({
+      token: uploadToken
+    })
     .set("Content-Type", body.mimeType)
     .send(fileBytes);
 
@@ -184,7 +190,20 @@ test("media upload flow backs public post media and private chat attachments", a
   const parsedSignedAttachmentUrl = new URL(signedAttachmentUrl);
   assert.equal(parsedSignedAttachmentUrl.pathname, "/api/v1/media/private/read");
 
-  const downloadResponse = await readBinaryResponse(`${parsedSignedAttachmentUrl.pathname}${parsedSignedAttachmentUrl.search}`);
+  const downloadResponse = await api
+    .get("/api/v1/media/private/read")
+    .query({
+      key: parsedSignedAttachmentUrl.searchParams.get("key"),
+      expires: parsedSignedAttachmentUrl.searchParams.get("expires"),
+      signature: parsedSignedAttachmentUrl.searchParams.get("signature")
+    })
+    .buffer(true)
+    .parse((res, callback) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+      res.on("end", () => callback(null, Buffer.concat(chunks)));
+      res.on("error", callback);
+    });
 
   assert.equal(downloadResponse.status, 200);
   assert.equal((downloadResponse.body as Buffer).toString("utf8"), "%PDF-1.4\nmock");

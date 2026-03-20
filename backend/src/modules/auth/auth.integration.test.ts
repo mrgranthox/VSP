@@ -16,6 +16,7 @@ import { prisma } from "../../lib/prisma";
 import { redis, redisQueue } from "../../lib/redis";
 import { twilioVerifyTesting } from "../../lib/twilio";
 import { authTokenStoreTesting } from "./auth.token-store";
+import { verifyAccessToken } from "./auth.tokens";
 
 const api = request(app);
 
@@ -51,6 +52,9 @@ after(async () => {
 });
 
 test("core auth flow covers email verification, reset, refresh reuse, and logout", async () => {
+  const readyResponse = await api.get("/api/v1/health/ready");
+  assert.equal([200, 503].includes(readyResponse.status), true);
+
   const email = buildEmail("core");
 
   const registerResponse = await api.post("/api/v1/auth/register").send({
@@ -126,6 +130,27 @@ test("core auth flow covers email verification, reset, refresh reuse, and logout
   });
   assert.equal(reloginForLogoutResponse.status, 200);
   const logoutAccessToken = getAccessToken(reloginForLogoutResponse.body);
+
+  const secondarySessionLoginResponse = await api.post("/api/v1/auth/login").set("x-device-type", "mobile").send({
+    email,
+    password: updatedPassword
+  });
+  assert.equal(secondarySessionLoginResponse.status, 200);
+  const secondarySessionAccessToken = getAccessToken(secondarySessionLoginResponse.body);
+  const secondarySessionId = verifyAccessToken(secondarySessionAccessToken).jti;
+
+  const revokeSessionResponse = await api
+    .post("/api/v1/auth/sessions/revoke")
+    .set("Authorization", `Bearer ${logoutAccessToken}`)
+    .send({
+      sessionId: secondarySessionId
+    });
+
+  assert.equal(revokeSessionResponse.status, 200);
+
+  const revokedSessionMeResponse = await api.get("/api/v1/auth/me").set("Authorization", `Bearer ${secondarySessionAccessToken}`);
+  assert.equal(revokedSessionMeResponse.status, 401);
+  assert.equal(revokedSessionMeResponse.body.error.code, "AUTH_SESSION_EXPIRED");
 
   const logoutResponse = await api.post("/api/v1/auth/logout").set("Authorization", `Bearer ${logoutAccessToken}`);
   assert.equal(logoutResponse.status, 200);

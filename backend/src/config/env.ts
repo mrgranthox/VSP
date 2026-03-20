@@ -5,6 +5,9 @@ import { loadEnvFiles } from "./load-env";
 loadEnvFiles();
 
 const BooleanString = z.enum(["true", "false"]).transform((value) => value === "true");
+const EmptyStringToUndefined = (value: unknown) => (typeof value === "string" && value.trim() === "" ? undefined : value);
+const OptionalUrl = () => z.preprocess(EmptyStringToUndefined, z.string().url().optional());
+const OptionalNonEmptyString = () => z.preprocess(EmptyStringToUndefined, z.string().min(1).optional());
 
 const toInt = (value: string, key: string): number => {
   const parsed = Number.parseInt(value, 10);
@@ -81,8 +84,8 @@ const EnvironmentSchema = z
     TWILIO_VERIFY_CODE_TTL_SECONDS: z.string().default("300").transform((value) => toInt(value, "TWILIO_VERIFY_CODE_TTL_SECONDS")),
     TYPESENSE_HOST: z.string().optional(),
     ALERTS_ENABLED: BooleanString.default("false"),
-    ALERT_WEBHOOK_URL: z.string().url().optional(),
-    ALERT_WEBHOOK_BEARER_TOKEN: z.string().optional(),
+    ALERT_WEBHOOK_URL: OptionalUrl(),
+    ALERT_WEBHOOK_BEARER_TOKEN: OptionalNonEmptyString(),
     ALERT_WEBHOOK_TIMEOUT_MS: z.string().default("3000").transform((value) => toInt(value, "ALERT_WEBHOOK_TIMEOUT_MS")),
     TYPESENSE_PORT: z.string().default("8108").transform((value) => toInt(value, "TYPESENSE_PORT")),
     TYPESENSE_PROTOCOL: z.enum(["http", "https"]).default("http"),
@@ -96,8 +99,8 @@ const EnvironmentSchema = z
     TYPESENSE_INDEXING_BATCH_SIZE: z.string().default("500").transform((value) => toInt(value, "TYPESENSE_INDEXING_BATCH_SIZE")),
     INTERNAL_API_KEY: z.string().optional(),
     TRACING_ENABLED: BooleanString.default("false"),
-    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.string().url().optional(),
-    OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
+    OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: OptionalUrl(),
+    OTEL_EXPORTER_OTLP_HEADERS: OptionalNonEmptyString(),
     OTEL_CONSOLE_EXPORTER_ENABLED: BooleanString.default("false"),
     OTEL_TRACES_SAMPLER_RATIO: z
       .string()
@@ -112,9 +115,9 @@ const EnvironmentSchema = z
         return parsed;
       }),
     SENTRY_ENABLED: BooleanString.default("false"),
-    SENTRY_DSN: z.string().url().optional(),
-    SENTRY_ENVIRONMENT: z.string().min(1).optional(),
-    SENTRY_RELEASE: z.string().min(1).optional(),
+    SENTRY_DSN: OptionalUrl(),
+    SENTRY_ENVIRONMENT: OptionalNonEmptyString(),
+    SENTRY_RELEASE: OptionalNonEmptyString(),
     SENTRY_FLUSH_TIMEOUT_MS: z.string().default("2000").transform((value) => toInt(value, "SENTRY_FLUSH_TIMEOUT_MS")),
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info")
   })

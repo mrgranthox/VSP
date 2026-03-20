@@ -188,6 +188,15 @@ test("social module covers feed visibility, media, likes, comments, reports, and
   assert.equal(actorOwnPostResponse.status, 201);
   const actorOwnPostId = actorOwnPostResponse.body.data.id as string;
 
+  const updateActorPostResponse = await api.patch(`/api/v1/posts/${actorOwnPostId}`).set("Authorization", `Bearer ${actor.accessToken}`).send({
+    body: "Actor post updated by owner",
+    visibility: "PRIVATE"
+  });
+
+  assert.equal(updateActorPostResponse.status, 200);
+  assert.equal(updateActorPostResponse.body.data.body, "Actor post updated by owner");
+  assert.equal(updateActorPostResponse.body.data.visibility, "PRIVATE");
+
   const feedResponse = await api.get("/api/v1/posts").set("Authorization", `Bearer ${actor.accessToken}`).query({
     page: 1,
     limit: 20
@@ -278,6 +287,15 @@ test("social module covers feed visibility, media, likes, comments, reports, and
   const likeCommentResponse = await api.post(`/api/v1/comments/${topLevelCommentId}/likes`).set("Authorization", `Bearer ${followedAuthor.accessToken}`).send({});
   assert.equal(likeCommentResponse.status, 200);
 
+  const unlikeCommentResponse = await api
+    .delete(`/api/v1/comments/${topLevelCommentId}/likes`)
+    .set("Authorization", `Bearer ${followedAuthor.accessToken}`);
+
+  assert.equal(unlikeCommentResponse.status, 200);
+
+  const relikeCommentResponse = await api.post(`/api/v1/comments/${topLevelCommentId}/likes`).set("Authorization", `Bearer ${followedAuthor.accessToken}`).send({});
+  assert.equal(relikeCommentResponse.status, 200);
+
   const listCommentsResponse = await api
     .get(`/api/v1/posts/${followedPostId}/comments`)
     .set("Authorization", `Bearer ${actor.accessToken}`)
@@ -356,4 +374,17 @@ test("social module covers feed visibility, media, likes, comments, reports, and
   assert.equal(followedPostDetailsResponse.body.data.saveCount, 1);
   assert.equal(followedPostDetailsResponse.body.data.isLikedByViewer, true);
   assert.equal(followedPostDetailsResponse.body.data.isSavedByViewer, true);
+
+  const unlikePostResponse = await api.delete(`/api/v1/posts/${followedPostId}/likes`).set("Authorization", `Bearer ${actor.accessToken}`);
+  assert.equal(unlikePostResponse.status, 200);
+
+  const unsavePostResponse = await api.delete(`/api/v1/posts/${followedPostId}/saves`).set("Authorization", `Bearer ${actor.accessToken}`);
+  assert.equal(unsavePostResponse.status, 200);
+
+  const followedPostAfterRemovalResponse = await api.get(`/api/v1/posts/${followedPostId}`).set("Authorization", `Bearer ${actor.accessToken}`);
+  assert.equal(followedPostAfterRemovalResponse.status, 200);
+  assert.equal(followedPostAfterRemovalResponse.body.data.likeCount, 0);
+  assert.equal(followedPostAfterRemovalResponse.body.data.saveCount, 0);
+  assert.equal(followedPostAfterRemovalResponse.body.data.isLikedByViewer, false);
+  assert.equal(followedPostAfterRemovalResponse.body.data.isSavedByViewer, false);
 });

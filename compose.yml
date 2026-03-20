@@ -174,9 +174,9 @@ services:
     profiles: ["monitoring"]
     environment:
       ALERTMANAGER_WEBHOOK_URL: ${ALERTMANAGER_WEBHOOK_URL:-http://alert-echo:8080/alerts}
-    command:
+    entrypoint:
       - /bin/sh
-      - -c
+      - -ec
       - |
         sed "s|__ALERTMANAGER_WEBHOOK_URL__|$${ALERTMANAGER_WEBHOOK_URL}|g" /etc/alertmanager/alertmanager.yml.template > /tmp/alertmanager.yml
         exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager
@@ -195,9 +195,9 @@ services:
     profiles: ["monitoring"]
     environment:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-compose-internal-key}
-    command:
+    entrypoint:
       - /bin/sh
-      - -c
+      - -ec
       - |
         sed "s|__INTERNAL_API_KEY__|$${INTERNAL_API_KEY}|g" /etc/prometheus/prometheus.yml.template > /tmp/prometheus.yml
         exec /bin/prometheus --config.file=/tmp/prometheus.yml --storage.tsdb.path=/prometheus --web.enable-lifecycle
