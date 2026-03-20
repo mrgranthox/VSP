@@ -1,6 +1,7 @@
 import { Prisma, SupportTicketStatus } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma";
+import { publicUserSelect } from "../../lib/public-user-select";
 
 class SupportRepository {
   async getSystemConfig(configKey: string) {
@@ -64,21 +65,15 @@ class SupportRepository {
       where: { id: ticketId },
       include: {
         openedByUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         assignedSupportUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         messages: {
           include: {
             authorUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             }
           },
           orderBy: {
@@ -120,14 +115,10 @@ class SupportRepository {
       },
       include: {
         openedByUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         assignedSupportUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         }
       },
       orderBy: {

@@ -14,6 +14,7 @@ import {
 
 import { buildPagination, getPaginationArgs, type PaginationInput } from "../../lib/pagination";
 import { prisma } from "../../lib/prisma";
+import { publicUserSelect } from "../../lib/public-user-select";
 import { redis } from "../../lib/redis";
 import { Errors } from "../../lib/errors";
 import { isTypesenseConfigured, typesenseClient, typesenseWorkersCollection } from "../../lib/typesense";
@@ -105,9 +106,7 @@ class AdminService {
       where: { id: workerId },
       include: {
         user: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         tradeCategories: {
           include: {
@@ -601,9 +600,7 @@ class AdminService {
         where,
         include: {
           reporterUser: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           },
           moderationCases: {
             include: {
@@ -631,23 +628,17 @@ class AdminService {
       where: { id: reportId },
       include: {
         reporterUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         moderationCases: {
           include: {
             assignedAdminUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             },
             actions: {
               include: {
                 performedByAdminUser: {
-                  include: {
-                    profile: true
-                  }
+                  select: publicUserSelect
                 }
               },
               orderBy: {
@@ -678,16 +669,12 @@ class AdminService {
         include: {
           report: true,
           assignedAdminUser: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           },
           actions: {
             include: {
               performedByAdminUser: {
-                include: {
-                  profile: true
-                }
+                select: publicUserSelect
               }
             },
             orderBy: {
@@ -716,16 +703,12 @@ class AdminService {
       include: {
         report: true,
         assignedAdminUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         actions: {
           include: {
             performedByAdminUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             }
           },
           orderBy: {
@@ -830,9 +813,7 @@ class AdminService {
         where,
         include: {
           adminUser: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           }
         },
         orderBy: {
@@ -1245,17 +1226,13 @@ class AdminService {
         where,
         include: {
           customerUser: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           },
           tradeCategory: true,
           preferredWorkerProfile: {
             include: {
               user: {
-                include: {
-                  profile: true
-                }
+                select: publicUserSelect
               }
             }
           },
@@ -1264,9 +1241,7 @@ class AdminService {
               workerProfile: {
                 include: {
                   user: {
-                    include: {
-                      profile: true
-                    }
+                    select: publicUserSelect
                   }
                 }
               }
@@ -1295,17 +1270,13 @@ class AdminService {
       where: { id: requestId },
       include: {
         customerUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         tradeCategory: true,
         preferredWorkerProfile: {
           include: {
             user: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             }
           }
         },
@@ -1314,9 +1285,7 @@ class AdminService {
             workerProfile: {
               include: {
                 user: {
-                  include: {
-                    profile: true
-                  }
+                  select: publicUserSelect
                 }
               }
             }
@@ -1327,9 +1296,7 @@ class AdminService {
             workerProfile: {
               include: {
                 user: {
-                  include: {
-                    profile: true
-                  }
+                  select: publicUserSelect
                 }
               }
             }
@@ -1339,9 +1306,7 @@ class AdminService {
         statusHistory: {
           include: {
             changedByUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             }
           },
           orderBy: {
@@ -1394,16 +1359,12 @@ class AdminService {
         where,
         include: {
           customerUser: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           },
           workerProfile: {
             include: {
               user: {
-                include: {
-                  profile: true
-                }
+                select: publicUserSelect
               }
             }
           },
@@ -1435,16 +1396,12 @@ class AdminService {
       where: { id: bookingId },
       include: {
         customerUser: {
-          include: {
-            profile: true
-          }
+          select: publicUserSelect
         },
         workerProfile: {
           include: {
             user: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             }
           }
         },
@@ -1457,9 +1414,7 @@ class AdminService {
         reschedules: {
           include: {
             requestedByUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             }
           }
         },
@@ -1508,9 +1463,7 @@ class AdminService {
         where,
         include: {
           user: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           },
           featuredSubscriptions: {
             orderBy: {
@@ -1693,9 +1646,7 @@ class AdminService {
         where,
         include: {
           user: {
-            include: {
-              profile: true
-            }
+            select: publicUserSelect
           }
         },
         orderBy: [{ score: "desc" }, { createdAt: "desc" }],
@@ -1789,9 +1740,7 @@ class AdminService {
           where: { id: entityId },
           include: {
             authorUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             },
             media: true,
             _count: {
@@ -1809,9 +1758,7 @@ class AdminService {
           where: { id: entityId },
           include: {
             authorUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             },
             post: {
               select: {
@@ -1851,21 +1798,15 @@ class AdminService {
               }
             },
             reviewerUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             },
             revieweeUser: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             },
             replies: {
               include: {
                 authorUser: {
-                  include: {
-                    profile: true
-                  }
+                  select: publicUserSelect
                 }
               }
             }
@@ -1879,18 +1820,14 @@ class AdminService {
           include: {
             attachments: true,
             sender: {
-              include: {
-                profile: true
-              }
+              select: publicUserSelect
             },
             conversation: {
               include: {
                 participants: {
                   include: {
                     user: {
-                      include: {
-                        profile: true
-                      }
+                      select: publicUserSelect
                     }
                   }
                 }
