@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellDot, CheckCheck, Megaphone, MessageCircleMore, ShieldAlert, Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -37,6 +38,7 @@ const notificationIconClasses = {
 } as const;
 
 const NotificationsPage = () => {
+  const location = useLocation();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [broadcastForm, setBroadcastForm] = useState({
     targetAudience: "ALL_USERS",
@@ -107,6 +109,7 @@ const NotificationsPage = () => {
   const unreadCount = notificationsQuery.data?.meta.unreadCount ?? 0;
   const roles = adminQuery.data?.roles ?? [];
   const canBroadcast = hasPermission(roles, "NOTIFICATION_BROADCAST");
+  const isBroadcastRoute = location.pathname.endsWith("/broadcast");
 
   const groupedTypes = useMemo(() => {
     const counts = new Map<string, number>();
@@ -118,9 +121,68 @@ const NotificationsPage = () => {
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
   }, [notifications]);
 
+  const broadcastCard = canBroadcast ? (
+    <Card>
+      <CardHeader>
+        <CardTitle>{isBroadcastRoute ? "Broadcast composer" : "Broadcast notification"}</CardTitle>
+        <CardDescription>Send an in-app, push, or email broadcast with the admin notification endpoint.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4">
+          <Select
+            onChange={(event) => setBroadcastForm((current) => ({ ...current, targetAudience: event.target.value }))}
+            value={broadcastForm.targetAudience}
+          >
+            <option value="ALL_USERS">All users</option>
+            <option value="ALL_WORKERS">All workers</option>
+            <option value="CITY">City audience</option>
+            <option value="TRADE">Trade audience</option>
+          </Select>
+          {broadcastForm.targetAudience === "CITY" || broadcastForm.targetAudience === "TRADE" ? (
+            <Input
+              onChange={(event) => setBroadcastForm((current) => ({ ...current, targetId: event.target.value }))}
+              placeholder="City or trade UUID"
+              value={broadcastForm.targetId}
+            />
+          ) : null}
+          <Select onChange={(event) => setBroadcastForm((current) => ({ ...current, channel: event.target.value }))} value={broadcastForm.channel}>
+            <option value="IN_APP">In-app</option>
+            <option value="PUSH">Push</option>
+            <option value="EMAIL">Email</option>
+          </Select>
+          <Input
+            onChange={(event) => setBroadcastForm((current) => ({ ...current, title: event.target.value }))}
+            placeholder="Broadcast title"
+            value={broadcastForm.title}
+          />
+          <Textarea
+            onChange={(event) => setBroadcastForm((current) => ({ ...current, body: event.target.value }))}
+            placeholder="What do admins need users to know?"
+            value={broadcastForm.body}
+          />
+        </div>
+
+        <Button
+          disabled={broadcastForm.title.trim().length < 5 || broadcastForm.body.trim().length < 10 || broadcastMutation.isPending}
+          onClick={() => broadcastMutation.mutate()}
+        >
+          <Megaphone className="h-4 w-4" />
+          {broadcastMutation.isPending ? "Sending..." : "Send broadcast"}
+        </Button>
+      </CardContent>
+    </Card>
+  ) : null;
+
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Read state, unread counts, and event fan-in are all wired to the backend notifications module." title="Notifications Center">
+      <PageHeader
+        subtitle={
+          isBroadcastRoute
+            ? "Audience selection, channel choice, and broadcast delivery are routed through the backend admin notifications endpoint."
+            : "Read state, unread counts, and event fan-in are all wired to the backend notifications module."
+        }
+        title={isBroadcastRoute ? "Broadcast Notification" : "Notifications Center"}
+      >
         <Button onClick={() => markAllMutation.mutate()} variant="outline">
           <CheckCheck className="h-4 w-4" />
           Mark all as read
@@ -129,6 +191,7 @@ const NotificationsPage = () => {
 
       <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
         <div className="space-y-6">
+          {isBroadcastRoute ? broadcastCard : null}
           <Card>
             <CardHeader>
               <CardTitle>Filters</CardTitle>
@@ -163,57 +226,7 @@ const NotificationsPage = () => {
             </CardContent>
           </Card>
 
-          {canBroadcast ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Broadcast notification</CardTitle>
-                <CardDescription>Send an in-app, push, or email broadcast with the admin notification endpoint.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <Select
-                    onChange={(event) => setBroadcastForm((current) => ({ ...current, targetAudience: event.target.value }))}
-                    value={broadcastForm.targetAudience}
-                  >
-                    <option value="ALL_USERS">All users</option>
-                    <option value="ALL_WORKERS">All workers</option>
-                    <option value="CITY">City audience</option>
-                    <option value="TRADE">Trade audience</option>
-                  </Select>
-                  {(broadcastForm.targetAudience === "CITY" || broadcastForm.targetAudience === "TRADE") ? (
-                    <Input
-                      onChange={(event) => setBroadcastForm((current) => ({ ...current, targetId: event.target.value }))}
-                      placeholder="City or trade UUID"
-                      value={broadcastForm.targetId}
-                    />
-                  ) : null}
-                  <Select onChange={(event) => setBroadcastForm((current) => ({ ...current, channel: event.target.value }))} value={broadcastForm.channel}>
-                    <option value="IN_APP">In-app</option>
-                    <option value="PUSH">Push</option>
-                    <option value="EMAIL">Email</option>
-                  </Select>
-                  <Input
-                    onChange={(event) => setBroadcastForm((current) => ({ ...current, title: event.target.value }))}
-                    placeholder="Broadcast title"
-                    value={broadcastForm.title}
-                  />
-                  <Textarea
-                    onChange={(event) => setBroadcastForm((current) => ({ ...current, body: event.target.value }))}
-                    placeholder="What do admins need users to know?"
-                    value={broadcastForm.body}
-                  />
-                </div>
-
-                <Button
-                  disabled={broadcastForm.title.trim().length < 5 || broadcastForm.body.trim().length < 10 || broadcastMutation.isPending}
-                  onClick={() => broadcastMutation.mutate()}
-                >
-                  <Megaphone className="h-4 w-4" />
-                  {broadcastMutation.isPending ? "Sending..." : "Send broadcast"}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : null}
+          {!isBroadcastRoute ? broadcastCard : null}
         </div>
 
         <Card>

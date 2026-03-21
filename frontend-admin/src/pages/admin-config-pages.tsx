@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, Flag, Globe2, Search, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { AreaTrendCard, BarMetricCard, DonutChartCard, InsightMetricCard } from "@/components/admin/dashboard-charts";
@@ -32,6 +33,7 @@ const handleActionError = (error: unknown, fallback: string) => {
 };
 
 const SearchAnalyticsPage = () => {
+  const location = useLocation();
   const searchQuery = useQuery({
     queryKey: ["admin", "analytics", "search", "detail"],
     queryFn: () => apiRequest<SearchAnalytics>("/admin/analytics/search")
@@ -41,7 +43,10 @@ const SearchAnalyticsPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Search demand signals from recorded impressions and query logs." title="Search Analytics" />
+      <PageHeader
+        subtitle={location.pathname === "/analytics/overview" ? "Executive analytics surface for the admin command center." : "Search demand signals from recorded impressions and query logs."}
+        title={location.pathname === "/analytics/overview" ? "Analytics Overview" : "Search Analytics"}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <InsightMetricCard accent="linear-gradient(135deg,#2457F5,#8FB7FF)" helper="Recorded search impressions in the analytics dataset." icon={Search} label="Impressions" value={formatNumber(search?.impressionCount ?? 0)} />
@@ -164,6 +169,7 @@ const MarketplaceAnalyticsPage = () => {
 };
 
 const ConfigsPage = () => {
+  const { configKey } = useParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
 
@@ -185,15 +191,29 @@ const ConfigsPage = () => {
     onError: (error) => handleActionError(error, "Unable to update config")
   });
 
-  const items = useMemo(
-    () =>
-      (configsQuery.data ?? []).filter((item) => item.configKey.toLowerCase().includes(search.trim().toLowerCase())),
-    [configsQuery.data, search]
-  );
+  const items = useMemo(() => {
+    const filtered = (configsQuery.data ?? []).filter((item) => item.configKey.toLowerCase().includes(search.trim().toLowerCase()));
+
+    if (!configKey) {
+      return filtered;
+    }
+
+    return [...filtered].sort((left, right) => {
+      if (left.configKey === configKey) {
+        return -1;
+      }
+
+      if (right.configKey === configKey) {
+        return 1;
+      }
+
+      return left.configKey.localeCompare(right.configKey);
+    });
+  }, [configKey, configsQuery.data, search]);
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Mutable platform configuration backed by the system-config admin endpoints." title="Configurations" />
+      <PageHeader subtitle={configKey ? `Focused config editor for ${configKey}.` : "Mutable platform configuration backed by the system-config admin endpoints."} title={configKey ? "Config Editor" : "Configurations"} />
 
       <FilterCard>
         <label className="space-y-2 lg:col-span-2">
@@ -254,6 +274,7 @@ const ConfigsPage = () => {
 };
 
 const FeatureFlagsPage = () => {
+  const { flagKey } = useParams();
   const queryClient = useQueryClient();
   const flagsQuery = useQuery({
     queryKey: ["admin", "feature-flags"],
@@ -273,11 +294,29 @@ const FeatureFlagsPage = () => {
     onError: (error) => handleActionError(error, "Unable to update feature flag")
   });
 
-  const flags = flagsQuery.data ?? [];
+  const flags = useMemo(() => {
+    const items = flagsQuery.data ?? [];
+
+    if (!flagKey) {
+      return items;
+    }
+
+    return [...items].sort((left, right) => {
+      if (left.flagKey === flagKey) {
+        return -1;
+      }
+
+      if (right.flagKey === flagKey) {
+        return 1;
+      }
+
+      return left.flagKey.localeCompare(right.flagKey);
+    });
+  }, [flagKey, flagsQuery.data]);
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Feature rollout controls wired directly to the backend feature-flag endpoints." title="Feature Flags" />
+      <PageHeader subtitle={flagKey ? `Focused flag editor for ${flagKey}.` : "Feature rollout controls wired directly to the backend feature-flag endpoints."} title={flagKey ? "Feature Flag Editor" : "Feature Flags"} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         {flags.map((flag) => (
@@ -340,6 +379,7 @@ const FeatureFlagsPage = () => {
 };
 
 const CitiesPage = () => {
+  const { cityId } = useParams();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
@@ -380,7 +420,25 @@ const CitiesPage = () => {
     onError: (error) => handleActionError(error, "Unable to update city")
   });
 
-  const cities = citiesQuery.data?.data ?? [];
+  const cities = useMemo(() => {
+    const items = citiesQuery.data?.data ?? [];
+
+    if (!cityId) {
+      return items;
+    }
+
+    return [...items].sort((left, right) => {
+      if (left.id === cityId) {
+        return -1;
+      }
+
+      if (right.id === cityId) {
+        return 1;
+      }
+
+      return left.name.localeCompare(right.name);
+    });
+  }, [citiesQuery.data?.data, cityId]);
 
   return (
     <div className="space-y-6">
@@ -407,8 +465,8 @@ const CitiesPage = () => {
             }
           });
         }}
-        subtitle="City availability and search defaults controlled from the admin city-config endpoints."
-        title="Cities"
+        subtitle={cityId ? "Focused city settings lane with enable/disable and metadata editing." : "City availability and search defaults controlled from the admin city-config endpoints."}
+        title={cityId ? "City Settings" : "Cities"}
       />
 
       <FilterCard>

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Lock, Mail, ShieldCheck, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -26,6 +27,7 @@ import { useStoredSession } from "@/lib/auth-storage";
 import { formatDateTime } from "@/lib/utils";
 
 const ProfilePage = () => {
+  const location = useLocation();
   const queryClient = useQueryClient();
   const session = useStoredSession();
   const adminQuery = useCurrentAdmin();
@@ -47,6 +49,7 @@ const ProfilePage = () => {
   const profile = profileQuery.data;
   const authMe = adminQuery.data;
   const preferences = preferencesQuery.data;
+  const isMfaView = location.pathname.endsWith("/mfa");
 
   useEffect(() => {
     if (profile) {
@@ -134,9 +137,168 @@ const ProfilePage = () => {
     }
   });
 
+  const profileSettingsCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Profile settings</CardTitle>
+        <CardDescription>Editable fields from the users module.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-4 md:grid-cols-2">
+        <label className="space-y-2">
+          <span className="text-sm font-semibold text-slate-700">First name</span>
+          <Input
+            onChange={(event) => setProfileForm((current) => ({ ...current, firstName: event.target.value }))}
+            value={profileForm.firstName}
+          />
+        </label>
+        <label className="space-y-2">
+          <span className="text-sm font-semibold text-slate-700">Last name</span>
+          <Input
+            onChange={(event) => setProfileForm((current) => ({ ...current, lastName: event.target.value }))}
+            value={profileForm.lastName}
+          />
+        </label>
+        <label className="space-y-2 md:col-span-2">
+          <span className="text-sm font-semibold text-slate-700">Display name</span>
+          <Input
+            onChange={(event) => setProfileForm((current) => ({ ...current, displayName: event.target.value }))}
+            value={profileForm.displayName}
+          />
+        </label>
+        <label className="space-y-2 md:col-span-2">
+          <span className="text-sm font-semibold text-slate-700">Bio</span>
+          <Input onChange={(event) => setProfileForm((current) => ({ ...current, bio: event.target.value }))} value={profileForm.bio} />
+        </label>
+        <div className="md:col-span-2">
+          <Button onClick={() => saveProfileMutation.mutate()}>{saveProfileMutation.isPending ? "Saving..." : "Save changes"}</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const notificationPreferencesCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Notification preferences</CardTitle>
+        <CardDescription>Preferences are pulled from `/notifications/preferences`.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Marketing email</p>
+          <p className="text-sm text-slate-500">
+            {preferences?.marketingEmailEnabled ? "Enabled" : "Disabled"} · Quiet hours {preferences?.quietHoursStart ?? 22} to {preferences?.quietHoursEnd ?? 6}
+          </p>
+        </div>
+        <Button onClick={() => savePreferencesMutation.mutate()} variant="outline">
+          Toggle marketing email
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
+  const mfaCard = (
+    <Card>
+      <CardHeader>
+        <CardTitle>Multi-factor authentication</CardTitle>
+        <CardDescription>TOTP setup and session step-up directly against the backend auth endpoints.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-4 rounded-[1.5rem] bg-slate-50 p-4">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 text-emerald-600" />
+            <div>
+              <p className="font-semibold text-slate-950">TOTP setup</p>
+              <p className="text-sm text-slate-500">Scan the QR or use the secret, then verify with a 6-digit code.</p>
+            </div>
+          </div>
+          <Button onClick={() => totpSetupMutation.mutate()} variant="outline">
+            Start TOTP setup
+          </Button>
+          {totpQr ? <img alt="TOTP QR code" className="w-full rounded-2xl border border-slate-200 bg-white p-4" src={totpQr} /> : null}
+          {totpSecret ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 font-mono text-xs">{totpSecret}</div> : null}
+          <Input onChange={(event) => setTotpCode(event.target.value)} placeholder="123456" value={totpCode} />
+          <Button disabled={totpCode.length < 6} onClick={() => verifyTotpMutation.mutate()}>
+            Verify setup
+          </Button>
+        </div>
+
+        <div className="space-y-4 rounded-[1.5rem] bg-slate-50 p-4">
+          <div className="flex items-center gap-3">
+            <Lock className="h-5 w-5 text-blue-700" />
+            <div>
+              <p className="font-semibold text-slate-950">Session step-up</p>
+              <p className="text-sm text-slate-500">Elevate the current session so dangerous admin actions stop returning MFA_REQUIRED.</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-white p-1">
+            {[
+              ["totp", "TOTP"],
+              ["sms", "SMS"],
+              ["backup_code", "Backup"]
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                className={`rounded-xl px-3 py-2 text-sm font-semibold ${mfaChallengeMethod === value ? "bg-slate-950 text-white" : "text-slate-500"}`}
+                onClick={() => setMfaChallengeMethod(value as "totp" | "sms" | "backup_code")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Input onChange={(event) => setMfaChallengeCode(event.target.value)} placeholder="Enter code or backup code" value={mfaChallengeCode} />
+          <div className="flex flex-wrap gap-3">
+            {mfaChallengeMethod === "sms" ? (
+              <Button
+                onClick={() =>
+                  requestMfaSmsCode()
+                    .then(() => toast.success("SMS code sent"))
+                    .catch(() => toast.error("Unable to send SMS code"))
+                }
+                variant="outline"
+              >
+                <Smartphone className="h-4 w-4" />
+                Send SMS
+              </Button>
+            ) : null}
+            <Button disabled={mfaChallengeCode.length < 6} onClick={() => stepUpMutation.mutate()}>
+              Verify session
+            </Button>
+            <Button onClick={() => fetchBackupCodesMutation.mutate()} variant="ghost">
+              Load backup codes
+            </Button>
+          </div>
+          {backupCodes.length > 0 ? (
+            <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-slate-950">Backup codes</p>
+                <Button onClick={() => disableMfaMutation.mutate()} variant="danger">
+                  Disable with first code
+                </Button>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {backupCodes.map((code) => (
+                  <div key={code} className="rounded-xl bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
+                    {code}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Profile, notification preferences, and MFA controls backed by the real auth and users modules." title="My Profile" />
+      <PageHeader
+        subtitle={
+          isMfaView
+            ? "Dedicated MFA setup and session elevation lane for dangerous admin operations."
+            : "Profile, notification preferences, and MFA controls backed by the real auth and users modules."
+        }
+        title={isMfaView ? "Admin MFA Setup" : "My Profile"}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[360px_1fr]">
         <Card>
@@ -180,158 +342,19 @@ const ProfilePage = () => {
         </Card>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile settings</CardTitle>
-              <CardDescription>Editable fields from the users module.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">First name</span>
-                <Input
-                  onChange={(event) => setProfileForm((current) => ({ ...current, firstName: event.target.value }))}
-                  value={profileForm.firstName}
-                />
-              </label>
-              <label className="space-y-2">
-                <span className="text-sm font-semibold text-slate-700">Last name</span>
-                <Input
-                  onChange={(event) => setProfileForm((current) => ({ ...current, lastName: event.target.value }))}
-                  value={profileForm.lastName}
-                />
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">Display name</span>
-                <Input
-                  onChange={(event) => setProfileForm((current) => ({ ...current, displayName: event.target.value }))}
-                  value={profileForm.displayName}
-                />
-              </label>
-              <label className="space-y-2 md:col-span-2">
-                <span className="text-sm font-semibold text-slate-700">Bio</span>
-                <Input onChange={(event) => setProfileForm((current) => ({ ...current, bio: event.target.value }))} value={profileForm.bio} />
-              </label>
-              <div className="md:col-span-2">
-                <Button onClick={() => saveProfileMutation.mutate()}>{saveProfileMutation.isPending ? "Saving..." : "Save changes"}</Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification preferences</CardTitle>
-              <CardDescription>Preferences are pulled from `/notifications/preferences`.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">Marketing email</p>
-                <p className="text-sm text-slate-500">
-                  {preferences?.marketingEmailEnabled ? "Enabled" : "Disabled"} · Quiet hours {preferences?.quietHoursStart ?? 22} to{" "}
-                  {preferences?.quietHoursEnd ?? 6}
-                </p>
-              </div>
-              <Button onClick={() => savePreferencesMutation.mutate()} variant="outline">
-                Toggle marketing email
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Multi-factor authentication</CardTitle>
-              <CardDescription>TOTP setup and session step-up directly against the backend auth endpoints.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-6 lg:grid-cols-2">
-              <div className="space-y-4 rounded-[1.5rem] bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
-                  <div>
-                    <p className="font-semibold text-slate-950">TOTP setup</p>
-                    <p className="text-sm text-slate-500">Scan the QR or use the secret, then verify with a 6-digit code.</p>
-                  </div>
-                </div>
-                <Button onClick={() => totpSetupMutation.mutate()} variant="outline">
-                  Start TOTP setup
-                </Button>
-                {totpQr ? <img alt="TOTP QR code" className="w-full rounded-2xl border border-slate-200 bg-white p-4" src={totpQr} /> : null}
-                {totpSecret ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 font-mono text-xs">{totpSecret}</div> : null}
-                <Input onChange={(event) => setTotpCode(event.target.value)} placeholder="123456" value={totpCode} />
-                <Button disabled={totpCode.length < 6} onClick={() => verifyTotpMutation.mutate()}>
-                  Verify setup
-                </Button>
-              </div>
-
-              <div className="space-y-4 rounded-[1.5rem] bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <Lock className="h-5 w-5 text-blue-700" />
-                  <div>
-                    <p className="font-semibold text-slate-950">Session step-up</p>
-                    <p className="text-sm text-slate-500">Elevate the current session so dangerous admin actions stop returning MFA_REQUIRED.</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2 rounded-2xl bg-white p-1">
-                  {[
-                    ["totp", "TOTP"],
-                    ["sms", "SMS"],
-                    ["backup_code", "Backup"]
-                  ].map(([value, label]) => (
-                    <button
-                      key={value}
-                      className={`rounded-xl px-3 py-2 text-sm font-semibold ${
-                        mfaChallengeMethod === value ? "bg-slate-950 text-white" : "text-slate-500"
-                      }`}
-                      onClick={() => setMfaChallengeMethod(value as "totp" | "sms" | "backup_code")}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <Input
-                  onChange={(event) => setMfaChallengeCode(event.target.value)}
-                  placeholder="Enter code or backup code"
-                  value={mfaChallengeCode}
-                />
-                <div className="flex flex-wrap gap-3">
-                  {mfaChallengeMethod === "sms" ? (
-                    <Button
-                      onClick={() =>
-                        requestMfaSmsCode()
-                          .then(() => toast.success("SMS code sent"))
-                          .catch(() => toast.error("Unable to send SMS code"))
-                      }
-                      variant="outline"
-                    >
-                      <Smartphone className="h-4 w-4" />
-                      Send SMS
-                    </Button>
-                  ) : null}
-                  <Button disabled={mfaChallengeCode.length < 6} onClick={() => stepUpMutation.mutate()}>
-                    Verify session
-                  </Button>
-                  <Button onClick={() => fetchBackupCodesMutation.mutate()} variant="ghost">
-                    Load backup codes
-                  </Button>
-                </div>
-                {backupCodes.length > 0 ? (
-                  <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-slate-950">Backup codes</p>
-                      <Button onClick={() => disableMfaMutation.mutate()} variant="danger">
-                        Disable with first code
-                      </Button>
-                    </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {backupCodes.map((code) => (
-                        <div key={code} className="rounded-xl bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700">
-                          {code}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            </CardContent>
-          </Card>
+          {isMfaView ? (
+            <>
+              {mfaCard}
+              {profileSettingsCard}
+              {notificationPreferencesCard}
+            </>
+          ) : (
+            <>
+              {profileSettingsCard}
+              {notificationPreferencesCard}
+              {mfaCard}
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, BadgeCheck, LifeBuoy, ShieldCheck, UserRoundCog, WalletCards } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PermissionGate } from "@/components/admin/permission-gate";
@@ -74,6 +74,7 @@ const resolveAdminEntityLink = (entityType?: string | null, entityId?: string | 
 };
 
 const UserDetailPage = () => {
+  const location = useLocation();
   const { userId = "" } = useParams();
   const queryClient = useQueryClient();
   const [suspendReason, setSuspendReason] = useState("Manual risk or trust review");
@@ -86,6 +87,8 @@ const UserDetailPage = () => {
   });
 
   const user = userQuery.data;
+  const isSuspendView = location.pathname.endsWith("/suspend");
+  const isReactivateView = location.pathname.endsWith("/reactivate");
 
   const statusMutation = useMutation({
     mutationFn: ({ action, body }: { action: "suspend" | "reactivate"; body: Record<string, unknown> }) =>
@@ -112,7 +115,16 @@ const UserDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Lifecycle, profile, roles, and support footprint for a specific account." title="User Detail">
+      <PageHeader
+        subtitle={
+          isSuspendView
+            ? "Focused lifecycle action screen for suspension and trust intervention."
+            : isReactivateView
+              ? "Focused lifecycle action screen for reactivating a previously restricted account."
+              : "Lifecycle, profile, roles, and support footprint for a specific account."
+        }
+        title={isSuspendView ? "Suspend User" : isReactivateView ? "Reactivate User" : "User Detail"}
+      >
         <BackButton label="Back to users" to="/users" />
         <Link className="inline-flex" to="/access-control">
           <Button variant="outline">
@@ -621,6 +633,7 @@ const VerificationReviewPage = () => {
 };
 
 const WorkerSubscriptionPage = () => {
+  const location = useLocation();
   const { workerId = "" } = useParams();
   const queryClient = useQueryClient();
   const [featureNotes, setFeatureNotes] = useState("Featured placement updated from the admin console.");
@@ -673,7 +686,10 @@ const WorkerSubscriptionPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Featured placement, subscription history, and billing footprint for one worker." title="Worker Subscription Mgmt">
+      <PageHeader
+        subtitle={location.pathname.endsWith("/featured") ? "Focused featured-placement control surface for a single worker." : "Featured placement, subscription history, and billing footprint for one worker."}
+        title="Worker Subscription Mgmt"
+      >
         <BackButton label="Back to featured workers" to="/featured-workers" />
         <Link className="inline-flex" to={`/workers/${worker.id}`}>
           <Button variant="outline">
@@ -770,6 +786,7 @@ const WorkerSubscriptionPage = () => {
 };
 
 const ServiceRequestDetailPage = () => {
+  const location = useLocation();
   const { requestId = "" } = useParams();
   const requestQuery = useQuery({
     queryKey: ["admin", "service-request", "detail", requestId],
@@ -778,6 +795,8 @@ const ServiceRequestDetailPage = () => {
   });
 
   const request = requestQuery.data;
+  const isAssignmentsView = location.pathname.endsWith("/assignments");
+  const isBookingView = location.pathname.endsWith("/booking");
 
   if (!request) {
     return (
@@ -791,7 +810,16 @@ const ServiceRequestDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Customer demand, worker assignment pipeline, and booking conversion on a single request." title="Service Request Detail">
+      <PageHeader
+        subtitle={
+          isAssignmentsView
+            ? "Focused assignment pipeline view for matching, acceptance, and worker response state."
+            : isBookingView
+              ? "Focused booking conversion view showing the service request to booking handoff."
+              : "Customer demand, worker assignment pipeline, and booking conversion on a single request."
+        }
+        title={isAssignmentsView ? "Service Request Assignments" : isBookingView ? "Service Request Booking" : "Service Request Detail"}
+      >
         <BackButton label="Back to requests" to="/service-requests" />
       </PageHeader>
 
@@ -865,6 +893,7 @@ const ServiceRequestDetailPage = () => {
 };
 
 const BookingDetailPage = () => {
+  const location = useLocation();
   const { bookingId = "" } = useParams();
   const bookingQuery = useQuery({
     queryKey: ["admin", "bookings", "detail", bookingId],
@@ -873,6 +902,8 @@ const BookingDetailPage = () => {
   });
 
   const booking = bookingQuery.data;
+  const isReviewView = location.pathname.endsWith("/review");
+  const isTimelineView = location.pathname.endsWith("/timeline");
 
   if (!booking) {
     return (
@@ -886,7 +917,16 @@ const BookingDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Booking execution, linked request items, customer-worker pairing, and review outcome." title="Booking Detail">
+      <PageHeader
+        subtitle={
+          isReviewView
+            ? "Focused review outcome screen for customer feedback and service quality evidence."
+            : isTimelineView
+              ? "Focused execution timeline with reschedules, cancellations, and final state changes."
+              : "Booking execution, linked request items, customer-worker pairing, and review outcome."
+        }
+        title={isReviewView ? "Booking Review" : isTimelineView ? "Booking Timeline" : "Booking Detail"}
+      >
         <BackButton label="Back to bookings" to="/bookings" />
       </PageHeader>
 
@@ -985,6 +1025,7 @@ const BookingDetailPage = () => {
 };
 
 const ContentViewerPage = () => {
+  const location = useLocation();
   const { entityType = "", entityId = "" } = useParams();
   const adminQuery = useCurrentAdmin();
   const queryClient = useQueryClient();
@@ -1023,6 +1064,7 @@ const ContentViewerPage = () => {
     (entityType === "post" && hasPermission(roles, "POST_DELETE")) ||
     (entityType === "comment" && hasPermission(roles, "COMMENT_DELETE")) ||
     (entityType === "review" && hasPermission(roles, "REVIEW_DELETE"));
+  const isDeleteView = location.pathname.endsWith("/delete");
 
   if (!contentView) {
     return (
@@ -1036,7 +1078,10 @@ const ContentViewerPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Dedicated viewer for report-linked content entities and their moderation history." title="Reported Content Viewer">
+      <PageHeader
+        subtitle={isDeleteView ? "Focused moderation action view for deleting the current content entity." : "Dedicated viewer for report-linked content entities and their moderation history."}
+        title={isDeleteView ? "Content Action" : "Reported Content Viewer"}
+      >
         <BackButton label="Back to content ops" to="/content" />
       </PageHeader>
 
@@ -1102,6 +1147,7 @@ const ContentViewerPage = () => {
 };
 
 const SupportTicketDetailPage = () => {
+  const location = useLocation();
   const { ticketId = "" } = useParams();
   const queryClient = useQueryClient();
   const adminQuery = useCurrentAdmin();
@@ -1120,6 +1166,9 @@ const SupportTicketDetailPage = () => {
   const relatedEntityPath = resolveAdminEntityLink(ticket?.relatedEntityType ?? undefined, ticket?.relatedEntityId ?? undefined);
   const canRespond = hasPermission(roles, "SUPPORT_TICKET_RESPOND");
   const canAssign = hasPermission(roles, "SUPPORT_TICKET_ASSIGN");
+  const isReplyView = location.pathname.endsWith("/reply");
+  const isAssignView = location.pathname.endsWith("/assign");
+  const isStatusView = location.pathname.endsWith("/status");
 
   useEffect(() => {
     if (ticket?.status) {
@@ -1204,7 +1253,18 @@ const SupportTicketDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Full support workflow with reply, assignment, and ticket status controls." title="Ticket Detail">
+      <PageHeader
+        subtitle={
+          isReplyView
+            ? "Focused support response screen for public replies and internal notes."
+            : isAssignView
+              ? "Focused assignment screen for routing the ticket to a support owner."
+              : isStatusView
+                ? "Focused ticket lifecycle screen for moving the case through support states."
+                : "Full support workflow with reply, assignment, and ticket status controls."
+        }
+        title={isReplyView ? "Ticket Reply" : isAssignView ? "Ticket Assign" : isStatusView ? "Ticket Status" : "Ticket Detail"}
+      >
         <BackButton label="Back to support tickets" to="/support-tickets" />
         {relatedEntityPath ? (
           <Link className="inline-flex" to={relatedEntityPath}>
@@ -1292,6 +1352,7 @@ const SupportTicketDetailPage = () => {
 };
 
 const ReportDetailPage = () => {
+  const location = useLocation();
   const { reportId = "" } = useParams();
   const reportQuery = useQuery({
     queryKey: ["admin", "reports", "detail", reportId],
@@ -1308,6 +1369,7 @@ const ReportDetailPage = () => {
   });
 
   const report = reportQuery.data;
+  const isContentView = location.pathname.endsWith("/content");
 
   if (!report) {
     return (
@@ -1321,7 +1383,10 @@ const ReportDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Reporter context, linked content evidence, and moderation-case progression." title="Report Detail">
+      <PageHeader
+        subtitle={isContentView ? "Focused content-evidence view from a single report record." : "Reporter context, linked content evidence, and moderation-case progression."}
+        title={isContentView ? "Reported Content Viewer" : "Report Detail"}
+      >
         <BackButton label="Back to reports" to="/reports" />
         <Link className="inline-flex" to={resolveAdminEntityLink(report.entityType, report.entityId) ?? "/content"}>
           <Button variant="outline">
@@ -1385,6 +1450,7 @@ const ReportDetailPage = () => {
 };
 
 const ModerationCaseDetailPage = () => {
+  const location = useLocation();
   const { caseId = "" } = useParams();
   const queryClient = useQueryClient();
   const [actionType, setActionType] = useState("REVIEW_NOTE");
@@ -1435,6 +1501,8 @@ const ModerationCaseDetailPage = () => {
   });
 
   const moderationCase = caseQuery.data;
+  const isActionView = location.pathname.endsWith("/actions/new");
+  const isContentView = location.pathname.endsWith("/content");
 
   if (!moderationCase) {
     return (
@@ -1448,7 +1516,16 @@ const ModerationCaseDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Case owner, linked report, evidence, and full action timeline." title="Moderation Case Detail">
+      <PageHeader
+        subtitle={
+          isActionView
+            ? "Focused action composer for recording a new moderation intervention."
+            : isContentView
+              ? "Focused evidence viewer for the content linked to this moderation case."
+              : "Case owner, linked report, evidence, and full action timeline."
+        }
+        title={isActionView ? "Moderation Action Panel" : isContentView ? "Case Content Viewer" : "Moderation Case Detail"}
+      >
         <BackButton label="Back to moderation cases" to="/moderation-cases" />
         {moderationCase.report ? (
           <Link className="inline-flex" to={resolveAdminEntityLink(moderationCase.report.entityType, moderationCase.report.entityId) ?? "/content"}>

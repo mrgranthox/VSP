@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Shield, UserRoundCog } from "lucide-react";
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { useCurrentAdmin } from "@/features/auth/auth";
@@ -45,6 +46,8 @@ const permissionGroupOrder = [
 ];
 
 const AccessControlPage = () => {
+  const location = useLocation();
+  const { roleId, userId } = useParams();
   const queryClient = useQueryClient();
   const adminQuery = useCurrentAdmin();
   const rolesGranted = adminQuery.data?.roles ?? [];
@@ -81,10 +84,22 @@ const AccessControlPage = () => {
   }, [roles, selectedRoleId]);
 
   useEffect(() => {
+    if (roleId && roles.some((role) => role.id === roleId)) {
+      setSelectedRoleId(roleId);
+    }
+  }, [roleId, roles]);
+
+  useEffect(() => {
     if (!selectedUserId && users[0]) {
       setSelectedUserId(users[0].id);
     }
   }, [selectedUserId, users]);
+
+  useEffect(() => {
+    if (userId && users.some((user) => user.id === userId)) {
+      setSelectedUserId(userId);
+    }
+  }, [userId, users]);
 
   useEffect(() => {
     if (!roleToAssign && roles[0]) {
@@ -172,13 +187,24 @@ const AccessControlPage = () => {
   const canUpdateRolePermissions = hasPermission(rolesGranted, "ROLE_PERMISSION_UPDATE");
   const canAssignAdminRole = hasPermission(rolesGranted, "ADMIN_ROLE_ASSIGN");
   const canRemoveAdminRole = hasPermission(rolesGranted, "ADMIN_ROLE_REMOVE");
+  const isPermissionsCatalogView = location.pathname === "/access-control/permissions";
+  const isRolePermissionEditorView = location.pathname.includes("/roles/") && location.pathname.endsWith("/permissions");
+  const isAdminRoleAssignmentView = location.pathname.includes("/users/") && location.pathname.endsWith("/roles");
+  const pageTitle = isRolePermissionEditorView ? "Role Permission Editor" : isAdminRoleAssignmentView ? "Admin Role Assignment" : isPermissionsCatalogView ? "Permissions Catalog" : "Access Control";
+  const pageSubtitle = isRolePermissionEditorView
+    ? "Focused role-permission editing lane with MFA-gated backend updates."
+    : isAdminRoleAssignmentView
+      ? "Assign and remove admin roles for a single user with live backend enforcement."
+      : isPermissionsCatalogView
+        ? "Permission catalog and grouping view across the admin RBAC surface."
+        : "Role catalog, permission matrix, and admin-role assignment flows for super admins and ops leads.";
 
   return (
     <div className="space-y-6">
-      <PageHeader subtitle="Role catalog, permission matrix, and admin-role assignment flows for super admins and ops leads." title="Access Control" />
+      <PageHeader subtitle={pageSubtitle} title={pageTitle} />
 
       <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-        <Card className="overflow-hidden border-white/70 bg-white/95">
+        <Card className={`overflow-hidden border-white/70 bg-white/95 ${isAdminRoleAssignmentView ? "xl:order-2" : "xl:order-1"}`}>
           <CardHeader>
             <CardTitle>Role editor</CardTitle>
             <CardDescription>Every backend role and permission is surfaced here, including FULL_ACCESS for the super-admin lane.</CardDescription>
@@ -258,7 +284,7 @@ const AccessControlPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-white/70 bg-white/95">
+        <Card className={`overflow-hidden border-white/70 bg-white/95 ${isAdminRoleAssignmentView ? "xl:order-1" : "xl:order-2"}`}>
           <CardHeader>
             <CardTitle>Admin assignments</CardTitle>
             <CardDescription>Search users, inspect current admin-role allocation, and assign or remove roles safely.</CardDescription>
