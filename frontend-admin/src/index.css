@@ -6,8 +6,17 @@
 
 @layer base {
   :root {
-    color: #0f172a;
-    background: #edf2ff;
+    --jo-forest: #419646;
+    --jo-gold: #f6b313;
+    --jo-rose: #e9779b;
+    --jo-coral: #ff4b19;
+    --jo-mist: #d9d4ca;
+    --jo-canvas: #f7f3eb;
+    --jo-paper: #fffdf8;
+    --jo-ink: #173328;
+    --jo-muted: #6b7266;
+    color: var(--jo-ink);
+    background: var(--jo-canvas);
     font-family: "Plus Jakarta Sans", system-ui, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -28,9 +37,10 @@
   body {
     @apply m-0 min-w-[320px] bg-slate-50 text-text;
     background-image:
-      radial-gradient(circle at top left, rgba(36, 87, 245, 0.12), transparent 24%),
-      radial-gradient(circle at top right, rgba(124, 58, 237, 0.08), transparent 16%),
-      linear-gradient(180deg, #f7faff 0%, #eef3ff 48%, #f8fafc 100%);
+      radial-gradient(circle at top left, rgba(65, 150, 70, 0.14), transparent 26%),
+      radial-gradient(circle at top right, rgba(246, 179, 19, 0.16), transparent 22%),
+      radial-gradient(circle at 65% 12%, rgba(233, 119, 155, 0.12), transparent 20%),
+      linear-gradient(180deg, #fbfaf6 0%, #f3eee6 52%, #f8f4ec 100%);
   }
 
   a {
@@ -50,12 +60,46 @@
   .glass-panel {
     @apply rounded-3xl border border-white/10 bg-white/5 shadow-shell backdrop-blur-xl;
   }
+
+  .admin-canvas-overlay {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(65, 150, 70, 0.12), transparent 26%),
+      radial-gradient(circle at 100% 0%, rgba(246, 179, 19, 0.14), transparent 22%),
+      radial-gradient(circle at 84% 18%, rgba(233, 119, 155, 0.12), transparent 18%),
+      linear-gradient(180deg, rgba(255, 252, 246, 0.84), rgba(247, 243, 235, 0.96));
+  }
+
+  .admin-sidebar-panel {
+    background:
+      radial-gradient(circle at top right, rgba(246, 179, 19, 0.18), transparent 24%),
+      radial-gradient(circle at 10% 18%, rgba(233, 119, 155, 0.1), transparent 18%),
+      linear-gradient(180deg, #183328 0%, #1d4233 38%, #13271f 100%);
+    box-shadow: 0 24px 60px rgba(23, 51, 40, 0.26);
+  }
+
+  .admin-topbar-shell {
+    background: rgba(255, 252, 246, 0.84);
+    border-color: rgba(112, 104, 84, 0.12);
+    box-shadow: 0 14px 32px rgba(71, 61, 45, 0.08);
+  }
+
+  .admin-sidebar-scroll {
+    scrollbar-color: rgba(246, 179, 19, 0.72) rgba(255, 255, 255, 0.06);
+  }
+
+  .admin-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(246, 179, 19, 0.82), rgba(233, 119, 155, 0.72));
+  }
+
+  .admin-sidebar-scroll::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 @layer utilities {
   .bg-admin-canvas {
     background:
-      linear-gradient(180deg, rgba(247, 250, 255, 0.92) 0%, rgba(239, 244, 255, 0.88) 100%);
+      linear-gradient(180deg, rgba(251, 249, 243, 0.96) 0%, rgba(245, 240, 230, 0.92) 100%);
   }
 }
 
@@ -65,10 +109,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.45);
+  background: linear-gradient(180deg, rgba(65, 150, 70, 0.68), rgba(246, 179, 19, 0.74));
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(226, 232, 240, 0.4);
+  background: rgba(217, 212, 202, 0.52);
 }

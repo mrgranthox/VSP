@@ -338,6 +338,9 @@ const WorkersPage = () => {
                       <ShieldAlert className="h-4 w-4" />
                     </Button>
                   </Link>
+                  <Link className="inline-flex" to={`/workers/${worker.id}/subscription`}>
+                    <Button variant="outline">Subscription</Button>
+                  </Link>
                   <Link className="inline-flex" to="/featured-workers">
                     <Button variant="outline">
                       Featured controls
@@ -416,9 +419,9 @@ const VerificationQueuePage = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <Link className="inline-flex" to={`/workers/${worker.id}`}>
+                  <Link className="inline-flex" to={`/verification/${worker.id}`}>
                     <Button variant="outline">
-                      Open detail
+                      Review evidence
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -569,6 +572,9 @@ const FeaturedWorkersPage = () => {
                       Open detail
                       <ArrowRight className="h-4 w-4" />
                     </Button>
+                  </Link>
+                  <Link className="inline-flex" to={`/workers/${worker.id}/subscription`}>
+                    <Button variant="outline">Subscription detail</Button>
                   </Link>
                   {worker.isFeatured ? (
                     <Button

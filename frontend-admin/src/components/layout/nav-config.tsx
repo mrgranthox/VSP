@@ -102,12 +102,46 @@ const navSections: NavSection[] = [
 const staticPageTitleMap = new Map<string, string>(navSections.flatMap((section) => section.items.map((item) => [item.path, item.label] as const)));
 
 const dynamicPageTitles: Array<{ matcher: RegExp; title: string }> = [
+  { matcher: /^\/analytics\/overview$/, title: "Analytics Overview" },
+  { matcher: /^\/notifications\/broadcast$/, title: "Broadcast Notification" },
+  { matcher: /^\/profile\/mfa$/, title: "Admin MFA Setup" },
   { matcher: /^\/users\/[^/]+$/, title: "User Detail" },
+  { matcher: /^\/users\/[^/]+\/suspend$/, title: "Suspend User" },
+  { matcher: /^\/users\/[^/]+\/reactivate$/, title: "Reactivate User" },
+  { matcher: /^\/users\/[^/]+\/roles$/, title: "Admin Role Assignment" },
   { matcher: /^\/workers\/[^/]+$/, title: "Worker Detail" },
+  { matcher: /^\/workers\/[^/]+\/verify$/, title: "Verification Review" },
+  { matcher: /^\/workers\/[^/]+\/reject-verification$/, title: "Verification Review" },
+  { matcher: /^\/workers\/[^/]+\/verification-documents$/, title: "Verification Review" },
+  { matcher: /^\/workers\/[^/]+\/subscription$/, title: "Worker Subscription Mgmt" },
+  { matcher: /^\/workers\/[^/]+\/featured$/, title: "Worker Subscription Mgmt" },
+  { matcher: /^\/verification\/[^/]+$/, title: "Verification Review" },
   { matcher: /^\/service-requests\/[^/]+$/, title: "Service Request Detail" },
+  { matcher: /^\/service-requests\/[^/]+\/assignments$/, title: "Service Request Assignments" },
+  { matcher: /^\/service-requests\/[^/]+\/booking$/, title: "Service Request Booking" },
   { matcher: /^\/bookings\/[^/]+$/, title: "Booking Detail" },
+  { matcher: /^\/bookings\/[^/]+\/review$/, title: "Booking Review" },
+  { matcher: /^\/bookings\/[^/]+\/timeline$/, title: "Booking Timeline" },
+  { matcher: /^\/content\/[^/]+\/[^/]+$/, title: "Reported Content Viewer" },
+  { matcher: /^\/content\/[^/]+\/[^/]+\/delete$/, title: "Content Action" },
   { matcher: /^\/reports\/[^/]+$/, title: "Report Detail" },
-  { matcher: /^\/moderation-cases\/[^/]+$/, title: "Moderation Case Detail" }
+  { matcher: /^\/reports\/[^/]+\/content$/, title: "Reported Content Viewer" },
+  { matcher: /^\/moderation-cases\/[^/]+$/, title: "Moderation Case Detail" },
+  { matcher: /^\/moderation-cases\/[^/]+\/actions\/new$/, title: "Moderation Action Panel" },
+  { matcher: /^\/moderation-cases\/[^/]+\/content$/, title: "Case Content Viewer" },
+  { matcher: /^\/fraud-signals\/[^/]+$/, title: "Fraud Signal Detail" },
+  { matcher: /^\/support-tickets\/[^/]+$/, title: "Ticket Detail" },
+  { matcher: /^\/support-tickets\/[^/]+\/reply$/, title: "Ticket Reply" },
+  { matcher: /^\/support-tickets\/[^/]+\/assign$/, title: "Ticket Assign" },
+  { matcher: /^\/support-tickets\/[^/]+\/status$/, title: "Ticket Status" },
+  { matcher: /^\/configs\/[^/]+$/, title: "Config Editor" },
+  { matcher: /^\/feature-flags\/[^/]+$/, title: "Feature Flag Editor" },
+  { matcher: /^\/cities\/[^/]+$/, title: "City Settings" },
+  { matcher: /^\/access-control\/permissions$/, title: "Permissions Catalog" },
+  { matcher: /^\/roles\/[^/]+\/permissions$/, title: "Role Permission Editor" },
+  { matcher: /^\/audit-logs\/[^/]+$/, title: "Audit Log Detail" },
+  { matcher: /^\/system-health\/jobs\/[^/]+$/, title: "Job Run Detail" },
+  { matcher: /^\/system-health\/metrics$/, title: "System Metrics" }
 ];
 
 const resolvePageTitle = (pathname: string) => {

@@ -539,6 +539,9 @@ const SupportTicketsPage = () => {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
+                  <Link className="inline-flex" to={`/support-tickets/${ticket.id}`}>
+                    <Button variant="outline">Open ticket</Button>
+                  </Link>
                   <Button disabled={!adminQuery.data?.user.id} onClick={() => ticketMutation.mutate({ ticketId: ticket.id, mode: "assign" })} variant="outline">
                     Assign to me
                   </Button>

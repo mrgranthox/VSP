@@ -216,6 +216,22 @@ export interface AdminSupportTicketItem {
   assignedSupportUser?: UserSummary | null;
 }
 
+export interface SupportTicketMessageItem {
+  id: string;
+  authorUserId: string;
+  body: string;
+  isInternalNote: boolean;
+  createdAt: string;
+  authorUser?: {
+    id: string;
+    displayName?: string | null;
+  } | null;
+}
+
+export interface SupportTicketDetail extends AdminSupportTicketItem {
+  messages: SupportTicketMessageItem[];
+}
+
 export interface AdminAuditLogItem {
   id: string;
   adminUserId?: string | null;

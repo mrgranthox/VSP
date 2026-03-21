@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, BadgeCheck, UserRoundCog } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, BadgeCheck, LifeBuoy, ShieldCheck, UserRoundCog, WalletCards } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -21,8 +21,11 @@ import type {
   AdminModerationCaseDetail,
   AdminReportDetail,
   AdminUserDetail,
+  AdminContentHistoryReport,
   BookingDetail,
   ServiceRequestDetail,
+  SupportTicketDetail,
+  SupportTicketMessageItem,
   WorkerDetail,
   WorkerSubscriptionSnapshot,
   WorkerVerificationDocuments
@@ -45,6 +48,30 @@ const BackButton = ({ to, label }: { to: string; label: string }) => (
     </Button>
   </Link>
 );
+
+const resolveAdminEntityLink = (entityType?: string | null, entityId?: string | null) => {
+  if (!entityType || !entityId) {
+    return undefined;
+  }
+
+  switch (entityType) {
+    case "post":
+    case "comment":
+    case "review":
+    case "message":
+      return `/content/${entityType}/${entityId}`;
+    case "service_request":
+      return `/service-requests/${entityId}`;
+    case "booking":
+      return `/bookings/${entityId}`;
+    case "user":
+      return `/users/${entityId}`;
+    case "worker":
+      return `/workers/${entityId}`;
+    default:
+      return undefined;
+  }
+};
 
 const UserDetailPage = () => {
   const { userId = "" } = useParams();
@@ -249,6 +276,22 @@ const WorkerDetailPage = () => {
     <div className="space-y-6">
       <PageHeader subtitle="Full worker operations view: verification, featured placement, services, and financial footprint." title="Worker Detail">
         <BackButton label="Back to workers" to="/workers" />
+        {canVerify ? (
+          <Link className="inline-flex" to={`/verification/${worker.id}`}>
+            <Button variant="outline">
+              <ShieldCheck className="h-4 w-4" />
+              Verification review
+            </Button>
+          </Link>
+        ) : null}
+        {canManageFeatured ? (
+          <Link className="inline-flex" to={`/workers/${worker.id}/subscription`}>
+            <Button variant="outline">
+              <WalletCards className="h-4 w-4" />
+              Subscription detail
+            </Button>
+          </Link>
+        ) : null}
       </PageHeader>
 
       <EntityHero
@@ -430,6 +473,296 @@ const WorkerDetailPage = () => {
               </div>
             </SectionCard>
           ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const VerificationReviewPage = () => {
+  const { workerId = "" } = useParams();
+  const queryClient = useQueryClient();
+  const [approvalNotes, setApprovalNotes] = useState("Verification approved after document review.");
+  const [rejectionNotes, setRejectionNotes] = useState("Please provide clearer identity and license evidence.");
+
+  const workerQuery = useQuery({
+    queryKey: ["admin", "workers", "detail", workerId],
+    queryFn: () => apiRequest<WorkerDetail>(`/admin/workers/${workerId}`),
+    enabled: Boolean(workerId)
+  });
+  const docsQuery = useQuery({
+    queryKey: ["admin", "workers", "docs", workerId],
+    queryFn: () => apiRequest<WorkerVerificationDocuments>(`/admin/workers/${workerId}/verification-documents`),
+    enabled: Boolean(workerId)
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ action, body }: { action: "verify" | "reject-verification"; body: Record<string, unknown> }) =>
+      apiRequest(`/admin/workers/${workerId}/${action}`, {
+        method: "POST",
+        body
+      }),
+    onSuccess: async (_, variables) => {
+      toast.success(variables.action === "verify" ? "Worker approved" : "Worker rejected");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "workers"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "verification-queue"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workers", "detail", workerId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workers", "docs", workerId] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to review worker")
+  });
+
+  const worker = workerQuery.data;
+  const docs = docsQuery.data;
+
+  if (!worker) {
+    return (
+      <div className="space-y-6">
+        <PageHeader subtitle="The selected verification record could not be loaded." title="Verification Review">
+          <BackButton label="Back to verification queue" to="/verification" />
+        </PageHeader>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader subtitle="Dedicated review desk for worker identity, licensing, and verification evidence." title="Verification Review">
+        <BackButton label="Back to verification queue" to="/verification" />
+        <Link className="inline-flex" to={`/workers/${worker.id}`}>
+          <Button variant="outline">
+            Open worker detail
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </PageHeader>
+
+      <EntityHero
+        badges={[{ label: worker.verificationStatus, variant: getStatusBadgeVariant(worker.verificationStatus) }]}
+        eyebrow="Worker verification"
+        meta={[
+          { label: "Worker", value: worker.id },
+          { label: "User", value: worker.user.email ?? worker.user.id },
+          { label: "Trades", value: formatNumber(worker.tradeCategories.length) },
+          { label: "Documents", value: formatNumber(docs?.documents.length ?? 0) }
+        ]}
+        subtitle={worker.headline || worker.bio || "No worker summary provided."}
+        title={worker.displayName || formatDisplayName(worker.user.profile, worker.user.email ?? "Worker")}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <SectionCard description="Identity, trade footprint, and document evidence submitted for review." title="Evidence Panel">
+          <div className="space-y-5">
+            <KeyValueGrid
+              columns="four"
+              items={[
+                { label: "Verification", value: worker.verificationStatus },
+                { label: "Created", value: formatDateTime(worker.createdAt) },
+                { label: "Reviews", value: formatNumber(worker.totalReviews) },
+                { label: "Experience", value: `${worker.experienceYears ?? 0} years` }
+              ]}
+            />
+
+            <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/80 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Trade categories</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {worker.tradeCategories.map((entry) => (
+                  <Badge key={entry.id} variant="blue">
+                    {entry.tradeCategory?.name ?? entry.tradeCategoryId}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {(docs?.documents ?? []).map((document) => (
+                <div className="rounded-[1.25rem] border border-slate-100 bg-white p-4" key={document.id}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{document.title}</p>
+                    <Badge variant={getStatusBadgeVariant(document.verificationStatus)}>{document.verificationStatus}</Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">{document.issuer || "No issuer recorded"}</p>
+                  <p className="mt-2 break-all text-xs font-medium text-slate-400">{document.documentUrl || "No document URL recorded"}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SectionCard>
+
+        <div className="space-y-6">
+          <SectionCard description="Approval path for legitimate submissions." title="Approve Worker">
+            <div className="space-y-4">
+              <Textarea onChange={(event) => setApprovalNotes(event.target.value)} value={approvalNotes} />
+              <Button disabled={reviewMutation.isPending || approvalNotes.trim().length < 5} onClick={() => reviewMutation.mutate({ action: "verify", body: { notes: approvalNotes } })} variant="success">
+                <BadgeCheck className="h-4 w-4" />
+                Approve verification
+              </Button>
+            </div>
+          </SectionCard>
+
+          <SectionCard description="Reject incomplete or invalid submissions with clear operator notes." title="Reject Worker">
+            <div className="space-y-4">
+              <Textarea onChange={(event) => setRejectionNotes(event.target.value)} value={rejectionNotes} />
+              <Button
+                disabled={reviewMutation.isPending || rejectionNotes.trim().length < 5}
+                onClick={() => reviewMutation.mutate({ action: "reject-verification", body: { reviewNotes: rejectionNotes } })}
+                variant="danger"
+              >
+                Reject verification
+              </Button>
+            </div>
+          </SectionCard>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WorkerSubscriptionPage = () => {
+  const { workerId = "" } = useParams();
+  const queryClient = useQueryClient();
+  const [featureNotes, setFeatureNotes] = useState("Featured placement updated from the admin console.");
+  const [featureEndsAt, setFeatureEndsAt] = useState("");
+
+  const workerQuery = useQuery({
+    queryKey: ["admin", "workers", "detail", workerId],
+    queryFn: () => apiRequest<WorkerDetail>(`/admin/workers/${workerId}`),
+    enabled: Boolean(workerId)
+  });
+  const subscriptionQuery = useQuery({
+    queryKey: ["admin", "workers", "subscription", workerId],
+    queryFn: () => apiRequest<WorkerSubscriptionSnapshot>(`/admin/workers/${workerId}/subscription`),
+    enabled: Boolean(workerId)
+  });
+
+  const featureMutation = useMutation({
+    mutationFn: ({ action, body }: { action: "ENABLE" | "DISABLE" | "EXTEND"; body: Record<string, unknown> }) =>
+      apiRequest(`/admin/workers/${workerId}/subscription`, {
+        method: "PATCH",
+        body: {
+          action,
+          ...body
+        }
+      }),
+    onSuccess: async () => {
+      toast.success("Worker subscription updated");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "featured-workers"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workers", "detail", workerId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "workers", "subscription", workerId] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to update worker subscription")
+  });
+
+  const worker = workerQuery.data;
+  const subscription = subscriptionQuery.data;
+  const totalRevenueMinor = (subscription?.invoices ?? []).reduce((sum, invoice) => sum + invoice.amountMinor, 0);
+
+  if (!worker) {
+    return (
+      <div className="space-y-6">
+        <PageHeader subtitle="The selected worker subscription record could not be loaded." title="Worker Subscription">
+          <BackButton label="Back to featured workers" to="/featured-workers" />
+        </PageHeader>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader subtitle="Featured placement, subscription history, and billing footprint for one worker." title="Worker Subscription Mgmt">
+        <BackButton label="Back to featured workers" to="/featured-workers" />
+        <Link className="inline-flex" to={`/workers/${worker.id}`}>
+          <Button variant="outline">
+            Open worker detail
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </PageHeader>
+
+      <EntityHero
+        badges={[
+          { label: worker.verificationStatus, variant: getStatusBadgeVariant(worker.verificationStatus) },
+          { label: subscription?.isFeatured ? "Featured" : "Standard", variant: subscription?.isFeatured ? "purple" : "slate" }
+        ]}
+        eyebrow="Subscription operations"
+        meta={[
+          { label: "Worker", value: worker.id },
+          { label: "Subscriptions", value: formatNumber(subscription?.subscriptions.length ?? 0) },
+          { label: "Invoices", value: formatNumber(subscription?.invoices.length ?? 0) },
+          { label: "Revenue", value: formatCurrency(totalRevenueMinor, subscription?.invoices[0]?.currencyCode ?? "USD") }
+        ]}
+        subtitle={worker.headline || "No worker headline recorded."}
+        title={worker.displayName || formatDisplayName(worker.user.profile, worker.user.email ?? "Worker")}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <SectionCard description="Live control surface for featured placement and extension windows." title="Placement Controls">
+          <div className="space-y-4">
+            <KeyValueGrid
+              columns="two"
+              items={[
+                { label: "Featured now", value: subscription?.isFeatured ? "Yes" : "No" },
+                { label: "Current status", value: subscription?.subscriptions[0]?.status ?? "No active subscription" }
+              ]}
+            />
+
+            <Textarea onChange={(event) => setFeatureNotes(event.target.value)} value={featureNotes} />
+            <Input onChange={(event) => setFeatureEndsAt(event.target.value)} type="datetime-local" value={featureEndsAt} />
+
+            <div className="flex flex-wrap gap-3">
+              <Button disabled={featureMutation.isPending} onClick={() => featureMutation.mutate({ action: "ENABLE", body: { notes: featureNotes } })}>
+                Enable featured
+              </Button>
+              <Button disabled={featureMutation.isPending} onClick={() => featureMutation.mutate({ action: "DISABLE", body: { notes: featureNotes } })} variant="danger">
+                Disable featured
+              </Button>
+              <Button
+                disabled={featureMutation.isPending || !featureEndsAt}
+                onClick={() =>
+                  featureMutation.mutate({
+                    action: "EXTEND",
+                    body: { notes: featureNotes, endsAt: new Date(featureEndsAt).toISOString() }
+                  })
+                }
+                variant="outline"
+              >
+                Extend window
+              </Button>
+            </div>
+          </div>
+        </SectionCard>
+
+        <div className="space-y-6">
+          <SectionCard description="Subscription lifecycle entries written by the featured worker billing flow." title="Subscription Timeline">
+            <TimelineList
+              items={(subscription?.subscriptions ?? []).map((entry) => ({
+                id: entry.id,
+                title: entry.status,
+                subtitle: `${formatDateTime(entry.startsAt)} to ${formatDateTime(entry.endsAt)}`,
+                timestamp: formatDateTime(entry.createdAt),
+                badge: { label: entry.status, variant: getStatusBadgeVariant(entry.status) }
+              }))}
+            />
+          </SectionCard>
+
+          <SectionCard description="Invoice records tied to featured placement purchases." title="Billing Ledger">
+            <div className="space-y-3">
+              {(subscription?.invoices ?? []).map((invoice) => (
+                <div className="rounded-[1.25rem] border border-slate-100 bg-white p-4" key={invoice.id}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold text-slate-900">{formatCurrency(invoice.amountMinor, invoice.currencyCode)}</p>
+                    <Badge variant={getStatusBadgeVariant(invoice.status)}>{invoice.status}</Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">{invoice.providerRef || "No provider reference recorded"}</p>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{formatDateTime(invoice.createdAt)}</p>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
         </div>
       </div>
     </div>
@@ -651,6 +984,313 @@ const BookingDetailPage = () => {
   );
 };
 
+const ContentViewerPage = () => {
+  const { entityType = "", entityId = "" } = useParams();
+  const adminQuery = useCurrentAdmin();
+  const queryClient = useQueryClient();
+  const roles = adminQuery.data?.roles ?? [];
+
+  const contentQuery = useQuery({
+    queryKey: ["admin", "content", entityType, entityId],
+    queryFn: () => apiRequest<AdminContentView>(`/admin/content/${entityType}/${entityId}`),
+    enabled: Boolean(entityType && entityId)
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => {
+      const path =
+        entityType === "post" ? `/admin/posts/${entityId}` : entityType === "comment" ? `/admin/comments/${entityId}` : `/admin/reviews/${entityId}`;
+
+      return apiRequest(path, {
+        method: "DELETE"
+      });
+    },
+    onSuccess: async () => {
+      toast.success(`${entityType} removed`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "content"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "posts"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to remove content")
+  });
+
+  const contentView = contentQuery.data;
+  const moderationHistory = (contentView?.moderationHistory ?? []) as AdminContentHistoryReport[];
+  const canDelete =
+    (entityType === "post" && hasPermission(roles, "POST_DELETE")) ||
+    (entityType === "comment" && hasPermission(roles, "COMMENT_DELETE")) ||
+    (entityType === "review" && hasPermission(roles, "REVIEW_DELETE"));
+
+  if (!contentView) {
+    return (
+      <div className="space-y-6">
+        <PageHeader subtitle="The selected content entity could not be loaded." title="Reported Content Viewer">
+          <BackButton label="Back to content ops" to="/content" />
+        </PageHeader>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader subtitle="Dedicated viewer for report-linked content entities and their moderation history." title="Reported Content Viewer">
+        <BackButton label="Back to content ops" to="/content" />
+      </PageHeader>
+
+      <EntityHero
+        badges={[{ label: contentView.entityType, variant: "blue" }]}
+        eyebrow="Content evidence"
+        meta={[
+          { label: "Entity type", value: contentView.entityType },
+          { label: "Entity id", value: contentView.entityId },
+          { label: "Reports", value: formatNumber(moderationHistory.length) },
+          { label: "Cases", value: formatNumber(moderationHistory.reduce((sum, item) => sum + item.moderationCases.length, 0)) }
+        ]}
+        subtitle="Use this screen to inspect the raw content payload and the full moderation trail without switching between queues."
+        title={`${contentView.entityType} · ${contentView.entityId}`}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <div className="space-y-6">
+          <ContentSnapshot contentView={contentView} />
+
+          {canDelete ? (
+            <SectionCard description="Irreversible moderation action for the current content entity." title="Content Action">
+              <Button disabled={deleteMutation.isPending} onClick={() => deleteMutation.mutate()} variant="danger">
+                Delete {entityType}
+              </Button>
+            </SectionCard>
+          ) : null}
+        </div>
+
+        <SectionCard description="Reports and moderation cases that have touched this content record." title="Moderation History">
+          <div className="space-y-4">
+            {moderationHistory.map((report) => (
+              <div className="rounded-[1.25rem] border border-slate-100 bg-white p-4" key={report.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{report.reason}</p>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {report.entityType} · {report.entityId}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={getStatusBadgeVariant(report.status)}>{report.status}</Badge>
+                    <Badge variant={getStatusBadgeVariant(report.severity)}>{report.severity}</Badge>
+                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link className="inline-flex" to={`/reports/${report.id}`}>
+                    <Button variant="outline">Open report</Button>
+                  </Link>
+                  {report.moderationCases.map((moderationCase) => (
+                    <Link className="inline-flex" key={moderationCase.id} to={`/moderation-cases/${moderationCase.id}`}>
+                      <Button variant="ghost">Case {moderationCase.status}</Button>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+};
+
+const SupportTicketDetailPage = () => {
+  const { ticketId = "" } = useParams();
+  const queryClient = useQueryClient();
+  const adminQuery = useCurrentAdmin();
+  const roles = adminQuery.data?.roles ?? [];
+  const [messageBody, setMessageBody] = useState("Thanks. We are reviewing this ticket now.");
+  const [isInternalNote, setIsInternalNote] = useState(false);
+  const [status, setStatus] = useState("ASSIGNED");
+
+  const ticketQuery = useQuery({
+    queryKey: ["support", "ticket", ticketId],
+    queryFn: () => apiRequest<SupportTicketDetail>(`/support/tickets/${ticketId}`),
+    enabled: Boolean(ticketId)
+  });
+
+  const ticket = ticketQuery.data;
+  const relatedEntityPath = resolveAdminEntityLink(ticket?.relatedEntityType ?? undefined, ticket?.relatedEntityId ?? undefined);
+  const canRespond = hasPermission(roles, "SUPPORT_TICKET_RESPOND");
+  const canAssign = hasPermission(roles, "SUPPORT_TICKET_ASSIGN");
+
+  useEffect(() => {
+    if (ticket?.status) {
+      setStatus(ticket.status);
+    }
+  }, [ticket?.status]);
+
+  const replyMutation = useMutation({
+    mutationFn: () =>
+      apiRequest(`/support/tickets/${ticketId}/messages`, {
+        method: "POST",
+        body: {
+          body: messageBody,
+          isInternalNote
+        }
+      }),
+    onSuccess: async () => {
+      toast.success(isInternalNote ? "Internal note added" : "Reply sent");
+      setMessageBody("");
+      setIsInternalNote(false);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["support", "ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to send ticket reply")
+  });
+
+  const assignMutation = useMutation({
+    mutationFn: () =>
+      apiRequest(`/admin/support-tickets/${ticketId}/assign`, {
+        method: "PATCH",
+        body: {
+          assignedSupportUserId: adminQuery.data?.user.id
+        }
+      }),
+    onSuccess: async () => {
+      toast.success("Ticket assigned");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["support", "ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to assign support ticket")
+  });
+
+  const statusMutation = useMutation({
+    mutationFn: () =>
+      apiRequest(`/admin/support-tickets/${ticketId}/status`, {
+        method: "PATCH",
+        body: {
+          status
+        }
+      }),
+    onSuccess: async () => {
+      toast.success("Ticket status updated");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["support", "ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to update support ticket status")
+  });
+
+  if (!ticket) {
+    return (
+      <div className="space-y-6">
+        <PageHeader subtitle="The selected support ticket could not be loaded." title="Ticket Detail">
+          <BackButton label="Back to support tickets" to="/support-tickets" />
+        </PageHeader>
+      </div>
+    );
+  }
+
+  const ticketTimeline = ticket.messages.map((message: SupportTicketMessageItem) => ({
+    id: message.id,
+    title: message.isInternalNote ? "Internal note" : "Ticket reply",
+    subtitle: `${message.authorUser?.displayName ?? message.authorUserId} · ${message.body}`,
+    timestamp: formatDateTime(message.createdAt),
+    badge: { label: message.isInternalNote ? "Internal" : "External", variant: message.isInternalNote ? ("amber" as const) : ("blue" as const) }
+  }));
+
+  return (
+    <div className="space-y-6">
+      <PageHeader subtitle="Full support workflow with reply, assignment, and ticket status controls." title="Ticket Detail">
+        <BackButton label="Back to support tickets" to="/support-tickets" />
+        {relatedEntityPath ? (
+          <Link className="inline-flex" to={relatedEntityPath}>
+            <Button variant="outline">
+              <LifeBuoy className="h-4 w-4" />
+              Open related entity
+            </Button>
+          </Link>
+        ) : null}
+      </PageHeader>
+
+      <EntityHero
+        badges={[
+          { label: ticket.status, variant: getStatusBadgeVariant(ticket.status) },
+          { label: ticket.priority, variant: getStatusBadgeVariant(ticket.priority) }
+        ]}
+        eyebrow="Support operations"
+        meta={[
+          { label: "Opened by", value: formatDisplayName(ticket.openedByUser?.profile, ticket.openedByUser?.email ?? "Unknown user") },
+          { label: "Assigned", value: formatDisplayName(ticket.assignedSupportUser?.profile, ticket.assignedSupportUser?.email ?? "Unassigned") },
+          { label: "Messages", value: formatNumber(ticket.messages.length) },
+          { label: "Updated", value: formatDateTime(ticket.updatedAt) }
+        ]}
+        subtitle={ticket.body}
+        title={ticket.subject}
+      />
+
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="space-y-6">
+          <SectionCard description="Ticket metadata, routing context, and audit-friendly status facts." title="Ticket Snapshot">
+            <div className="space-y-5">
+              <KeyValueGrid
+                columns="four"
+                items={[
+                  { label: "Ticket ID", value: ticket.id, mono: true },
+                  { label: "Related type", value: ticket.relatedEntityType ?? "No related entity" },
+                  { label: "Related id", value: ticket.relatedEntityId ?? "—", mono: true },
+                  { label: "Created", value: formatDateTime(ticket.createdAt) }
+                ]}
+              />
+              <TimelineList items={ticketTimeline} />
+            </div>
+          </SectionCard>
+        </div>
+
+        <div className="space-y-6">
+          {canRespond ? (
+            <SectionCard description="Reply to the user or add an internal operator note." title="Reply Composer">
+              <div className="space-y-4">
+                <Textarea onChange={(event) => setMessageBody(event.target.value)} value={messageBody} />
+                <label className="flex items-center gap-3 rounded-[1.25rem] border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700">
+                  <input checked={isInternalNote} onChange={(event) => setIsInternalNote(event.target.checked)} type="checkbox" />
+                  Save as internal note
+                </label>
+                <Button disabled={replyMutation.isPending || messageBody.trim().length < 3} onClick={() => replyMutation.mutate()}>
+                  Send update
+                </Button>
+              </div>
+            </SectionCard>
+          ) : null}
+
+          {canAssign ? (
+            <SectionCard description="Support owner and lifecycle controls for the current ticket." title="Ticket Controls">
+              <div className="space-y-4">
+                <Button disabled={assignMutation.isPending || !adminQuery.data?.user.id} onClick={() => assignMutation.mutate()} variant="outline">
+                  Assign to me
+                </Button>
+                <Select onChange={(event) => setStatus(event.target.value)} value={status}>
+                  <option value="ASSIGNED">Assigned</option>
+                  <option value="WAITING_USER">Waiting user</option>
+                  <option value="WAITING_INTERNAL">Waiting internal</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="CLOSED">Closed</option>
+                </Select>
+                <Button disabled={statusMutation.isPending} onClick={() => statusMutation.mutate()} variant="success">
+                  Update status
+                </Button>
+              </div>
+            </SectionCard>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ReportDetailPage = () => {
   const { reportId = "" } = useParams();
   const reportQuery = useQuery({
@@ -683,6 +1323,12 @@ const ReportDetailPage = () => {
     <div className="space-y-6">
       <PageHeader subtitle="Reporter context, linked content evidence, and moderation-case progression." title="Report Detail">
         <BackButton label="Back to reports" to="/reports" />
+        <Link className="inline-flex" to={resolveAdminEntityLink(report.entityType, report.entityId) ?? "/content"}>
+          <Button variant="outline">
+            Open content viewer
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
       </PageHeader>
 
       <EntityHero
@@ -804,6 +1450,14 @@ const ModerationCaseDetailPage = () => {
     <div className="space-y-6">
       <PageHeader subtitle="Case owner, linked report, evidence, and full action timeline." title="Moderation Case Detail">
         <BackButton label="Back to moderation cases" to="/moderation-cases" />
+        {moderationCase.report ? (
+          <Link className="inline-flex" to={resolveAdminEntityLink(moderationCase.report.entityType, moderationCase.report.entityId) ?? "/content"}>
+            <Button variant="outline">
+              Open content viewer
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        ) : null}
       </PageHeader>
 
       <EntityHero
@@ -863,4 +1517,15 @@ const ModerationCaseDetailPage = () => {
   );
 };
 
-export { BookingDetailPage, ModerationCaseDetailPage, ReportDetailPage, ServiceRequestDetailPage, UserDetailPage, WorkerDetailPage };
+export {
+  BookingDetailPage,
+  ContentViewerPage,
+  ModerationCaseDetailPage,
+  ReportDetailPage,
+  ServiceRequestDetailPage,
+  SupportTicketDetailPage,
+  UserDetailPage,
+  VerificationReviewPage,
+  WorkerDetailPage,
+  WorkerSubscriptionPage
+};

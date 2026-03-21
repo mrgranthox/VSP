@@ -205,13 +205,21 @@ const ContentOperationsPage = () => {
                 <CardDescription>Delete the selected post directly from the admin content lane.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button
-                  disabled={deleteMutation.isPending}
-                  onClick={() => deleteMutation.mutate({ entityType: "post", entityId: postContentQuery.data.entityId })}
-                  variant="danger"
-                >
-                  Delete selected post
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Link className="inline-flex" to={`/content/post/${postContentQuery.data.entityId}`}>
+                    <Button variant="outline">
+                      Open dedicated viewer
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Button
+                    disabled={deleteMutation.isPending}
+                    onClick={() => deleteMutation.mutate({ entityType: "post", entityId: postContentQuery.data.entityId })}
+                    variant="danger"
+                  >
+                    Delete selected post
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : null}
@@ -288,6 +296,12 @@ const ContentOperationsPage = () => {
                 <Link className="inline-flex" to={`/reports/${reportDetailQuery.data.id}`}>
                   <Button variant="outline">
                     Open full report detail
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link className="inline-flex" to={`/content/${reportDetailQuery.data.entityType}/${reportDetailQuery.data.entityId}`}>
+                  <Button variant="outline">
+                    Open content viewer
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
