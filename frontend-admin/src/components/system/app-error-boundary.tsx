@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type PropsWithChildren, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { reportAdminError } from "@/lib/error-reporting";
 
 interface AppErrorBoundaryState {
   error: Error | null;
@@ -19,6 +20,11 @@ class AppErrorBoundary extends Component<PropsWithChildren, AppErrorBoundaryStat
     console.error("Admin route crashed", {
       error,
       componentStack: errorInfo.componentStack
+    });
+
+    reportAdminError(error, {
+      source: "react.error-boundary",
+      componentStack: errorInfo.componentStack ?? undefined
     });
   }
 

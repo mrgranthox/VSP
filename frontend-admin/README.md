@@ -15,6 +15,9 @@ Set the API target in `.env` or `.env.local`:
 ```bash
 VITE_API_BASE_URL=http://localhost:3000/api/v1
 VITE_APP_NAME=VSP Admin
+VITE_APP_RELEASE=local
+VITE_ERROR_REPORTING_ENABLED=true
+VITE_ERROR_REPORTING_ENDPOINT=
 ```
 
 ## Production Build
@@ -69,9 +72,8 @@ Playwright covers the critical live admin workflows against the real backend:
 
 Before running E2E, make sure:
 
-1. the backend is running on `http://localhost:3000`
-2. the database is seeded with the standard admin accounts
-3. the admin frontend dependencies are installed
+1. the database is seeded with the standard admin accounts
+2. the admin frontend dependencies are installed
 
 Install the browser once:
 
@@ -87,7 +89,26 @@ cd frontend-admin
 npm run e2e
 ```
 
-The Playwright config will reuse an existing admin dev server on `http://localhost:3001` or start one automatically.
+The Playwright config will reuse an existing admin dev server on `http://localhost:3001` and backend API on `http://127.0.0.1:3000`, or start them automatically.
+
+## Frontend Error Reporting
+
+The admin console can forward runtime errors to an external collector or lightweight webhook.
+
+Environment variables:
+
+- `VITE_ERROR_REPORTING_ENABLED`
+- `VITE_ERROR_REPORTING_ENDPOINT`
+- `VITE_APP_RELEASE`
+
+Verify delivery locally:
+
+```bash
+cd frontend-admin
+npm run ops:error-reporting:verify
+```
+
+That verifier starts a local receiver, boots the Vite app with error reporting enabled, opens the dev-only error boundary probe route, and asserts that a frontend runtime error is delivered.
 
 Seeded accounts used by the browser suite:
 

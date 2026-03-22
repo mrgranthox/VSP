@@ -1,6 +1,7 @@
 import type { ApiErrorEnvelope, ApiPaginatedEnvelope, ApiSuccessEnvelope } from "@/types/api";
 import type { AuthRefreshResponse } from "@/types/auth";
 import { clearStoredSession, getStoredSession, setStoredSession } from "@/lib/auth-storage";
+import { reportAdminError } from "@/lib/error-reporting";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api/v1";
 
@@ -100,6 +101,36 @@ const parseDownloadFilename = (contentDisposition: string | null, fallback: stri
   return plainMatch?.[1] ?? fallback;
 };
 
+const fetchWithTelemetry = async (path: string, init: RequestInit, context: { auth: boolean }) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, init);
+
+    if (response.status >= 500) {
+      reportAdminError(new Error(`Admin API request failed with ${response.status}`), {
+        source: "api.server",
+        path,
+        method: init.method ?? "GET",
+        status: response.status,
+        details: {
+          auth: context.auth
+        }
+      });
+    }
+
+    return response;
+  } catch (error) {
+    reportAdminError(error, {
+      source: "api.network",
+      path,
+      method: init.method ?? "GET",
+      details: {
+        auth: context.auth
+      }
+    });
+    throw error;
+  }
+};
+
 const apiRequest = async <T>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
   const { auth = true, body, retryOnAuthFailure = true, headers, ...rest } = options;
   const session = getStoredSession();
@@ -113,11 +144,11 @@ const apiRequest = async <T>(path: string, options: ApiRequestOptions = {}): Pro
     finalHeaders.set("Authorization", `Bearer ${session.accessToken}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithTelemetry(path, {
     ...rest,
     headers: finalHeaders,
     body: body !== undefined ? JSON.stringify(body) : undefined
-  });
+  }, { auth });
 
   const parsed = await readJson(response);
 
@@ -152,11 +183,11 @@ const apiPaginatedRequest = async <T>(path: string, options: ApiRequestOptions =
     finalHeaders.set("Authorization", `Bearer ${session.accessToken}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithTelemetry(path, {
     ...rest,
     headers: finalHeaders,
     body: body !== undefined ? JSON.stringify(body) : undefined
-  });
+  }, { auth });
 
   const parsed = await readJson(response);
 
@@ -187,10 +218,10 @@ const apiDownload = async (path: string, fallbackFileName: string, options: ApiR
     finalHeaders.set("Authorization", `Bearer ${session.accessToken}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithTelemetry(path, {
     ...rest,
     headers: finalHeaders
-  });
+  }, { auth });
 
   if (response.status === 401 && auth && retryOnAuthFailure && session?.refreshToken && path !== "/auth/refresh") {
     await ensureFreshToken();

@@ -96,21 +96,21 @@ const sendPayload = (payload: AdminErrorPayload) => {
   }
 
   const body = JSON.stringify(payload);
-
-  if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
-    const blob = new Blob([body], { type: "application/json" });
-    navigator.sendBeacon(endpoint, blob);
-    return;
-  }
-
   void fetch(endpoint, {
     method: "POST",
     headers: {
       "content-type": "application/json"
     },
     body,
-    keepalive: true
-  }).catch(() => undefined);
+    keepalive: true,
+    mode: "cors",
+    credentials: "omit"
+  }).catch(() => {
+    if (typeof navigator !== "undefined" && typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      navigator.sendBeacon(endpoint, blob);
+    }
+  });
 };
 
 const reportAdminError = (error: unknown, context: ErrorReportContext) => {
