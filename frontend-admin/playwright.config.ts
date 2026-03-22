@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const frontendUrl = process.env.E2E_FRONTEND_BASE_URL ?? "http://localhost:3001";
+const backendUrl = process.env.E2E_BACKEND_BASE_URL ?? "http://127.0.0.1:3000";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -20,12 +21,21 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure"
   },
-  webServer: {
-    command: "npm run dev -- --host localhost --port 3001",
-    url: frontendUrl,
-    reuseExistingServer: true,
-    timeout: 120_000
-  },
+  webServer: [
+    {
+      command: "npm start",
+      cwd: "../backend",
+      url: `${backendUrl}/api/v1/health`,
+      reuseExistingServer: true,
+      timeout: 120_000
+    },
+    {
+      command: "npm run dev -- --host localhost --port 3001",
+      url: frontendUrl,
+      reuseExistingServer: true,
+      timeout: 120_000
+    }
+  ],
   projects: [
     {
       name: "setup",

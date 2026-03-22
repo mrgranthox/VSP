@@ -215,37 +215,60 @@ const NotificationsPage = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4">
-          <Select
-            onChange={(event) => setBroadcastForm((current) => ({ ...current, targetAudience: event.target.value }))}
-            value={broadcastForm.targetAudience}
-          >
-            <option value="ALL_USERS">All users</option>
-            <option value="ALL_WORKERS">All workers</option>
-            <option value="CITY">City audience</option>
-            <option value="TRADE">Trade audience</option>
-          </Select>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Audience</span>
+            <Select
+              aria-label="Broadcast audience"
+              onChange={(event) => setBroadcastForm((current) => ({ ...current, targetAudience: event.target.value }))}
+              value={broadcastForm.targetAudience}
+            >
+              <option value="ALL_USERS">All users</option>
+              <option value="ALL_WORKERS">All workers</option>
+              <option value="CITY">City audience</option>
+              <option value="TRADE">Trade audience</option>
+            </Select>
+          </label>
           {broadcastForm.targetAudience === "CITY" || broadcastForm.targetAudience === "TRADE" ? (
-            <Input
-              onChange={(event) => setBroadcastForm((current) => ({ ...current, targetId: event.target.value }))}
-              placeholder="City or trade UUID"
-              value={broadcastForm.targetId}
-            />
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Target audience ID</span>
+              <Input
+                aria-label="Broadcast target audience identifier"
+                onChange={(event) => setBroadcastForm((current) => ({ ...current, targetId: event.target.value }))}
+                placeholder="City or trade UUID"
+                value={broadcastForm.targetId}
+              />
+            </label>
           ) : null}
-          <Select onChange={(event) => setBroadcastForm((current) => ({ ...current, channel: event.target.value }))} value={broadcastForm.channel}>
-            <option value="IN_APP">In-app</option>
-            <option value="PUSH">Push</option>
-            <option value="EMAIL">Email</option>
-          </Select>
-          <Input
-            onChange={(event) => setBroadcastForm((current) => ({ ...current, title: event.target.value }))}
-            placeholder="Broadcast title"
-            value={broadcastForm.title}
-          />
-          <Textarea
-            onChange={(event) => setBroadcastForm((current) => ({ ...current, body: event.target.value }))}
-            placeholder="What do admins need users to know?"
-            value={broadcastForm.body}
-          />
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Channel</span>
+            <Select
+              aria-label="Broadcast delivery channel"
+              onChange={(event) => setBroadcastForm((current) => ({ ...current, channel: event.target.value }))}
+              value={broadcastForm.channel}
+            >
+              <option value="IN_APP">In-app</option>
+              <option value="PUSH">Push</option>
+              <option value="EMAIL">Email</option>
+            </Select>
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Title</span>
+            <Input
+              aria-label="Broadcast title"
+              onChange={(event) => setBroadcastForm((current) => ({ ...current, title: event.target.value }))}
+              placeholder="Broadcast title"
+              value={broadcastForm.title}
+            />
+          </label>
+          <label className="space-y-2">
+            <span className="text-sm font-semibold text-slate-700">Message</span>
+            <Textarea
+              aria-label="Broadcast message"
+              onChange={(event) => setBroadcastForm((current) => ({ ...current, body: event.target.value }))}
+              placeholder="What do admins need users to know?"
+              value={broadcastForm.body}
+            />
+          </label>
         </div>
 
         <Button
@@ -262,7 +285,7 @@ const NotificationsPage = () => {
   const actionLinks = selectedNotification ? resolveNotificationActionLinks(selectedNotification) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="notifications-page">
       <PageHeader
         subtitle={
           isBroadcastRoute

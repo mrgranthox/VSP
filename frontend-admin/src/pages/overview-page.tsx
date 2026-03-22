@@ -64,7 +64,7 @@ const OverviewPage = () => {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="overview-page">
       <PageHeader subtitle="Live executive summary spanning marketplace demand, content engagement, search behavior, and infrastructure readiness." title="Overview Dashboard" />
 
       <RevenueRibbon amountMinor={overview?.revenueMinor ?? 0} subtitle="Succeeded marketplace payment volume, paired with live request, booking, and engagement telemetry from the admin analytics layer." title="Revenue pulse" />

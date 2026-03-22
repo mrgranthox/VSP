@@ -241,13 +241,19 @@ const ReportsPage = () => {
             <CardDescription>Update queue status for the selected reports and write a single operator note into the admin audit trail.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_auto]">
-            <Select data-testid="reports-bulk-status" onChange={(event) => setBulkStatus(event.target.value)} value={bulkStatus}>
-              <option value="OPEN">Open</option>
-              <option value="UNDER_REVIEW">Under review</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="DISMISSED">Dismissed</option>
-            </Select>
-            <Textarea data-testid="reports-bulk-notes" onChange={(event) => setBulkNotes(event.target.value)} value={bulkNotes} />
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Bulk status</span>
+              <Select aria-label="Bulk report status" data-testid="reports-bulk-status" onChange={(event) => setBulkStatus(event.target.value)} value={bulkStatus}>
+                <option value="OPEN">Open</option>
+                <option value="UNDER_REVIEW">Under review</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="DISMISSED">Dismissed</option>
+              </Select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Operator note</span>
+              <Textarea aria-label="Bulk report operator note" data-testid="reports-bulk-notes" onChange={(event) => setBulkNotes(event.target.value)} value={bulkNotes} />
+            </label>
             <Button
               data-testid="reports-bulk-submit"
               disabled={bulkUpdateMutation.isPending || selectedReportIds.length === 0 || bulkNotes.trim().length < 4}
@@ -270,6 +276,7 @@ const ReportsPage = () => {
                   <div className="flex items-start gap-3">
                     {canBulkUpdateReports ? (
                       <input
+                        aria-label={`Select report ${report.reason}`}
                         checked={selectedReportIds.includes(report.id)}
                         className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
                         onChange={() => setSelectedReportIds((current) => toggleSelection(current, report.id))}
@@ -567,14 +574,20 @@ const ModerationCasesPage = () => {
             <CardDescription>Apply the next moderation action to the selected cases and refresh the review queue in one pass.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_auto]">
-            <Select data-testid="moderation-bulk-action-type" onChange={(event) => setActionType(event.target.value)} value={actionType}>
-              <option value="REVIEW_NOTE">Review note</option>
-              <option value="ESCALATE">Escalate</option>
-              <option value="CONTENT_REMOVE">Content remove</option>
-              <option value="ACCOUNT_WARNING">Account warning</option>
-              <option value="NO_ACTION">No action</option>
-            </Select>
-            <Textarea data-testid="moderation-bulk-notes" onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Bulk action type</span>
+              <Select aria-label="Bulk moderation action type" data-testid="moderation-bulk-action-type" onChange={(event) => setActionType(event.target.value)} value={actionType}>
+                <option value="REVIEW_NOTE">Review note</option>
+                <option value="ESCALATE">Escalate</option>
+                <option value="CONTENT_REMOVE">Content remove</option>
+                <option value="ACCOUNT_WARNING">Account warning</option>
+                <option value="NO_ACTION">No action</option>
+              </Select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Operator note</span>
+              <Textarea aria-label="Bulk moderation operator note" data-testid="moderation-bulk-notes" onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
+            </label>
             <Button
               data-testid="moderation-bulk-submit"
               disabled={bulkActionMutation.isPending || selectedCaseIds.length === 0 || actionNotes.trim().length < 4}
@@ -597,6 +610,7 @@ const ModerationCasesPage = () => {
                   <div className="flex items-start gap-3">
                     {canActionCases ? (
                       <input
+                        aria-label={`Select moderation case ${item.id}`}
                         checked={selectedCaseIds.includes(item.id)}
                         className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
                         onChange={() => setSelectedCaseIds((current) => toggleSelection(current, item.id))}
@@ -673,14 +687,20 @@ const ModerationCasesPage = () => {
                     </div>
                   </div>
 
-                  <Select onChange={(event) => setActionType(event.target.value)} value={actionType}>
-                    <option value="REVIEW_NOTE">Review note</option>
-                    <option value="ESCALATE">Escalate</option>
-                    <option value="CONTENT_REMOVE">Content remove</option>
-                    <option value="ACCOUNT_WARNING">Account warning</option>
-                    <option value="NO_ACTION">No action</option>
-                  </Select>
-                  <Textarea onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">Action type</span>
+                    <Select aria-label="Moderation action type" onChange={(event) => setActionType(event.target.value)} value={actionType}>
+                      <option value="REVIEW_NOTE">Review note</option>
+                      <option value="ESCALATE">Escalate</option>
+                      <option value="CONTENT_REMOVE">Content remove</option>
+                      <option value="ACCOUNT_WARNING">Account warning</option>
+                      <option value="NO_ACTION">No action</option>
+                    </Select>
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">Action note</span>
+                    <Textarea aria-label="Moderation action note" onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
+                  </label>
 
                   <div className="flex flex-wrap gap-3">
                     <Button
@@ -873,12 +893,23 @@ const FraudSignalsPage = () => {
             <CardDescription>Apply a trust action across the selected signals and write the operator note once.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_auto]">
-            <Select data-testid="fraud-bulk-action" onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")} value={fraudAction}>
-              <option value="REVIEW">Review</option>
-              <option value="DISMISS">Dismiss</option>
-              <option value="ACTION">Action and open trust trail</option>
-            </Select>
-            <Textarea data-testid="fraud-bulk-notes" onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Bulk trust action</span>
+              <Select
+                aria-label="Bulk fraud action"
+                data-testid="fraud-bulk-action"
+                onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")}
+                value={fraudAction}
+              >
+                <option value="REVIEW">Review</option>
+                <option value="DISMISS">Dismiss</option>
+                <option value="ACTION">Action and open trust trail</option>
+              </Select>
+            </label>
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Operator note</span>
+              <Textarea aria-label="Bulk fraud operator note" data-testid="fraud-bulk-notes" onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
+            </label>
             <Button
               data-testid="fraud-bulk-submit"
               disabled={bulkSignalMutation.isPending || selectedSignalIds.length === 0 || (fraudAction === "ACTION" && fraudNotes.trim().length < 4)}
@@ -901,6 +932,7 @@ const FraudSignalsPage = () => {
                   <div className="flex items-start gap-3">
                     {canActionSignals ? (
                       <input
+                        aria-label={`Select fraud signal ${signal.signalKey}`}
                         checked={selectedSignalIds.includes(signal.id)}
                         className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
                         onChange={() => setSelectedSignalIds((current) => toggleSelection(current, signal.id))}
@@ -979,12 +1011,18 @@ const FraudSignalsPage = () => {
                       <Button variant="outline">Open user detail</Button>
                     </Link>
                   ) : null}
-                  <Select onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")} value={fraudAction}>
-                    <option value="REVIEW">Review</option>
-                    <option value="DISMISS">Dismiss</option>
-                    <option value="ACTION">Action and open trust trail</option>
-                  </Select>
-                  <Textarea onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">Action</span>
+                    <Select aria-label="Fraud action type" onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")} value={fraudAction}>
+                      <option value="REVIEW">Review</option>
+                      <option value="DISMISS">Dismiss</option>
+                      <option value="ACTION">Action and open trust trail</option>
+                    </Select>
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-sm font-semibold text-slate-700">Action note</span>
+                    <Textarea aria-label="Fraud action note" onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
+                  </label>
                   <Button
                     disabled={signalMutation.isPending || (fraudAction === "ACTION" && fraudNotes.trim().length < 4)}
                     onClick={() => signalMutation.mutate({ signalId: selectedSignal.id, action: fraudAction, notes: fraudNotes })}
@@ -1172,14 +1210,17 @@ const SupportTicketsPage = () => {
             <CardDescription>Assign the selected tickets to yourself and move them into the next support state without leaving the queue.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_0.8fr_auto]">
-            <Select data-testid="support-bulk-status" onChange={(event) => setBulkStatus(event.target.value)} value={bulkStatus}>
-              <option value="OPEN">Open</option>
-              <option value="ASSIGNED">Assigned</option>
-              <option value="WAITING_USER">Waiting user</option>
-              <option value="WAITING_INTERNAL">Waiting internal</option>
-              <option value="RESOLVED">Resolved</option>
-              <option value="CLOSED">Closed</option>
-            </Select>
+            <label className="space-y-2">
+              <span className="text-sm font-semibold text-slate-700">Bulk status</span>
+              <Select aria-label="Bulk support ticket status" data-testid="support-bulk-status" onChange={(event) => setBulkStatus(event.target.value)} value={bulkStatus}>
+                <option value="OPEN">Open</option>
+                <option value="ASSIGNED">Assigned</option>
+                <option value="WAITING_USER">Waiting user</option>
+                <option value="WAITING_INTERNAL">Waiting internal</option>
+                <option value="RESOLVED">Resolved</option>
+                <option value="CLOSED">Closed</option>
+              </Select>
+            </label>
             <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
               <input checked={bulkAssignToMe} data-testid="support-bulk-assign-to-me" onChange={(event) => setBulkAssignToMe(event.target.checked)} type="checkbox" />
               Assign selected tickets to me
@@ -1205,6 +1246,7 @@ const SupportTicketsPage = () => {
                 <div className="flex items-start gap-3">
                   {canAssignTickets ? (
                     <input
+                      aria-label={`Select support ticket ${ticket.subject}`}
                       checked={selectedTicketIds.includes(ticket.id)}
                       className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
                       onChange={() => setSelectedTicketIds((current) => toggleSelection(current, ticket.id))}

@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -44,6 +44,8 @@ const loadTotpSecret = (): string => {
 };
 
 const generateTotpCode = (secret: string): string => authenticator.generate(secret);
+
+const hasStoredTotpSecret = (): boolean => existsSync(superAdminMfaPath);
 
 const dismissLoginMfaModalIfPresent = async (page: Page) => {
   const continueButton = page.getByTestId("login-mfa-continue");
@@ -95,7 +97,25 @@ const waitForAdminShell = async (page: Page) => {
   await expect(page).toHaveURL(/\/(overview|access-denied|session-expired|profile|notifications|reports|support-tickets|fraud-signals|moderation-cases)/);
 };
 
+const stepUpWithSecret = async (page: Page, secret: string) => {
+  await page.goto("/profile/mfa");
+  await expect(page.getByTestId("mfa-step-up-verify")).toBeVisible();
+  await page.getByTestId("mfa-step-up-method-totp").click();
+  await page.getByTestId("mfa-step-up-code").fill(generateTotpCode(secret));
+  await page.getByTestId("mfa-step-up-verify").click();
+  await expect(page.getByText("Session elevated for dangerous actions")).toBeVisible();
+};
+
 const configureTotpAndStepUp = async (page: Page) => {
+  if (hasStoredTotpSecret()) {
+    try {
+      await stepUpWithSecret(page, loadTotpSecret());
+      return;
+    } catch {
+      // Fall through to full setup when the stored secret is stale or the DB was reset.
+    }
+  }
+
   await page.goto("/profile/mfa");
   await expect(page.getByTestId("mfa-start-totp-setup")).toBeVisible();
 
@@ -109,21 +129,11 @@ const configureTotpAndStepUp = async (page: Page) => {
   await page.getByTestId("mfa-totp-verify-setup").click();
   await expect(page.getByText("MFA setup verified")).toBeVisible();
 
-  await page.getByTestId("mfa-step-up-method-totp").click();
-  await page.getByTestId("mfa-step-up-code").fill(generateTotpCode(secret));
-  await page.getByTestId("mfa-step-up-verify").click();
-  await expect(page.getByText("Session elevated for dangerous actions")).toBeVisible();
+  await stepUpWithSecret(page, secret);
 };
 
 const ensureFreshStepUp = async (page: Page) => {
-  const secret = loadTotpSecret();
-
-  await page.goto("/profile/mfa");
-  await expect(page.getByTestId("mfa-step-up-verify")).toBeVisible();
-  await page.getByTestId("mfa-step-up-method-totp").click();
-  await page.getByTestId("mfa-step-up-code").fill(generateTotpCode(secret));
-  await page.getByTestId("mfa-step-up-verify").click();
-  await expect(page.getByText("Session elevated for dangerous actions")).toBeVisible();
+  await stepUpWithSecret(page, loadTotpSecret());
 };
 
 export {

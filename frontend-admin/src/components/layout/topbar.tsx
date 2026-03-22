@@ -67,14 +67,18 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <button
+              aria-label="Open mobile navigation"
               className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white lg:hidden"
               onClick={onToggleMobileSidebar}
+              type="button"
             >
               <PanelLeftOpen className="h-4 w-4" />
             </button>
             <button
+              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white lg:flex"
               onClick={onToggleDesktopSidebar}
+              type="button"
             >
               {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
             </button>
@@ -109,19 +113,21 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
 
           <div className="relative" ref={notificationsPanelRef}>
             <button
+              aria-expanded={notificationsOpen}
+              aria-label="Open notifications"
               className={cn(
                 "relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white",
                 notificationsOpen && "border-[rgba(65,150,70,0.24)] bg-white"
               )}
               data-testid="topbar-notifications-toggle"
               onClick={() => setNotificationsOpen((current) => !current)}
-              title="Open notifications"
+              type="button"
             >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 ? (
                 <>
                   <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[color:var(--jo-coral)]" />
-                  <span className="absolute -right-1 -top-1 flex min-h-[1.2rem] min-w-[1.2rem] items-center justify-center rounded-full bg-[color:var(--jo-coral)] px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -right-1 -top-1 flex min-h-[1.2rem] min-w-[1.2rem] items-center justify-center rounded-full bg-[color:var(--jo-coral-deep)] px-1 text-[10px] font-bold text-white">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 </>
@@ -232,8 +238,10 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
               <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{roles.length > 0 ? roles.join(" · ") : "LOADING"}</p>
             </div>
             <button
+              aria-label="Sign out"
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(112,104,84,0.14)] text-[color:var(--jo-muted)] transition hover:bg-white"
               onClick={() => logoutMutation.mutate()}
+              type="button"
             >
               <LogOut className="h-4 w-4" />
             </button>

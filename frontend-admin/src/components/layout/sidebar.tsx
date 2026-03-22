@@ -22,9 +22,11 @@ const Sidebar = ({ collapsed, mobileOpen, onClose }: SidebarProps) => {
   return (
     <>
       <button
+        aria-label="Close mobile navigation overlay"
         aria-hidden={!mobileOpen}
         className={cn("fixed inset-0 z-30 bg-slate-950/42 backdrop-blur-[2px] transition lg:hidden", mobileOpen ? "opacity-100" : "pointer-events-none opacity-0")}
         onClick={onClose}
+        type="button"
       />
 
       <aside
@@ -48,8 +50,10 @@ const Sidebar = ({ collapsed, mobileOpen, onClose }: SidebarProps) => {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[color:rgba(255,248,235,0.52)]">Jungle Opal Morning</p>
                 </div>
                 <button
+                  aria-label="Close mobile navigation"
                   className="ml-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white transition hover:bg-white/10 lg:hidden"
                   onClick={onClose}
+                  type="button"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -101,6 +105,7 @@ const Sidebar = ({ collapsed, mobileOpen, onClose }: SidebarProps) => {
                     )}
                     {items.map((item) => (
                       <NavLink
+                        aria-label={collapsed ? item.label : undefined}
                         key={item.path}
                         className={({ isActive }) =>
                           cn(

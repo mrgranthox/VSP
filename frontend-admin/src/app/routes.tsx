@@ -49,6 +49,8 @@ const ContentViewerPage = lazyPage(() => import("@/pages/admin-detail-pages").th
 const ReportDetailPage = lazyPage(() => import("@/pages/admin-detail-pages").then((module) => ({ default: module.ReportDetailPage })));
 const ModerationCaseDetailPage = lazyPage(() => import("@/pages/admin-detail-pages").then((module) => ({ default: module.ModerationCaseDetailPage })));
 const SupportTicketDetailPage = lazyPage(() => import("@/pages/admin-detail-pages").then((module) => ({ default: module.SupportTicketDetailPage })));
+const DevErrorBoundaryProbePage = lazyPage(() => import("@/pages/dev-error-boundary-probe").then((module) => ({ default: module.DevErrorBoundaryProbePage })));
+const showDevProbeRoutes = import.meta.env.DEV;
 
 const RouteLoadingScreen = () => (
   <div className="flex min-h-[40vh] items-center justify-center px-4 py-12">
@@ -142,6 +144,7 @@ const AppRoutes = () => (
       </Route>
 
       <Route element={<Navigate replace to="/overview" />} path="*" />
+      {showDevProbeRoutes ? <Route element={<DevErrorBoundaryProbePage />} path="/__test/error-boundary" /> : null}
     </Routes>
   </Suspense>
 );

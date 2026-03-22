@@ -10,6 +10,7 @@
     --jo-gold: #f6b313;
     --jo-rose: #e9779b;
     --jo-coral: #ff4b19;
+    --jo-coral-deep: #b33612;
     --jo-mist: #d9d4ca;
     --jo-canvas: #f7f3eb;
     --jo-paper: #fffdf8;
@@ -101,6 +102,20 @@
   .bg-admin-canvas {
     background:
       linear-gradient(180deg, rgba(251, 249, 243, 0.96) 0%, rgba(245, 240, 230, 0.92) 100%);
+  }
+
+  .text-slate-400,
+  .text-gray-400,
+  .text-zinc-400,
+  .text-stone-400 {
+    color: #6b7266;
+  }
+
+  .text-slate-500,
+  .text-gray-500,
+  .text-zinc-500,
+  .text-stone-500 {
+    color: #4f574e;
   }
 }
 
