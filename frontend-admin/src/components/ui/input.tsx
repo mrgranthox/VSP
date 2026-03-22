@@ -6,7 +6,7 @@ const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>
   <input
     ref={ref}
     className={cn(
-      "w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10",
+      "w-full rounded-[1rem] border border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] px-4 py-3 text-sm text-[color:var(--jo-ink)] shadow-sm outline-none transition placeholder:text-[color:rgba(107,114,102,0.72)] focus:border-[rgba(65,150,70,0.45)] focus:ring-4 focus:ring-[rgba(65,150,70,0.12)]",
       className
     )}
     {...props}
@@ -19,7 +19,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLText
   <textarea
     ref={ref}
     className={cn(
-      "min-h-[132px] w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10",
+      "min-h-[132px] w-full rounded-[1rem] border border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] px-4 py-3 text-sm text-[color:var(--jo-ink)] shadow-sm outline-none transition placeholder:text-[color:rgba(107,114,102,0.72)] focus:border-[rgba(65,150,70,0.45)] focus:ring-4 focus:ring-[rgba(65,150,70,0.12)]",
       className
     )}
     {...props}

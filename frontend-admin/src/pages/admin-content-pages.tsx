@@ -4,7 +4,8 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
-import { AreaTrendCard, DonutChartCard, InsightMetricCard } from "@/components/admin/dashboard-charts";
+import { AreaTrendCard, DonutChartCard } from "@/components/admin/lazy-dashboard-charts";
+import { InsightMetricCard } from "@/components/admin/dashboard-metrics";
 import { useCurrentAdmin } from "@/features/auth/auth";
 import { ContentSnapshot } from "@/pages/admin-detail-pages.shared";
 import { PageHeader } from "@/components/layout/page-header";
@@ -146,10 +147,10 @@ const ContentOperationsPage = () => {
       <PageHeader subtitle="Unified content command center for posts, linked evidence, reports, and delete actions across moderation-owned entities." title="Content Operations" />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InsightMetricCard accent="linear-gradient(135deg,#2457F5,#8FB7FF)" helper="Posts currently visible in the moderation index." icon={Eye} label="Indexed posts" value={formatNumber(postsQuery.data?.pagination.total ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#F59E0B,#FCD34D)" helper="Open report items loaded into this command center." icon={Flag} label="Reports loaded" value={formatNumber(reportsQuery.data?.pagination.total ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#7C3AED,#B794F4)" helper="Comment interactions across visible posts." icon={MessageSquareWarning} label="Comment volume" value={formatNumber(posts.reduce((total, item) => total + item.commentCount, 0))} />
-        <InsightMetricCard accent="linear-gradient(135deg,#DC2626,#FB7185)" helper="Media attachments attached to visible posts." icon={ShieldAlert} label="Media attachments" value={formatNumber(posts.reduce((total, item) => total + item.mediaCount, 0))} />
+        <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Posts currently visible in the moderation index." icon={Eye} label="Indexed posts" value={formatNumber(postsQuery.data?.pagination.total ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Open report items loaded into this command center." icon={Flag} label="Reports loaded" value={formatNumber(reportsQuery.data?.pagination.total ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Comment interactions across visible posts." icon={MessageSquareWarning} label="Comment volume" value={formatNumber(posts.reduce((total, item) => total + item.commentCount, 0))} />
+        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Media attachments attached to visible posts." icon={ShieldAlert} label="Media attachments" value={formatNumber(posts.reduce((total, item) => total + item.mediaCount, 0))} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-3">

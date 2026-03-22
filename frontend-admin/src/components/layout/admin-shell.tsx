@@ -28,7 +28,7 @@ const AdminShell = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-admin-canvas text-slate-950">
+    <div className="min-h-screen overflow-x-clip bg-admin-canvas text-[color:var(--jo-ink)]">
       <div className="admin-canvas-overlay pointer-events-none fixed inset-0" />
       <div className="relative flex min-h-screen items-start">
         <Sidebar collapsed={isSidebarCollapsed} mobileOpen={isMobileSidebarOpen} onClose={() => setIsMobileSidebarOpen(false)} />
@@ -38,7 +38,7 @@ const AdminShell = () => {
             onToggleDesktopSidebar={() => setIsSidebarCollapsed((current) => !current)}
             onToggleMobileSidebar={() => setIsMobileSidebarOpen((current) => !current)}
           />
-          <main className="px-4 py-5 lg:px-8 lg:py-6">
+          <main className="px-4 pb-8 pt-4 sm:px-5 lg:px-8 lg:pb-10 lg:pt-6">
             <Outlet />
           </main>
         </div>

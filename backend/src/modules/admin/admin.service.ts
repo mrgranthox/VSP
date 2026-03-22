@@ -40,6 +40,75 @@ const addDays = (date: Date, days: number): Date => {
   return next;
 };
 
+const clipText = (value: string | null | undefined, max = 160): string => {
+  const normalized = stripHtml(value ?? "");
+
+  if (!normalized) {
+    return "";
+  }
+
+  return normalized.length > max ? `${normalized.slice(0, max - 1)}…` : normalized;
+};
+
+const resolveFollowLink = (targetType: "USER" | "WORKER", targetId: string): string => (targetType === "USER" ? `/users/${targetId}` : `/workers/${targetId}`);
+
+const resolveNotificationLink = (payload: Record<string, unknown>): string | null => {
+  const readString = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = payload[key];
+
+      if (typeof value === "string" && value.length > 0) {
+        return value;
+      }
+    }
+
+    return null;
+  };
+
+  const bookingId = readString("bookingId");
+  const requestId = readString("requestId", "serviceRequestId");
+  const workerId = readString("workerProfileId", "workerId");
+  const userId = readString("userId");
+  const postId = readString("postId");
+  const commentId = readString("commentId");
+  const reviewId = readString("reviewId");
+  const reportId = readString("reportId");
+
+  if (bookingId) {
+    return `/bookings/${bookingId}`;
+  }
+
+  if (requestId) {
+    return `/service-requests/${requestId}`;
+  }
+
+  if (workerId) {
+    return `/workers/${workerId}`;
+  }
+
+  if (userId) {
+    return `/users/${userId}`;
+  }
+
+  if (postId) {
+    return `/content/post/${postId}`;
+  }
+
+  if (commentId) {
+    return `/content/comment/${commentId}`;
+  }
+
+  if (reviewId) {
+    return `/content/review/${reviewId}`;
+  }
+
+  if (reportId) {
+    return `/reports/${reportId}`;
+  }
+
+  return null;
+};
+
 class AdminService {
   constructor(
     private readonly repository: AdminRepository = new AdminRepository(),
@@ -118,6 +187,33 @@ class AdminService {
           include: {
             city: true
           }
+        },
+        availabilityRules: {
+          orderBy: [{ dayOfWeek: "asc" }, { startMinute: "asc" }]
+        },
+        availabilityExceptions: {
+          orderBy: {
+            startsAt: "desc"
+          }
+        },
+        portfolioItems: {
+          include: {
+            mediaAsset: {
+              select: {
+                id: true,
+                category: true,
+                visibility: true,
+                mimeType: true,
+                status: true,
+                originalFilename: true,
+                finalCdnUrl: true,
+                storageKey: true,
+                createdAt: true,
+                confirmedAt: true
+              }
+            }
+          },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }]
         },
         certifications: true,
         verificationRequests: {
@@ -203,6 +299,470 @@ class AdminService {
     };
   }
 
+  private mapMediaAssetSummary(asset: {
+    id: string;
+    category: string;
+    visibility: string;
+    mimeType: string;
+    status: string;
+    originalFilename: string | null;
+    finalCdnUrl: string | null;
+    storageKey: string;
+    createdAt: Date;
+    confirmedAt: Date | null;
+  }) {
+    return {
+      id: asset.id,
+      category: asset.category,
+      visibility: asset.visibility,
+      mimeType: asset.mimeType,
+      status: asset.status,
+      originalFilename: asset.originalFilename,
+      finalCdnUrl: asset.finalCdnUrl,
+      storageKey: asset.storageKey,
+      createdAt: asset.createdAt,
+      confirmedAt: asset.confirmedAt
+    };
+  }
+
+  private sortActivityTimeline(items: Array<{
+    id: string;
+    kind: string;
+    title: string;
+    subtitle?: string | null;
+    status?: string | null;
+    createdAt: Date;
+    linkPath?: string | null;
+  }>) {
+    return items
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
+      .slice(0, 28);
+  }
+
+  private async getUserActivitySnapshot(userId: string) {
+    const [
+      postsCount,
+      commentsCount,
+      postLikesCount,
+      commentLikesCount,
+      postSavesCount,
+      followsCount,
+      followersCount,
+      savedWorkersCount,
+      reportsCount,
+      messagesCount,
+      conversationsCount,
+      notificationsCount,
+      serviceRequestsCount,
+      bookingsCount,
+      reviewsWrittenCount,
+      reviewsReceivedCount,
+      supportTicketsCount,
+      fraudSignalsCount,
+      mediaAssetsCount,
+      recentPosts,
+      recentComments,
+      recentPostLikes,
+      recentCommentLikes,
+      recentFollows,
+      recentReports,
+      recentMessages,
+      recentNotifications,
+      recentServiceRequests,
+      recentBookings,
+      recentReviewsWritten,
+      recentReviewsReceived,
+      recentSupportTickets,
+      recentFraudSignals,
+      recentMediaAssets
+    ] = await Promise.all([
+      prisma.post.count({ where: { authorUserId: userId } }),
+      prisma.comment.count({ where: { authorUserId: userId } }),
+      prisma.postLike.count({ where: { userId } }),
+      prisma.commentLike.count({ where: { userId } }),
+      prisma.postSave.count({ where: { userId } }),
+      prisma.userFollow.count({ where: { followerUserId: userId } }),
+      prisma.userFollow.count({
+        where: {
+          targetType: "USER",
+          targetId: userId
+        }
+      }),
+      prisma.customerSavedWorker.count({ where: { userId } }),
+      prisma.report.count({ where: { reporterUserId: userId } }),
+      prisma.message.count({ where: { senderId: userId } }),
+      prisma.conversationParticipant.count({ where: { userId } }),
+      prisma.notification.count({ where: { userId } }),
+      prisma.serviceRequest.count({ where: { customerUserId: userId } }),
+      prisma.booking.count({ where: { customerUserId: userId } }),
+      prisma.review.count({ where: { reviewerUserId: userId } }),
+      prisma.review.count({ where: { revieweeUserId: userId } }),
+      prisma.supportTicket.count({ where: { openedByUserId: userId } }),
+      prisma.fraudSignal.count({ where: { userId } }),
+      prisma.mediaAsset.count({ where: { ownerUserId: userId } }),
+      prisma.post.findMany({
+        where: { authorUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.comment.findMany({
+        where: { authorUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.postLike.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          post: {
+            select: {
+              id: true,
+              body: true
+            }
+          }
+        }
+      }),
+      prisma.commentLike.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          comment: {
+            select: {
+              id: true,
+              body: true
+            }
+          }
+        }
+      }),
+      prisma.userFollow.findMany({
+        where: { followerUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.report.findMany({
+        where: { reporterUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.message.findMany({
+        where: { senderId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          conversation: {
+            select: {
+              id: true,
+              conversationType: true,
+              serviceRequestId: true
+            }
+          }
+        }
+      }),
+      prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 6
+      }),
+      prisma.serviceRequest.findMany({
+        where: { customerUserId: userId },
+        orderBy: { requestedAt: "desc" },
+        take: 5,
+        include: {
+          tradeCategory: {
+            select: {
+              name: true
+            }
+          }
+        }
+      }),
+      prisma.booking.findMany({
+        where: { customerUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          serviceRequest: {
+            select: {
+              id: true,
+              title: true
+            }
+          }
+        }
+      }),
+      prisma.review.findMany({
+        where: { reviewerUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.review.findMany({
+        where: { revieweeUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.supportTicket.findMany({
+        where: { openedByUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.fraudSignal.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.mediaAsset.findMany({
+        where: { ownerUserId: userId },
+        orderBy: { createdAt: "desc" },
+        take: 8
+      })
+    ]);
+
+    const activityTimeline = this.sortActivityTimeline([
+      ...recentPosts.map((post) => ({
+        id: `post:${post.id}`,
+        kind: "POST",
+        title: "Created post",
+        subtitle: clipText(post.body),
+        status: post.isDeleted ? "DELETED" : post.visibility,
+        createdAt: post.createdAt,
+        linkPath: `/content/post/${post.id}`
+      })),
+      ...recentComments.map((comment) => ({
+        id: `comment:${comment.id}`,
+        kind: "COMMENT",
+        title: "Added comment",
+        subtitle: clipText(comment.body),
+        status: comment.isDeleted ? "DELETED" : comment.reviewId ? "REVIEW" : "POST",
+        createdAt: comment.createdAt,
+        linkPath: `/content/comment/${comment.id}`
+      })),
+      ...recentPostLikes.map((item) => ({
+        id: `post-like:${item.id}`,
+        kind: "POST_LIKE",
+        title: "Liked post",
+        subtitle: clipText(item.post.body),
+        createdAt: item.createdAt,
+        linkPath: `/content/post/${item.post.id}`
+      })),
+      ...recentCommentLikes.map((item) => ({
+        id: `comment-like:${item.id}`,
+        kind: "COMMENT_LIKE",
+        title: "Liked comment",
+        subtitle: clipText(item.comment.body),
+        createdAt: item.createdAt,
+        linkPath: `/content/comment/${item.comment.id}`
+      })),
+      ...recentFollows.map((follow) => ({
+        id: `follow:${follow.id}`,
+        kind: "FOLLOW",
+        title: `Followed ${follow.targetType.toLowerCase()}`,
+        subtitle: follow.targetId,
+        createdAt: follow.createdAt,
+        linkPath: resolveFollowLink(follow.targetType, follow.targetId)
+      })),
+      ...recentReports.map((report) => ({
+        id: `report:${report.id}`,
+        kind: "REPORT",
+        title: `Filed ${report.severity.toLowerCase()} report`,
+        subtitle: `${report.entityType} · ${report.reason}`,
+        status: report.status,
+        createdAt: report.createdAt,
+        linkPath: `/reports/${report.id}`
+      })),
+      ...recentMessages.map((message) => ({
+        id: `message:${message.id}`,
+        kind: "MESSAGE",
+        title: `Sent ${message.messageType.toLowerCase()} message`,
+        subtitle: clipText(message.body) || `Conversation ${message.conversation.conversationType.toLowerCase()}`,
+        createdAt: message.createdAt,
+        linkPath: message.conversation.serviceRequestId ? `/service-requests/${message.conversation.serviceRequestId}` : null
+      })),
+      ...recentNotifications.map((notification) => ({
+        id: `notification:${notification.id}`,
+        kind: "NOTIFICATION",
+        title: notification.notificationType.replaceAll("_", " "),
+        subtitle: clipText(
+          Object.entries(notification.payloadJson as Record<string, unknown>)
+            .slice(0, 2)
+            .map(([key, value]) => `${key}: ${String(value)}`)
+            .join(" · ")
+        ),
+        status: notification.isRead ? "READ" : "UNREAD",
+        createdAt: notification.createdAt,
+        linkPath: resolveNotificationLink(notification.payloadJson as Record<string, unknown>)
+      })),
+      ...recentServiceRequests.map((request) => ({
+        id: `request:${request.id}`,
+        kind: "SERVICE_REQUEST",
+        title: request.title,
+        subtitle: request.tradeCategory?.name ?? clipText(request.description),
+        status: request.status,
+        createdAt: request.requestedAt,
+        linkPath: `/service-requests/${request.id}`
+      })),
+      ...recentBookings.map((booking) => ({
+        id: `booking:${booking.id}`,
+        kind: "BOOKING",
+        title: booking.serviceRequest?.title ?? "Booking",
+        subtitle: `Customer booking · ${booking.status.toLowerCase()}`,
+        status: booking.status,
+        createdAt: booking.createdAt,
+        linkPath: `/bookings/${booking.id}`
+      })),
+      ...recentReviewsWritten.map((review) => ({
+        id: `review-written:${review.id}`,
+        kind: "REVIEW_WRITTEN",
+        title: `Wrote ${review.rating}/5 review`,
+        subtitle: clipText(review.body),
+        createdAt: review.createdAt,
+        linkPath: `/content/review/${review.id}`
+      })),
+      ...recentReviewsReceived.map((review) => ({
+        id: `review-received:${review.id}`,
+        kind: "REVIEW_RECEIVED",
+        title: `Received ${review.rating}/5 review`,
+        subtitle: clipText(review.body),
+        createdAt: review.createdAt,
+        linkPath: `/content/review/${review.id}`
+      })),
+      ...recentSupportTickets.map((ticket) => ({
+        id: `support:${ticket.id}`,
+        kind: "SUPPORT_TICKET",
+        title: ticket.subject,
+        subtitle: clipText(ticket.body),
+        status: ticket.status,
+        createdAt: ticket.createdAt,
+        linkPath: `/support-tickets/${ticket.id}`
+      })),
+      ...recentFraudSignals.map((signal) => ({
+        id: `fraud:${signal.id}`,
+        kind: "FRAUD_SIGNAL",
+        title: signal.signalKey.replaceAll("_", " "),
+        subtitle: `${signal.entityType ?? "account"} · score ${signal.score.toString()}`,
+        status: signal.status,
+        createdAt: signal.createdAt,
+        linkPath: `/fraud-signals/${signal.id}`
+      })),
+      ...recentMediaAssets.map((asset) => ({
+        id: `media:${asset.id}`,
+        kind: "MEDIA",
+        title: asset.originalFilename ?? asset.category,
+        subtitle: `${asset.category} · ${asset.status.toLowerCase()}`,
+        status: asset.status,
+        createdAt: asset.createdAt
+      }))
+    ]);
+
+    return {
+      activitySummary: {
+        posts: postsCount,
+        comments: commentsCount,
+        postLikes: postLikesCount,
+        commentLikes: commentLikesCount,
+        postSaves: postSavesCount,
+        follows: followsCount,
+        followers: followersCount,
+        savedWorkers: savedWorkersCount,
+        reports: reportsCount,
+        messages: messagesCount,
+        conversations: conversationsCount,
+        notifications: notificationsCount,
+        serviceRequests: serviceRequestsCount,
+        bookings: bookingsCount,
+        reviewsWritten: reviewsWrittenCount,
+        reviewsReceived: reviewsReceivedCount,
+        supportTickets: supportTicketsCount,
+        fraudSignals: fraudSignalsCount,
+        mediaAssets: mediaAssetsCount
+      },
+      recentMediaAssets: recentMediaAssets.map((asset) => this.mapMediaAssetSummary(asset)),
+      activityTimeline
+    };
+  }
+
+  private async getWorkerActivitySnapshot(workerId: string, userId: string) {
+    const userActivity = await this.getUserActivitySnapshot(userId);
+    const [assignmentCount, bookingCount, savedByCount, searchImpressionsCount, recentAssignments, recentBookings, recentImpressions] = await Promise.all([
+      prisma.serviceRequestAssignment.count({ where: { workerProfileId: workerId } }),
+      prisma.booking.count({ where: { workerProfileId: workerId } }),
+      prisma.customerSavedWorker.count({ where: { workerProfileId: workerId } }),
+      prisma.searchImpression.count({ where: { workerProfileId: workerId } }),
+      prisma.serviceRequestAssignment.findMany({
+        where: { workerProfileId: workerId },
+        orderBy: { assignedAt: "desc" },
+        take: 5,
+        include: {
+          serviceRequest: {
+            select: {
+              id: true,
+              title: true,
+              status: true
+            }
+          }
+        }
+      }),
+      prisma.booking.findMany({
+        where: { workerProfileId: workerId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          serviceRequest: {
+            select: {
+              id: true,
+              title: true
+            }
+          }
+        }
+      }),
+      prisma.searchImpression.findMany({
+        where: { workerProfileId: workerId },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      })
+    ]);
+
+    const workerTimeline = this.sortActivityTimeline([
+      ...userActivity.activityTimeline,
+      ...recentAssignments.map((assignment) => ({
+        id: `assignment:${assignment.id}`,
+        kind: "ASSIGNMENT",
+        title: assignment.serviceRequest.title,
+        subtitle: `Assignment ${assignment.assignmentStatus.toLowerCase()}`,
+        status: assignment.assignmentStatus,
+        createdAt: assignment.assignedAt,
+        linkPath: `/service-requests/${assignment.serviceRequest.id}`
+      })),
+      ...recentBookings.map((booking) => ({
+        id: `worker-booking:${booking.id}`,
+        kind: "WORKER_BOOKING",
+        title: booking.serviceRequest.title,
+        subtitle: `Worker booking · ${booking.status.toLowerCase()}`,
+        status: booking.status,
+        createdAt: booking.createdAt,
+        linkPath: `/bookings/${booking.id}`
+      })),
+      ...recentImpressions.map((impression) => ({
+        id: `impression:${impression.id}`,
+        kind: "SEARCH_IMPRESSION",
+        title: "Appeared in search",
+        subtitle: impression.queryText ? `Query: ${impression.queryText}` : "Marketplace search impression",
+        createdAt: impression.createdAt
+      }))
+    ]);
+
+    return {
+      activitySummary: {
+        ...userActivity.activitySummary,
+        assignments: assignmentCount,
+        bookingsAsWorker: bookingCount,
+        savedByUsers: savedByCount,
+        searchImpressions: searchImpressionsCount
+      },
+      recentMediaAssets: userActivity.recentMediaAssets,
+      activityTimeline: workerTimeline
+    };
+  }
+
   async listUsers(
     query: {
       status?: UserStatus;
@@ -265,15 +825,19 @@ class AdminService {
 
   async getUserDetail(userId: string) {
     const user = await this.requireUser(userId);
-    const [sessionCount, openTicketCount] = await Promise.all([
-      prisma.userSession.count({
+    const [activeSessions, openTicketCount, activitySnapshot] = await Promise.all([
+      prisma.userSession.findMany({
         where: {
           userId,
           revokedAt: null,
           expiresAt: {
             gt: new Date()
           }
-        }
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: 8
       }),
       prisma.supportTicket.count({
         where: {
@@ -282,13 +846,27 @@ class AdminService {
             in: [SupportTicketStatus.OPEN, SupportTicketStatus.ASSIGNED, SupportTicketStatus.WAITING_INTERNAL, SupportTicketStatus.WAITING_USER]
           }
         }
-      })
+      }),
+      this.getUserActivitySnapshot(userId)
     ]);
 
     return {
       ...this.mapUserSummary(user),
-      sessionCount,
-      openTicketCount
+      updatedAt: user.updatedAt,
+      sessionCount: activeSessions.length,
+      openTicketCount,
+      activeSessions: activeSessions.map((session) => ({
+        id: session.id,
+        deviceType: session.deviceType,
+        ipAddress: session.ipAddress,
+        mfaVerified: session.mfaVerified,
+        mfaMethod: session.mfaMethod,
+        createdAt: session.createdAt,
+        expiresAt: session.expiresAt
+      })),
+      activitySummary: activitySnapshot.activitySummary,
+      recentMediaAssets: activitySnapshot.recentMediaAssets,
+      activityTimeline: activitySnapshot.activityTimeline
     };
   }
 
@@ -400,7 +978,26 @@ class AdminService {
   }
 
   async getWorkerDetail(workerId: string) {
-    return this.requireWorker(workerId);
+    const worker = await this.requireWorker(workerId);
+    const activitySnapshot = await this.getWorkerActivitySnapshot(worker.id, worker.userId);
+
+    return {
+      ...worker,
+      activitySummary: {
+        ...activitySnapshot.activitySummary,
+        services: worker.services.length,
+        serviceAreas: worker.serviceAreas.length,
+        certifications: worker.certifications.length,
+        verificationRequests: worker.verificationRequests.length,
+        portfolioItems: worker.portfolioItems.length,
+        availabilityRules: worker.availabilityRules.length,
+        availabilityExceptions: worker.availabilityExceptions.length,
+        featuredSubscriptions: worker.featuredSubscriptions.length,
+        subscriptionInvoices: worker.subscriptionInvoices.length
+      },
+      recentMediaAssets: activitySnapshot.recentMediaAssets,
+      activityTimeline: activitySnapshot.activityTimeline
+    };
   }
 
   async verifyWorker(actor: ActorContext, workerId: string, data: { notes?: string }) {

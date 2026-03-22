@@ -81,4 +81,20 @@ const formatDateTime = (value?: string | null) => {
   }).format(new Date(value));
 };
 
-export { cn, formatCurrency, formatDateTime, formatDisplayName, formatJsonValue, formatNumber, formatRelativeDate };
+const isImageMimeType = (value?: string | null) => typeof value === "string" && value.startsWith("image/");
+
+const isPdfMimeType = (value?: string | null) => value === "application/pdf";
+
+const compactId = (value?: string | null, left = 8, right = 6) => {
+  if (!value) {
+    return "—";
+  }
+
+  if (value.length <= left + right + 3) {
+    return value;
+  }
+
+  return `${value.slice(0, left)}...${value.slice(-right)}`;
+};
+
+export { cn, compactId, formatCurrency, formatDateTime, formatDisplayName, formatJsonValue, formatNumber, formatRelativeDate, isImageMimeType, isPdfMimeType };

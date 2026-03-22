@@ -13,13 +13,13 @@ interface EntityHeroProps {
 }
 
 const EntityHero = ({ eyebrow, title, subtitle, badges = [], meta = [] }: EntityHeroProps) => (
-  <div className="overflow-hidden rounded-[1.75rem] border border-white/70 bg-[linear-gradient(135deg,rgba(10,15,30,1)_0%,rgba(22,41,109,0.96)_55%,rgba(82,122,255,0.92)_140%)] p-6 text-white shadow-[0_24px_60px_rgba(15,23,42,0.22)]">
+  <div className="overflow-hidden rounded-[1.75rem] border border-[rgba(112,104,84,0.12)] bg-[linear-gradient(135deg,#173328_0%,#2f6b35_36%,#f6b313_82%,#ff4b19_120%)] p-6 text-white shadow-[0_24px_60px_rgba(23,51,40,0.24)]">
     <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
       <div className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-100/70">{eyebrow}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[rgba(255,248,235,0.76)]">{eyebrow}</p>
         <div>
           <h1 className="text-3xl font-black tracking-tight">{title}</h1>
-          <p className="mt-2 max-w-3xl text-sm text-blue-100/82">{subtitle}</p>
+          <p className="mt-2 max-w-3xl text-sm text-[rgba(255,248,235,0.86)]">{subtitle}</p>
         </div>
         {badges.length > 0 ? (
           <div className="flex flex-wrap gap-2">
@@ -36,7 +36,7 @@ const EntityHero = ({ eyebrow, title, subtitle, badges = [], meta = [] }: Entity
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {meta.map((item) => (
             <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3" key={item.label}>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-blue-100/66">{item.label}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[rgba(255,248,235,0.68)]">{item.label}</p>
               <p className="mt-2 text-sm font-semibold text-white">{item.value}</p>
             </div>
           ))}
@@ -47,7 +47,7 @@ const EntityHero = ({ eyebrow, title, subtitle, badges = [], meta = [] }: Entity
 );
 
 const SectionCard = ({ className, ...props }: PropsWithChildren<{ title: string; description?: string; className?: string }>) => (
-  <Card className={cn("overflow-hidden border-white/70 bg-white/95", className)}>
+  <Card className={cn("overflow-hidden", className)}>
     <CardHeader>
       <CardTitle>{props.title}</CardTitle>
       {props.description ? <CardDescription>{props.description}</CardDescription> : null}
@@ -70,9 +70,9 @@ const columnClassMap = {
 const KeyValueGrid = ({ items, columns = "three" }: KeyValueGridProps) => (
   <div className={cn("grid gap-3", columnClassMap[columns])}>
     {items.map((item) => (
-      <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/90 px-4 py-3" key={`${item.label}-${item.value}`}>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">{item.label}</p>
-        <p className={cn("mt-2 text-sm font-semibold text-slate-950", item.mono && "font-mono text-xs")}>{item.value}</p>
+      <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.9)] px-4 py-3" key={`${item.label}-${item.value}`}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.82)]">{item.label}</p>
+        <p className={cn("mt-2 text-sm font-semibold text-[color:var(--jo-ink)]", item.mono && "font-mono text-xs")}>{item.value}</p>
       </div>
     ))}
   </div>
@@ -89,18 +89,18 @@ interface TimelineItem {
 const TimelineList = ({ items }: { items: TimelineItem[] }) => (
   <div className="space-y-3">
     {items.map((item, index) => (
-      <div className="flex gap-4 rounded-[1.25rem] border border-slate-100 bg-slate-50/90 p-4" key={item.id}>
+      <div className="flex gap-4 rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4" key={item.id}>
         <div className="flex flex-col items-center">
-          <span className="h-3 w-3 rounded-full bg-blue-600" />
-          {index !== items.length - 1 ? <span className="mt-2 h-full w-px bg-slate-200" /> : null}
+          <span className="h-3 w-3 rounded-full bg-[color:var(--jo-forest)]" />
+          {index !== items.length - 1 ? <span className="mt-2 h-full w-px bg-[rgba(112,104,84,0.16)]" /> : null}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-slate-950">{item.title}</p>
+            <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{item.title}</p>
             {item.badge ? <Badge variant={item.badge.variant}>{item.badge.label}</Badge> : null}
           </div>
-          {item.subtitle ? <p className="mt-1 text-sm text-slate-500">{item.subtitle}</p> : null}
-          {item.timestamp ? <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{item.timestamp}</p> : null}
+          {item.subtitle ? <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{item.subtitle}</p> : null}
+          {item.timestamp ? <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{item.timestamp}</p> : null}
         </div>
       </div>
     ))}

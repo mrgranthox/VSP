@@ -66,6 +66,16 @@ class NotificationsService {
     };
   }
 
+  async getNotification(actor: ActorContext, notificationId: string) {
+    const notification = await this.repository.getNotificationById(actor.userId, notificationId);
+
+    if (!notification) {
+      throw Errors.NOTIFICATION_NOT_FOUND();
+    }
+
+    return notification;
+  }
+
   async markRead(actor: ActorContext, notificationId: string) {
     const notification = await this.repository.getNotificationById(actor.userId, notificationId);
 

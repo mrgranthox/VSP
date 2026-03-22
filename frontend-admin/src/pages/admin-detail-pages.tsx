@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, BadgeCheck, LifeBuoy, ShieldCheck, UserRoundCog, WalletCards } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, BriefcaseBusiness, FileText, ImageIcon, LifeBuoy, MessageSquareText, ShieldAlert, ShieldCheck, UserRoundCog, Users, WalletCards } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -14,11 +14,13 @@ import { Select } from "@/components/ui/select";
 import { useCurrentAdmin } from "@/features/auth/auth";
 import { apiRequest, getApiErrorMessage, isMfaRequiredError } from "@/lib/api";
 import { hasPermission } from "@/lib/admin-permissions";
-import { formatCurrency, formatDateTime, formatDisplayName, formatNumber } from "@/lib/utils";
+import { compactId, formatCurrency, formatDateTime, formatDisplayName, formatNumber, isImageMimeType, isPdfMimeType } from "@/lib/utils";
 import { ContentSnapshot } from "@/pages/admin-detail-pages.shared";
 import type {
+  AdminActivityItem,
   AdminContentView,
   AdminModerationCaseDetail,
+  AdminMediaAssetItem,
   AdminReportDetail,
   AdminUserDetail,
   AdminContentHistoryReport,
@@ -73,6 +75,216 @@ const resolveAdminEntityLink = (entityType?: string | null, entityId?: string | 
   }
 };
 
+const formatDayLabel = (dayOfWeek: number) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dayOfWeek] ?? `Day ${dayOfWeek}`;
+
+const emptyUserActivitySummary: AdminUserDetail["activitySummary"] = {
+  posts: 0,
+  comments: 0,
+  postLikes: 0,
+  commentLikes: 0,
+  postSaves: 0,
+  follows: 0,
+  followers: 0,
+  savedWorkers: 0,
+  reports: 0,
+  messages: 0,
+  conversations: 0,
+  notifications: 0,
+  serviceRequests: 0,
+  bookings: 0,
+  reviewsWritten: 0,
+  reviewsReceived: 0,
+  supportTickets: 0,
+  fraudSignals: 0,
+  mediaAssets: 0
+};
+
+const emptyWorkerActivitySummary: WorkerDetail["activitySummary"] = {
+  ...emptyUserActivitySummary,
+  assignments: 0,
+  bookingsAsWorker: 0,
+  savedByUsers: 0,
+  searchImpressions: 0,
+  services: 0,
+  serviceAreas: 0,
+  certifications: 0,
+  verificationRequests: 0,
+  portfolioItems: 0,
+  availabilityRules: 0,
+  availabilityExceptions: 0,
+  featuredSubscriptions: 0,
+  subscriptionInvoices: 0
+};
+
+const activityDomainConfig = [
+  {
+    key: "content",
+    title: "Content",
+    description: "Posts, comments, reviews, and interaction traces.",
+    icon: MessageSquareText,
+    matches: new Set(["POST", "COMMENT", "POST_LIKE", "COMMENT_LIKE", "REVIEW_WRITTEN", "REVIEW_RECEIVED"])
+  },
+  {
+    key: "marketplace",
+    title: "Marketplace",
+    description: "Requests, bookings, assignments, follows, and search exposure.",
+    icon: BriefcaseBusiness,
+    matches: new Set(["SERVICE_REQUEST", "BOOKING", "ASSIGNMENT", "WORKER_BOOKING", "FOLLOW", "SEARCH_IMPRESSION"])
+  },
+  {
+    key: "trust",
+    title: "Trust & Safety",
+    description: "Reports, fraud signals, and support escalations.",
+    icon: ShieldAlert,
+    matches: new Set(["REPORT", "FRAUD_SIGNAL", "SUPPORT_TICKET"])
+  },
+  {
+    key: "comms",
+    title: "Messaging & Alerts",
+    description: "Conversations, admin notices, and operational comms.",
+    icon: Users,
+    matches: new Set(["MESSAGE", "NOTIFICATION"])
+  },
+  {
+    key: "media",
+    title: "Media",
+    description: "Images, documents, and uploaded evidence.",
+    icon: ImageIcon,
+    matches: new Set(["MEDIA"])
+  }
+] as const;
+
+const groupActivityIntoDomains = (items: AdminActivityItem[]) =>
+  activityDomainConfig
+    .map((domain) => ({
+      ...domain,
+      items: items.filter((item) => domain.matches.has(item.kind)).slice(0, 4)
+    }))
+    .filter((domain) => domain.items.length > 0);
+
+const getVerificationRequestValue = (record: Record<string, unknown> | null | undefined, key: string) => {
+  const value = record?.[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+};
+
+const getVerificationRequestTimestamp = (record: Record<string, unknown> | null | undefined, key: string) => {
+  const value = record?.[key];
+  return typeof value === "string" ? value : null;
+};
+
+const ActivityFeed = ({ items, emptyLabel }: { items: AdminActivityItem[]; emptyLabel: string }) => {
+  if (items.length === 0) {
+    return <p className="text-sm text-[color:var(--jo-muted)]">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {items.map((item) => {
+        const content = (
+          <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4 transition hover:border-[rgba(65,150,70,0.22)]">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="blue">{item.kind.replaceAll("_", " ")}</Badge>
+              {item.status ? <Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge> : null}
+            </div>
+            <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{item.title}</p>
+            {item.subtitle ? <p className="mt-1 text-sm leading-6 text-[color:var(--jo-muted)]">{item.subtitle}</p> : null}
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{formatDateTime(item.createdAt)}</p>
+          </div>
+        );
+
+        return item.linkPath ? (
+          <Link className="block" key={item.id} to={item.linkPath}>
+            {content}
+          </Link>
+        ) : (
+          <div key={item.id}>{content}</div>
+        );
+      })}
+    </div>
+  );
+};
+
+const ActivityDomainBoard = ({ items }: { items: AdminActivityItem[] }) => {
+  const domains = groupActivityIntoDomains(items);
+
+  if (domains.length === 0) {
+    return <p className="text-sm text-[color:var(--jo-muted)]">No recent domain activity was recorded.</p>;
+  }
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-2">
+      {domains.map((domain) => (
+        <div className="rounded-[1.35rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4" key={domain.key}>
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(65,150,70,0.12),rgba(246,179,19,0.18))] text-[color:var(--jo-forest)]">
+              <domain.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[color:var(--jo-ink)]">{domain.title}</p>
+              <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{domain.description}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {domain.items.map((item) => (
+              <div className="rounded-2xl bg-white px-4 py-3" key={item.id}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{item.title}</p>
+                  {item.status ? <Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge> : null}
+                </div>
+                {item.subtitle ? <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{item.subtitle}</p> : null}
+                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{formatDateTime(item.createdAt)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const MediaAssetStrip = ({ assets, emptyLabel }: { assets: AdminMediaAssetItem[]; emptyLabel: string }) => {
+  if (assets.length === 0) {
+    return <p className="text-sm text-[color:var(--jo-muted)]">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {assets.map((asset) => (
+        <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4" key={asset.id}>
+          {asset.finalCdnUrl && isImageMimeType(asset.mimeType) ? (
+            <img alt={asset.originalFilename ?? asset.category} className="mb-4 h-36 w-full rounded-[1rem] object-cover" src={asset.finalCdnUrl} />
+          ) : (
+            <div className="mb-4 flex h-36 w-full flex-col items-center justify-center rounded-[1rem] border border-dashed border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] text-sm font-semibold text-[color:var(--jo-muted)]">
+              <FileText className="h-7 w-7 text-[color:var(--jo-coral)]" />
+              <span className="mt-3">{isPdfMimeType(asset.mimeType) ? "PDF document" : asset.category}</span>
+              <span className="mt-1 text-xs uppercase tracking-[0.16em]">{asset.mimeType ?? "unknown mime"}</span>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={getStatusBadgeVariant(asset.status)}>{asset.status}</Badge>
+            <Badge variant="slate">{asset.visibility}</Badge>
+          </div>
+          <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{asset.originalFilename ?? asset.storageKey}</p>
+          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{asset.mimeType}</p>
+          <p className="mt-1 font-mono text-[11px] text-[color:var(--jo-muted)]">{compactId(asset.id)}</p>
+          {asset.finalCdnUrl ? (
+            <a
+              className="mt-3 inline-flex items-center justify-center rounded-[1rem] border border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] px-4 py-2.5 text-sm font-semibold text-[color:var(--jo-ink)] transition hover:border-[rgba(65,150,70,0.24)] hover:bg-white"
+              href={asset.finalCdnUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Open file
+            </a>
+          ) : null}
+          <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{formatDateTime(asset.createdAt)}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const UserDetailPage = () => {
   const location = useLocation();
   const { userId = "" } = useParams();
@@ -113,6 +325,11 @@ const UserDetailPage = () => {
     );
   }
 
+  const userActivitySummary = user.activitySummary ?? emptyUserActivitySummary;
+  const userActiveSessions = user.activeSessions ?? [];
+  const userActivityTimeline = user.activityTimeline ?? [];
+  const userRecentMediaAssets = user.recentMediaAssets ?? [];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -149,19 +366,55 @@ const UserDetailPage = () => {
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <SectionCard description="Direct account facts and profile metadata." title="Profile Snapshot">
-          <KeyValueGrid
-            columns="four"
-            items={[
-              { label: "User ID", value: user.id, mono: true },
-              { label: "Phone", value: user.phone ?? "Not provided" },
-              { label: "Email verified", value: user.isEmailVerified ? "Verified" : "Pending" },
-              { label: "Phone verified", value: user.isPhoneVerified ? "Verified" : "Pending" },
-              { label: "Last login", value: formatDateTime(user.lastLoginAt) },
-              { label: "City", value: user.profile?.cityId ?? "No city", mono: true },
-              { label: "Worker profile", value: user.workerProfile?.verificationStatus ?? "No worker profile" },
-              { label: "Updated", value: formatDateTime(user.updatedAt) }
-            ]}
-          />
+          <div className="space-y-5">
+            <KeyValueGrid
+              columns="four"
+              items={[
+                { label: "User ID", value: user.id, mono: true },
+                { label: "Phone", value: user.phone ?? "Not provided" },
+                { label: "Email verified", value: user.isEmailVerified ? "Verified" : "Pending" },
+                { label: "Phone verified", value: user.isPhoneVerified ? "Verified" : "Pending" },
+                { label: "Last login", value: formatDateTime(user.lastLoginAt) },
+                { label: "City", value: user.profile?.cityId ?? "No city", mono: true },
+                { label: "Worker profile", value: user.workerProfile?.verificationStatus ?? "No worker profile" },
+                { label: "Updated", value: formatDateTime(user.updatedAt) }
+              ]}
+            />
+
+            <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+              <div className="rounded-[1.35rem] border border-[rgba(112,104,84,0.12)] bg-[rgba(255,251,244,0.92)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Identity portrait</p>
+                {user.profile?.avatarUrl ? (
+                  <img alt={formatDisplayName(user.profile, user.email ?? "User")} className="mt-4 h-40 w-full rounded-[1.1rem] object-cover" src={user.profile.avatarUrl} />
+                ) : (
+                  <div className="mt-4 flex h-40 w-full items-center justify-center rounded-[1.1rem] border border-dashed border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] text-sm font-semibold text-[color:var(--jo-muted)]">
+                    No avatar on file
+                  </div>
+                )}
+                <p className="mt-4 text-sm font-semibold text-[color:var(--jo-ink)]">{formatDisplayName(user.profile, user.email ?? "Unknown user")}</p>
+                <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{user.profile?.bio || "No biography recorded."}</p>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Posts</p>
+                  <p className="mt-2 text-2xl font-black text-[color:var(--jo-ink)]">{formatNumber(userActivitySummary.posts)}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Messages</p>
+                  <p className="mt-2 text-2xl font-black text-[color:var(--jo-ink)]">{formatNumber(userActivitySummary.messages)}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Reports</p>
+                  <p className="mt-2 text-2xl font-black text-[color:var(--jo-ink)]">{formatNumber(userActivitySummary.reports)}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Followers</p>
+                  <p className="mt-2 text-2xl font-black text-[color:var(--jo-ink)]">{formatNumber(userActivitySummary.followers)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </SectionCard>
 
         <SectionCard description="High-risk user lifecycle actions are gated by admin permission and backend MFA." title="Lifecycle Controls">
@@ -196,9 +449,65 @@ const UserDetailPage = () => {
                 </Button>
               </Link>
             ) : null}
+
+            <div className="space-y-3 border-t border-[rgba(112,104,84,0.12)] pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Active sessions</p>
+              {userActiveSessions.length === 0 ? (
+                <p className="text-sm text-[color:var(--jo-muted)]">No active sessions recorded.</p>
+              ) : (
+                userActiveSessions.map((session) => (
+                  <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-3" key={session.id}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={session.mfaVerified ? "green" : "amber"}>{session.mfaVerified ? "MFA verified" : "No MFA"}</Badge>
+                      {session.mfaMethod ? <Badge variant="slate">{session.mfaMethod}</Badge> : null}
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{session.deviceType ?? "Unknown device"}</p>
+                    <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{session.ipAddress ?? "No IP recorded"}</p>
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Expires {formatDateTime(session.expiresAt)}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </SectionCard>
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+        <SectionCard description="Counts across content, trust, engagement, support, and commerce actions attributed to this user." title="Activity Summary">
+          <KeyValueGrid
+            columns="four"
+            items={[
+              { label: "Comments", value: formatNumber(userActivitySummary.comments) },
+              { label: "Post likes", value: formatNumber(userActivitySummary.postLikes) },
+              { label: "Comment likes", value: formatNumber(userActivitySummary.commentLikes) },
+              { label: "Post saves", value: formatNumber(userActivitySummary.postSaves) },
+              { label: "Follows", value: formatNumber(userActivitySummary.follows) },
+              { label: "Saved workers", value: formatNumber(userActivitySummary.savedWorkers) },
+              { label: "Conversations", value: formatNumber(userActivitySummary.conversations) },
+              { label: "Notifications", value: formatNumber(userActivitySummary.notifications) },
+              { label: "Requests", value: formatNumber(userActivitySummary.serviceRequests) },
+              { label: "Bookings", value: formatNumber(userActivitySummary.bookings) },
+              { label: "Reviews written", value: formatNumber(userActivitySummary.reviewsWritten) },
+              { label: "Reviews received", value: formatNumber(userActivitySummary.reviewsReceived) },
+              { label: "Support tickets", value: formatNumber(userActivitySummary.supportTickets) },
+              { label: "Fraud signals", value: formatNumber(userActivitySummary.fraudSignals) },
+              { label: "Media assets", value: formatNumber(userActivitySummary.mediaAssets) }
+            ]}
+          />
+        </SectionCard>
+
+        <SectionCard description="The latest cross-system events tied to this user, with direct links into the relevant admin surfaces." title="Cross-System Activity">
+          <ActivityFeed emptyLabel="No recorded activity yet for this account." items={userActivityTimeline} />
+        </SectionCard>
+      </div>
+
+      <SectionCard description="A faster investigative cut of the same timeline, grouped by operational domain so moderators and support agents can scan patterns quickly." title="Activity Evidence Lanes">
+        <ActivityDomainBoard items={userActivityTimeline} />
+      </SectionCard>
+
+      <SectionCard description="Recent media and document uploads owned by this user account." title="Media & Documents">
+        <MediaAssetStrip assets={userRecentMediaAssets} emptyLabel="No media assets have been uploaded by this user." />
+      </SectionCard>
     </div>
   );
 };
@@ -221,12 +530,12 @@ const WorkerDetailPage = () => {
   const docsQuery = useQuery({
     queryKey: ["admin", "workers", "docs", workerId],
     queryFn: () => apiRequest<WorkerVerificationDocuments>(`/admin/workers/${workerId}/verification-documents`),
-    enabled: Boolean(workerId)
+    enabled: Boolean(workerId) && hasPermission(roles, "WORKER_VERIFY")
   });
   const subscriptionQuery = useQuery({
     queryKey: ["admin", "workers", "subscription", workerId],
     queryFn: () => apiRequest<WorkerSubscriptionSnapshot>(`/admin/workers/${workerId}/subscription`),
-    enabled: Boolean(workerId)
+    enabled: Boolean(workerId) && hasPermission(roles, "FEATURED_WORKER_MANAGE")
   });
 
   const reviewMutation = useMutation({
@@ -283,6 +592,17 @@ const WorkerDetailPage = () => {
   const canVerify = hasPermission(roles, "WORKER_VERIFY");
   const canReject = hasPermission(roles, "WORKER_REJECT_VERIFICATION");
   const canManageFeatured = hasPermission(roles, "FEATURED_WORKER_MANAGE");
+  const workerActivitySummary = worker.activitySummary ?? emptyWorkerActivitySummary;
+  const workerActivityTimeline = worker.activityTimeline ?? [];
+  const workerRecentMediaAssets = worker.recentMediaAssets ?? [];
+  const workerPortfolioItems = worker.portfolioItems ?? [];
+  const workerAvailabilityRules = worker.availabilityRules ?? [];
+  const workerAvailabilityExceptions = worker.availabilityExceptions ?? [];
+  const workerServices = worker.services ?? [];
+  const workerServiceAreas = worker.serviceAreas ?? [];
+  const workerTradeCategories = worker.tradeCategories ?? [];
+  const workerCertifications = worker.certifications ?? [];
+  const workerVerificationRequests = worker.verificationRequests ?? [];
 
   return (
     <div className="space-y-6">
@@ -335,43 +655,62 @@ const WorkerDetailPage = () => {
                 { label: "Experience", value: `${worker.experienceYears ?? 0} years` },
                 { label: "Reviews", value: formatNumber(worker.totalReviews) },
                 { label: "Featured", value: worker.isFeatured ? "Yes" : "No" },
-                { label: "Verification", value: worker.verificationStatus }
+                { label: "Verification", value: worker.verificationStatus },
+                { label: "Last login", value: formatDateTime(worker.user.lastLoginAt) },
+                { label: "Email", value: worker.user.email ?? "No email" },
+                { label: "Phone", value: worker.user.phone ?? "No phone" },
+                { label: "Portfolio", value: formatNumber(workerPortfolioItems.length) }
               ]}
             />
 
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Trades</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {worker.tradeCategories.map((entry) => (
-                    <Badge key={entry.id} variant="blue">
-                      {entry.tradeCategory?.name ?? entry.tradeCategoryId}
-                    </Badge>
-                  ))}
-                </div>
+            <div className="grid gap-3 lg:grid-cols-[240px_1fr]">
+              <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Identity portrait</p>
+                {worker.user.profile?.avatarUrl ? (
+                  <img alt={worker.displayName || "Worker"} className="mt-4 h-40 w-full rounded-[1rem] object-cover" src={worker.user.profile.avatarUrl} />
+                ) : (
+                  <div className="mt-4 flex h-40 w-full items-center justify-center rounded-[1rem] border border-dashed border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] text-sm font-semibold text-[color:var(--jo-muted)]">
+                    No avatar on file
+                  </div>
+                )}
+                <p className="mt-4 text-sm font-semibold text-[color:var(--jo-ink)]">{worker.displayName || formatDisplayName(worker.user.profile, worker.user.email ?? "Worker")}</p>
+                <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{worker.headline || "No worker headline recorded."}</p>
               </div>
-              <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Coverage areas</p>
-                <div className="mt-3 space-y-2">
-                  {worker.serviceAreas.map((area) => (
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2" key={area.id}>
-                      <span className="text-sm font-semibold text-slate-700">{area.city?.name ?? area.cityId}</span>
-                      <span className="text-xs font-medium text-slate-500">{area.radiusKm ?? 0} km</span>
-                    </div>
-                  ))}
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Trades</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {workerTradeCategories.map((entry) => (
+                      <Badge key={entry.id} variant="blue">
+                        {entry.tradeCategory?.name ?? entry.tradeCategoryId}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Coverage areas</p>
+                  <div className="mt-3 space-y-2">
+                    {workerServiceAreas.map((area) => (
+                      <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2" key={area.id}>
+                        <span className="text-sm font-semibold text-[color:var(--jo-ink)]">{area.city?.name ?? area.cityId}</span>
+                        <span className="text-xs font-medium text-[color:var(--jo-muted)]">{area.radiusKm ?? 0} km</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="grid gap-3 md:grid-cols-2">
-              {worker.services.map((service) => (
-                <div className="rounded-[1.25rem] border border-slate-100 bg-white p-4" key={service.id}>
+              {workerServices.map((service) => (
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,253,248,0.96)] p-4" key={service.id}>
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-slate-950">{service.title}</p>
+                    <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{service.title}</p>
                     <Badge variant={service.isEnabled ? "green" : "slate"}>{service.isEnabled ? "Enabled" : "Disabled"}</Badge>
                   </div>
-                  <p className="mt-2 text-sm text-slate-500">{service.description || "No service description"}</p>
-                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  <p className="mt-2 text-sm text-[color:var(--jo-muted)]">{service.description || "No service description"}</p>
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">
                     {service.basePriceMinor ? formatCurrency(service.basePriceMinor, service.currencyCode ?? "USD") : "Custom pricing"}
                   </p>
                 </div>
@@ -383,17 +722,70 @@ const WorkerDetailPage = () => {
         <div className="space-y-6">
           <SectionCard description="Verification evidence and review controls." title="Verification Desk">
             <div className="space-y-4">
-              <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/80 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Documents on file</p>
+              <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Latest verification request</p>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Status</p>
+                    <p className="mt-2 text-sm font-semibold text-[color:var(--jo-ink)]">
+                      {getVerificationRequestValue((docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined), "status") ?? worker.verificationStatus}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Submitted</p>
+                    <p className="mt-2 text-sm font-semibold text-[color:var(--jo-ink)]">
+                      {formatDateTime(
+                        getVerificationRequestTimestamp(
+                          (docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined),
+                          "createdAt"
+                        )
+                      )}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white px-4 py-3 md:col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Review notes</p>
+                    <p className="mt-2 text-sm text-[color:var(--jo-muted)]">
+                      {getVerificationRequestValue(
+                        (docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined),
+                        "reviewNotes"
+                      ) ??
+                        getVerificationRequestValue(
+                          (docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined),
+                          "notes"
+                        ) ??
+                        "No verification notes recorded yet."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Documents on file</p>
                 <div className="mt-3 space-y-2">
-                  {(docs?.documents ?? []).map((document) => (
+                  {(docs?.documents ?? workerCertifications.map((certification) => ({
+                    id: certification.id,
+                    title: certification.title,
+                    issuer: certification.issuer,
+                    documentUrl: certification.certificateUrl,
+                    verificationStatus: certification.verificationStatus
+                  }))).map((document) => (
                     <div className="rounded-2xl bg-white px-4 py-3" key={document.id}>
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-900">{document.title}</p>
+                        <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{document.title}</p>
                         <Badge variant={getStatusBadgeVariant(document.verificationStatus)}>{document.verificationStatus}</Badge>
                       </div>
-                      <p className="mt-1 text-sm text-slate-500">{document.issuer || "No issuer recorded"}</p>
-                      <p className="mt-2 break-all text-xs font-medium text-slate-400">{document.documentUrl || "No document URL recorded"}</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{document.issuer || "No issuer recorded"}</p>
+                      <p className="mt-2 break-all text-xs font-medium text-[color:rgba(107,114,102,0.72)]">{document.documentUrl || "No document URL recorded"}</p>
+                      {document.documentUrl ? (
+                        <a
+                          className="mt-3 inline-flex items-center justify-center rounded-[1rem] border border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] px-4 py-2.5 text-sm font-semibold text-[color:var(--jo-ink)] transition hover:border-[rgba(65,150,70,0.24)] hover:bg-white"
+                          href={document.documentUrl}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          Open document
+                        </a>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -487,6 +879,100 @@ const WorkerDetailPage = () => {
           ) : null}
         </div>
       </div>
+
+      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <SectionCard description="Availability coverage, exceptions, and visual proof of completed work." title="Availability & Portfolio">
+          <div className="space-y-5">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Availability rules</p>
+                <div className="mt-3 space-y-2">
+                  {workerAvailabilityRules.length === 0 ? (
+                    <p className="text-sm text-[color:var(--jo-muted)]">No recurring rules configured.</p>
+                  ) : (
+                    workerAvailabilityRules.map((rule) => (
+                      <div className="rounded-2xl bg-white px-3 py-2" key={rule.id}>
+                        <p className="text-sm font-semibold text-[color:var(--jo-ink)]">
+                          {formatDayLabel(rule.dayOfWeek)} · {rule.startMinute} to {rule.endMinute}
+                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{rule.timezone}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Availability exceptions</p>
+                <div className="mt-3 space-y-2">
+                  {workerAvailabilityExceptions.length === 0 ? (
+                    <p className="text-sm text-[color:var(--jo-muted)]">No exception windows recorded.</p>
+                  ) : (
+                    workerAvailabilityExceptions.map((exception) => (
+                      <div className="rounded-2xl bg-white px-3 py-2" key={exception.id}>
+                        <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{formatDateTime(exception.startsAt)}</p>
+                        <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{exception.reason || formatDateTime(exception.endsAt)}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              {workerPortfolioItems.length === 0 ? (
+                <p className="text-sm text-[color:var(--jo-muted)]">No portfolio items uploaded yet.</p>
+              ) : (
+                workerPortfolioItems.map((item) => (
+                  <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4" key={item.id}>
+                    {item.mediaAsset?.finalCdnUrl && isImageMimeType(item.mediaAsset.mimeType) ? (
+                      <img alt={item.title ?? "Portfolio item"} className="h-40 w-full rounded-[1rem] object-cover" src={item.mediaAsset.finalCdnUrl} />
+                    ) : (
+                      <div className="flex h-40 w-full items-center justify-center rounded-[1rem] border border-dashed border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] text-sm font-semibold text-[color:var(--jo-muted)]">
+                        Portfolio evidence
+                      </div>
+                    )}
+                    <p className="mt-4 text-sm font-semibold text-[color:var(--jo-ink)]">{item.title ?? "Untitled portfolio item"}</p>
+                    <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{item.caption || "No caption recorded."}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard description="Cross-system activity tied to the worker profile and its linked user account." title="Worker Activity">
+          <div className="space-y-5">
+            <KeyValueGrid
+              columns="four"
+              items={[
+                { label: "Assignments", value: formatNumber(workerActivitySummary.assignments) },
+                { label: "Bookings as worker", value: formatNumber(workerActivitySummary.bookingsAsWorker) },
+                { label: "Saved by users", value: formatNumber(workerActivitySummary.savedByUsers) },
+                { label: "Search impressions", value: formatNumber(workerActivitySummary.searchImpressions) },
+                { label: "Services", value: formatNumber(workerActivitySummary.services) },
+                { label: "Service areas", value: formatNumber(workerActivitySummary.serviceAreas) },
+                { label: "Certifications", value: formatNumber(workerActivitySummary.certifications) },
+                { label: "Verification requests", value: formatNumber(workerActivitySummary.verificationRequests) },
+                { label: "Portfolio items", value: formatNumber(workerActivitySummary.portfolioItems) },
+                { label: "Availability rules", value: formatNumber(workerActivitySummary.availabilityRules) },
+                { label: "Featured subscriptions", value: formatNumber(workerActivitySummary.featuredSubscriptions) },
+                { label: "Subscription invoices", value: formatNumber(workerActivitySummary.subscriptionInvoices) }
+              ]}
+            />
+
+            <ActivityFeed emptyLabel="No worker activity has been recorded yet." items={workerActivityTimeline} />
+          </div>
+        </SectionCard>
+      </div>
+
+      <SectionCard description="Domain-grouped evidence for the worker and linked user account, useful for fast trust, support, and marketplace reviews." title="Worker Evidence Lanes">
+        <ActivityDomainBoard items={workerActivityTimeline} />
+      </SectionCard>
+
+      <SectionCard description="Most recent uploads and processed media tied to the worker account." title="Recent Media">
+        <MediaAssetStrip assets={workerRecentMediaAssets} emptyLabel="No recent media assets were found for this worker." />
+      </SectionCard>
     </div>
   );
 };

@@ -77,6 +77,7 @@ const AppRoutes = () => (
           <Route element={protectedElement(<OverviewPage />, "ANALYTICS_VIEW_OVERVIEW")} path="/overview" />
           <Route element={protectedElement(<OverviewPage />, "ANALYTICS_VIEW_OVERVIEW")} path="/analytics/overview" />
           <Route element={protectedElement(<NotificationsPage />)} path="/notifications" />
+          <Route element={protectedElement(<NotificationsPage />)} path="/notifications/:notificationId" />
           <Route element={protectedElement(<NotificationsPage />, "NOTIFICATION_BROADCAST")} path="/notifications/broadcast" />
           <Route element={protectedElement(<ProfilePage />)} path="/profile" />
           <Route element={protectedElement(<ProfilePage />)} path="/profile/mfa" />

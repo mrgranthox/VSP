@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, Flag, Globe2, Search, Settings2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { AreaTrendCard, BarMetricCard, DonutChartCard, InsightMetricCard } from "@/components/admin/dashboard-charts";
+import { AreaTrendCard, BarMetricCard, DonutChartCard } from "@/components/admin/lazy-dashboard-charts";
+import { InsightMetricCard } from "@/components/admin/dashboard-metrics";
 import { EmptyState, FilterCard, PaginationControls } from "@/components/admin/list-controls";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,47 @@ const handleActionError = (error: unknown, fallback: string) => {
   toast.error(getApiErrorMessage(error, fallback));
 };
 
+const ActionDesk = ({ title, description, children }: { title: string; description: string; children: ReactNode }) => (
+  <Card className="h-fit xl:sticky xl:top-28">
+    <CardHeader>
+      <CardTitle>{title}</CardTitle>
+      <CardDescription>{description}</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">{children}</CardContent>
+  </Card>
+);
+
+const buildJsonDraft = (value: unknown) => JSON.stringify(value ?? null, null, 2);
+
+const parseJsonDraft = (value: string, label: string) => {
+  try {
+    return JSON.parse(value);
+  } catch {
+    toast.error(`${label} must be valid JSON`);
+    return null;
+  }
+};
+
+const emptyCityForm = () => ({
+  slug: "",
+  name: "",
+  countryCode: "GH",
+  currencyCode: "GHS",
+  timezone: "Africa/Accra",
+  defaultSearchRadiusKm: "10",
+  isEnabled: true
+});
+
+const mapCityToForm = (city: CityItem) => ({
+  slug: city.slug,
+  name: city.name,
+  countryCode: city.countryCode,
+  currencyCode: city.currencyCode,
+  timezone: city.timezone,
+  defaultSearchRadiusKm: String(city.defaultSearchRadiusKm),
+  isEnabled: city.isEnabled
+});
+
 const SearchAnalyticsPage = () => {
   const location = useLocation();
   const searchQuery = useQuery({
@@ -49,9 +91,9 @@ const SearchAnalyticsPage = () => {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <InsightMetricCard accent="linear-gradient(135deg,#2457F5,#8FB7FF)" helper="Recorded search impressions in the analytics dataset." icon={Search} label="Impressions" value={formatNumber(search?.impressionCount ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#F59E0B,#FCD34D)" helper="Top query rows currently returned from search analytics." icon={Activity} label="Top queries" value={formatNumber(search?.topQueries.length ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#7C3AED,#C4B5FD)" helper="City buckets represented in search logs." icon={Globe2} label="Top cities" value={formatNumber(search?.topCities.length ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Recorded search impressions in the analytics dataset." icon={Search} label="Impressions" value={formatNumber(search?.impressionCount ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Top query rows currently returned from search analytics." icon={Activity} label="Top queries" value={formatNumber(search?.topQueries.length ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="City buckets represented in search logs." icon={Globe2} label="Top cities" value={formatNumber(search?.topCities.length ?? 0)} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -91,11 +133,11 @@ const EngagementAnalyticsPage = () => {
       <PageHeader subtitle="Cross-module activity totals for feed, messaging, review, and notification systems." title="Engagement Analytics" />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <InsightMetricCard accent="linear-gradient(135deg,#2457F5,#8FB7FF)" helper="Published social posts." icon={Activity} label="Posts" value={formatNumber(engagement?.posts ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#16A34A,#6EE7B7)" helper="Comments across posts and reviews." icon={Activity} label="Comments" value={formatNumber(engagement?.comments ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#F59E0B,#FCD34D)" helper="Chat and system messages." icon={Activity} label="Messages" value={formatNumber(engagement?.messages ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#7C3AED,#C4B5FD)" helper="Marketplace review records." icon={Activity} label="Reviews" value={formatNumber(engagement?.reviews ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#DC2626,#FDA4AF)" helper="Stored notification rows." icon={Activity} label="Notifications" value={formatNumber(engagement?.notifications ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Published social posts." icon={Activity} label="Posts" value={formatNumber(engagement?.posts ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Comments across posts and reviews." icon={Activity} label="Comments" value={formatNumber(engagement?.comments ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Chat and system messages." icon={Activity} label="Messages" value={formatNumber(engagement?.messages ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Marketplace review records." icon={Activity} label="Reviews" value={formatNumber(engagement?.reviews ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#173328,#4c6e63)" helper="Stored notification rows." icon={Activity} label="Notifications" value={formatNumber(engagement?.notifications ?? 0)} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -141,10 +183,10 @@ const MarketplaceAnalyticsPage = () => {
       <PageHeader subtitle="Status mixes and revenue totals from requests, bookings, and featured subscriptions." title="Marketplace Analytics" />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InsightMetricCard accent="linear-gradient(135deg,#2457F5,#8FB7FF)" helper="Featured subscriptions currently active." icon={Flag} label="Active featured workers" value={formatNumber(analytics?.activeFeaturedWorkers ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#16A34A,#6EE7B7)" helper="Succeeded payment-intent volume." icon={Settings2} label="Revenue" value={formatCurrency(analytics?.revenueMinor ?? 0, "USD")} />
-        <InsightMetricCard accent="linear-gradient(135deg,#F59E0B,#FCD34D)" helper="Service-request status buckets." icon={Activity} label="Request states" value={formatNumber(analytics?.serviceRequests.length ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#7C3AED,#C4B5FD)" helper="Booking status buckets." icon={Activity} label="Booking states" value={formatNumber(analytics?.bookings.length ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Featured subscriptions currently active." icon={Flag} label="Active featured workers" value={formatNumber(analytics?.activeFeaturedWorkers ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Succeeded payment-intent volume." icon={Settings2} label="Revenue" value={formatCurrency(analytics?.revenueMinor ?? 0, "USD")} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Service-request status buckets." icon={Activity} label="Request states" value={formatNumber(analytics?.serviceRequests.length ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Booking status buckets." icon={Activity} label="Booking states" value={formatNumber(analytics?.bookings.length ?? 0)} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -172,6 +214,8 @@ const ConfigsPage = () => {
   const { configKey } = useParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [selectedConfigKey, setSelectedConfigKey] = useState(configKey ?? "");
+  const [configDraft, setConfigDraft] = useState("");
 
   const configsQuery = useQuery({
     queryKey: ["admin", "configs"],
@@ -211,6 +255,32 @@ const ConfigsPage = () => {
     });
   }, [configKey, configsQuery.data, search]);
 
+  const selectedConfig = items.find((item) => item.configKey === selectedConfigKey) ?? items[0];
+
+  useEffect(() => {
+    if (items.length === 0) {
+      if (selectedConfigKey) {
+        setSelectedConfigKey("");
+      }
+      return;
+    }
+
+    const preferredKey = configKey && items.some((item) => item.configKey === configKey) ? configKey : items[0].configKey;
+
+    if (preferredKey !== selectedConfigKey) {
+      setSelectedConfigKey(preferredKey);
+    }
+  }, [configKey, items, selectedConfigKey]);
+
+  useEffect(() => {
+    if (selectedConfig) {
+      setConfigDraft(buildJsonDraft(selectedConfig.valueJson));
+      return;
+    }
+
+    setConfigDraft("");
+  }, [selectedConfig?.configKey, selectedConfig?.updatedAt]);
+
   return (
     <div className="space-y-6">
       <PageHeader subtitle={configKey ? `Focused config editor for ${configKey}.` : "Mutable platform configuration backed by the system-config admin endpoints."} title={configKey ? "Config Editor" : "Configurations"} />
@@ -232,9 +302,13 @@ const ConfigsPage = () => {
       {items.length === 0 ? (
         <EmptyState description="No config keys matched the current search." title="No configs found" />
       ) : (
-        <div className="space-y-3">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
+          <div className="space-y-3">
           {items.map((item) => (
-            <Card key={item.id}>
+            <Card
+              className={item.configKey === selectedConfig?.configKey ? "border-[rgba(65,150,70,0.26)] shadow-[0_22px_45px_rgba(65,150,70,0.14)]" : undefined}
+              key={item.id}
+            >
               <CardContent className="grid gap-4 pt-6 lg:grid-cols-[1fr_320px]">
                 <div>
                   <p className="text-sm font-semibold text-slate-900">{item.configKey}</p>
@@ -242,31 +316,48 @@ const ConfigsPage = () => {
                 </div>
                 <div className="space-y-3">
                   <Textarea className="min-h-[120px] font-mono text-xs" readOnly value={formatJsonValue(item.valueJson)} />
-                  <Button
-                    onClick={() => {
-                      const nextValue = window.prompt("New config value as JSON", JSON.stringify(item.valueJson));
-
-                      if (!nextValue) {
-                        return;
-                      }
-
-                      try {
-                        updateMutation.mutate({
-                          configKey: item.configKey,
-                          value: JSON.parse(nextValue)
-                        });
-                      } catch {
-                        toast.error("Config value must be valid JSON");
-                      }
-                    }}
-                    variant="outline"
-                  >
-                    Edit JSON
+                  <Button onClick={() => setSelectedConfigKey(item.configKey)} variant={item.configKey === selectedConfig?.configKey ? "primary" : "outline"}>
+                    {item.configKey === selectedConfig?.configKey ? "Editing now" : "Open editor"}
                   </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
+          </div>
+
+          <ActionDesk description="Edit structured config JSON and submit it directly to the CONFIG_UPDATE endpoint." title="Config editor">
+            {selectedConfig ? (
+              <>
+                <div className="rounded-[1.25rem] bg-[rgba(255,251,244,0.92)] p-4">
+                  <p className="text-sm font-bold text-[color:var(--jo-ink)]">{selectedConfig.configKey}</p>
+                  <p className="mt-2 text-sm text-[color:var(--jo-muted)]">Last updated {formatDateTime(selectedConfig.updatedAt)}</p>
+                </div>
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">JSON value</span>
+                  <Textarea className="min-h-[320px] font-mono text-xs" onChange={(event) => setConfigDraft(event.target.value)} value={configDraft} />
+                </label>
+                <Button
+                  disabled={updateMutation.isPending}
+                  onClick={() => {
+                    const parsed = parseJsonDraft(configDraft, "Config value");
+
+                    if (parsed === null) {
+                      return;
+                    }
+
+                    updateMutation.mutate({
+                      configKey: selectedConfig.configKey,
+                      value: parsed
+                    });
+                  }}
+                >
+                  Save config JSON
+                </Button>
+              </>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">Select a config key to edit its live JSON payload.</p>
+            )}
+          </ActionDesk>
         </div>
       )}
     </div>
@@ -276,6 +367,9 @@ const ConfigsPage = () => {
 const FeatureFlagsPage = () => {
   const { flagKey } = useParams();
   const queryClient = useQueryClient();
+  const [selectedFlagKey, setSelectedFlagKey] = useState(flagKey ?? "");
+  const [descriptionDraft, setDescriptionDraft] = useState("");
+  const [rolloutJsonDraft, setRolloutJsonDraft] = useState("");
   const flagsQuery = useQuery({
     queryKey: ["admin", "feature-flags"],
     queryFn: () => apiRequest<FeatureFlagItem[]>("/admin/feature-flags")
@@ -314,13 +408,45 @@ const FeatureFlagsPage = () => {
     });
   }, [flagKey, flagsQuery.data]);
 
+  const selectedFlag = flags.find((flag) => flag.flagKey === selectedFlagKey) ?? flags[0];
+
+  useEffect(() => {
+    if (flags.length === 0) {
+      if (selectedFlagKey) {
+        setSelectedFlagKey("");
+      }
+      return;
+    }
+
+    const preferredKey = flagKey && flags.some((flag) => flag.flagKey === flagKey) ? flagKey : flags[0].flagKey;
+
+    if (preferredKey !== selectedFlagKey) {
+      setSelectedFlagKey(preferredKey);
+    }
+  }, [flagKey, flags, selectedFlagKey]);
+
+  useEffect(() => {
+    if (selectedFlag) {
+      setDescriptionDraft(selectedFlag.description ?? "");
+      setRolloutJsonDraft(buildJsonDraft(selectedFlag.rolloutJson ?? null));
+      return;
+    }
+
+    setDescriptionDraft("");
+    setRolloutJsonDraft("");
+  }, [selectedFlag?.flagKey, selectedFlag?.defaultEnabled]);
+
   return (
     <div className="space-y-6">
       <PageHeader subtitle={flagKey ? `Focused flag editor for ${flagKey}.` : "Feature rollout controls wired directly to the backend feature-flag endpoints."} title={flagKey ? "Feature Flag Editor" : "Feature Flags"} />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
+        <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-1">
         {flags.map((flag) => (
-          <Card key={flag.id}>
+          <Card
+            className={flag.flagKey === selectedFlag?.flagKey ? "border-[rgba(65,150,70,0.26)] shadow-[0_22px_45px_rgba(65,150,70,0.14)]" : undefined}
+            key={flag.id}
+          >
             <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
               <div>
                 <CardTitle>{flag.flagKey}</CardTitle>
@@ -331,6 +457,9 @@ const FeatureFlagsPage = () => {
             <CardContent className="space-y-4">
               <Textarea className="min-h-[120px] font-mono text-xs" readOnly value={formatJsonValue(flag.rolloutJson ?? null)} />
               <div className="flex flex-wrap gap-3">
+                <Button onClick={() => setSelectedFlagKey(flag.flagKey)} variant={flag.flagKey === selectedFlag?.flagKey ? "primary" : "outline"}>
+                  {flag.flagKey === selectedFlag?.flagKey ? "Editing now" : "Open editor"}
+                </Button>
                 <Button
                   onClick={() =>
                     updateMutation.mutate({
@@ -344,35 +473,76 @@ const FeatureFlagsPage = () => {
                 >
                   {flag.defaultEnabled ? "Disable" : "Enable"}
                 </Button>
-                <Button
-                  onClick={() => {
-                    const description = window.prompt("Edit description", flag.description ?? "");
-                    const rolloutJson = window.prompt("Edit rollout JSON", JSON.stringify(flag.rolloutJson ?? null));
-
-                    if (description === null || rolloutJson === null) {
-                      return;
-                    }
-
-                    try {
-                      updateMutation.mutate({
-                        flagKey: flag.flagKey,
-                        payload: {
-                          description,
-                          rolloutJson: JSON.parse(rolloutJson)
-                        }
-                      });
-                    } catch {
-                      toast.error("Rollout JSON must be valid JSON");
-                    }
-                  }}
-                  variant="outline"
-                >
-                  Edit details
-                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
+        </div>
+
+        <ActionDesk description="Adjust rollout JSON and metadata against the FEATURE_FLAG_UPDATE endpoint." title="Feature flag editor">
+          {selectedFlag ? (
+            <>
+              <div className="rounded-[1.25rem] bg-[rgba(255,251,244,0.92)] p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-[color:var(--jo-ink)]">{selectedFlag.flagKey}</p>
+                    <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{selectedFlag.description || "No description recorded"}</p>
+                  </div>
+                  <Badge variant={selectedFlag.defaultEnabled ? "green" : "slate"}>{selectedFlag.defaultEnabled ? "Enabled" : "Disabled"}</Badge>
+                </div>
+              </div>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Description</span>
+                <Textarea className="min-h-[120px]" onChange={(event) => setDescriptionDraft(event.target.value)} value={descriptionDraft} />
+              </label>
+
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Rollout JSON</span>
+                <Textarea className="min-h-[220px] font-mono text-xs" onChange={(event) => setRolloutJsonDraft(event.target.value)} value={rolloutJsonDraft} />
+              </label>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={() =>
+                    updateMutation.mutate({
+                      flagKey: selectedFlag.flagKey,
+                      payload: {
+                        defaultEnabled: !selectedFlag.defaultEnabled
+                      }
+                    })
+                  }
+                  variant={selectedFlag.defaultEnabled ? "ghost" : "success"}
+                >
+                  {selectedFlag.defaultEnabled ? "Disable flag" : "Enable flag"}
+                </Button>
+                <Button
+                  disabled={updateMutation.isPending}
+                  onClick={() => {
+                    const rolloutJson = parseJsonDraft(rolloutJsonDraft, "Rollout JSON");
+
+                    if (rolloutJson === null) {
+                      return;
+                    }
+
+                    updateMutation.mutate({
+                      flagKey: selectedFlag.flagKey,
+                      payload: {
+                        description: descriptionDraft.trim() || null,
+                        rolloutJson
+                      }
+                    });
+                  }}
+                  variant="outline"
+                >
+                  Save flag details
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-[color:var(--jo-muted)]">Select a feature flag to edit rollout settings.</p>
+          )}
+        </ActionDesk>
       </div>
     </div>
   );
@@ -384,6 +554,9 @@ const CitiesPage = () => {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [enabled, setEnabled] = useState("");
+  const [selectedCityId, setSelectedCityId] = useState(cityId ?? "");
+  const [isCreateMode, setIsCreateMode] = useState(!cityId);
+  const [cityForm, setCityForm] = useState(emptyCityForm());
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -409,12 +582,19 @@ const CitiesPage = () => {
 
   const cityMutation = useMutation({
     mutationFn: ({ cityId, body, method }: { cityId?: string; body: Record<string, unknown>; method: "POST" | "PATCH" }) =>
-      apiRequest(cityId ? `/admin/cities/${cityId}` : "/admin/cities", {
+      apiRequest<CityItem>(cityId ? `/admin/cities/${cityId}` : "/admin/cities", {
         method,
         body
       }),
-    onSuccess: async (_, variables) => {
+    onSuccess: async (result, variables) => {
       toast.success(variables.method === "POST" ? "City created" : "City updated");
+
+      if (variables.method === "POST") {
+        setIsCreateMode(false);
+        setSelectedCityId(result.id);
+        setCityForm(mapCityToForm(result));
+      }
+
       await queryClient.invalidateQueries({ queryKey: ["admin", "cities"] });
     },
     onError: (error) => handleActionError(error, "Unable to update city")
@@ -440,30 +620,41 @@ const CitiesPage = () => {
     });
   }, [citiesQuery.data?.data, cityId]);
 
+  const selectedCity = cities.find((city) => city.id === selectedCityId) ?? cities[0];
+
+  useEffect(() => {
+    if (cityId && cities.some((city) => city.id === cityId)) {
+      setSelectedCityId(cityId);
+      setIsCreateMode(false);
+      return;
+    }
+
+    if (cities.length === 0) {
+      if (!isCreateMode) {
+        setSelectedCityId("");
+      }
+      return;
+    }
+
+    if (!isCreateMode && !cities.some((city) => city.id === selectedCityId)) {
+      setSelectedCityId(cities[0].id);
+    }
+  }, [cityId, cities, isCreateMode, selectedCityId]);
+
+  useEffect(() => {
+    if (!isCreateMode && selectedCity) {
+      setCityForm(mapCityToForm(selectedCity));
+    }
+  }, [isCreateMode, selectedCity?.id]);
+
   return (
     <div className="space-y-6">
       <PageHeader
         actionLabel="Create city"
         onAction={() => {
-          const slug = window.prompt("Slug", "new_city");
-          const name = window.prompt("City name", "New City");
-
-          if (!slug || !name) {
-            return;
-          }
-
-          cityMutation.mutate({
-            method: "POST",
-            body: {
-              slug,
-              name,
-              countryCode: window.prompt("Country code", "GH") || "GH",
-              currencyCode: window.prompt("Currency code", "GHS") || "GHS",
-              timezone: window.prompt("Timezone", "Africa/Accra") || "Africa/Accra",
-              defaultSearchRadiusKm: Number(window.prompt("Default radius km", "10") || "10"),
-              isEnabled: true
-            }
-          });
+          setIsCreateMode(true);
+          setSelectedCityId("");
+          setCityForm(emptyCityForm());
         }}
         subtitle={cityId ? "Focused city settings lane with enable/disable and metadata editing." : "City availability and search defaults controlled from the admin city-config endpoints."}
         title={cityId ? "City Settings" : "Cities"}
@@ -506,9 +697,13 @@ const CitiesPage = () => {
       {cities.length === 0 ? (
         <EmptyState description="No cities matched the current filters." title="No cities found" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
+          <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-1">
           {cities.map((city) => (
-            <Card key={city.id}>
+            <Card
+              className={!isCreateMode && city.id === selectedCity?.id ? "border-[rgba(65,150,70,0.26)] shadow-[0_22px_45px_rgba(65,150,70,0.14)]" : undefined}
+              key={city.id}
+            >
               <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <CardTitle>{city.name}</CardTitle>
@@ -525,6 +720,16 @@ const CitiesPage = () => {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Button
+                    onClick={() => {
+                      setIsCreateMode(false);
+                      setSelectedCityId(city.id);
+                      setCityForm(mapCityToForm(city));
+                    }}
+                    variant={!isCreateMode && city.id === selectedCity?.id ? "primary" : "outline"}
+                  >
+                    {!isCreateMode && city.id === selectedCity?.id ? "Editing now" : "Manage city"}
+                  </Button>
+                  <Button
                     onClick={() =>
                       cityMutation.mutate({
                         cityId: city.id,
@@ -538,32 +743,117 @@ const CitiesPage = () => {
                   >
                     {city.isEnabled ? "Disable" : "Enable"}
                   </Button>
-                  <Button
-                    onClick={() => {
-                      const name = window.prompt("City name", city.name);
-                      const timezone = window.prompt("Timezone", city.timezone);
-
-                      if (!name || !timezone) {
-                        return;
-                      }
-
-                      cityMutation.mutate({
-                        cityId: city.id,
-                        method: "PATCH",
-                        body: {
-                          name,
-                          timezone
-                        }
-                      });
-                    }}
-                    variant="ghost"
-                  >
-                    Edit
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
+          </div>
+
+          <ActionDesk
+            description={isCreateMode ? "Create a new marketplace city using the CITY_CREATE endpoint." : "Edit live city metadata and search defaults through the CITY_UPDATE endpoint."}
+            title={isCreateMode ? "Create city" : "City editor"}
+          >
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Slug</span>
+                <Input
+                  onChange={(event) => setCityForm((current) => ({ ...current, slug: event.target.value }))}
+                  value={cityForm.slug}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Name</span>
+                <Input
+                  onChange={(event) => setCityForm((current) => ({ ...current, name: event.target.value }))}
+                  value={cityForm.name}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Country code</span>
+                <Input
+                  maxLength={2}
+                  onChange={(event) => setCityForm((current) => ({ ...current, countryCode: event.target.value.toUpperCase() }))}
+                  value={cityForm.countryCode}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Currency code</span>
+                <Input
+                  maxLength={3}
+                  onChange={(event) => setCityForm((current) => ({ ...current, currencyCode: event.target.value.toUpperCase() }))}
+                  value={cityForm.currencyCode}
+                />
+              </label>
+              <label className="block space-y-2 sm:col-span-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Timezone</span>
+                <Input
+                  onChange={(event) => setCityForm((current) => ({ ...current, timezone: event.target.value }))}
+                  value={cityForm.timezone}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Default search radius (km)</span>
+                <Input
+                  min="1"
+                  max="100"
+                  onChange={(event) => setCityForm((current) => ({ ...current, defaultSearchRadiusKm: event.target.value }))}
+                  type="number"
+                  value={cityForm.defaultSearchRadiusKm}
+                />
+              </label>
+              <label className="block space-y-2">
+                <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Enabled</span>
+                <Select
+                  onChange={(event) => setCityForm((current) => ({ ...current, isEnabled: event.target.value === "true" }))}
+                  value={String(cityForm.isEnabled)}
+                >
+                  <option value="true">Enabled</option>
+                  <option value="false">Disabled</option>
+                </Select>
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Button
+                disabled={
+                  cityMutation.isPending ||
+                  cityForm.slug.trim().length === 0 ||
+                  cityForm.name.trim().length === 0 ||
+                  cityForm.timezone.trim().length === 0 ||
+                  !Number.isInteger(Number(cityForm.defaultSearchRadiusKm)) ||
+                  Number(cityForm.defaultSearchRadiusKm) < 1 ||
+                  Number(cityForm.defaultSearchRadiusKm) > 100
+                }
+                onClick={() =>
+                  cityMutation.mutate({
+                    cityId: isCreateMode ? undefined : selectedCity?.id,
+                    method: isCreateMode ? "POST" : "PATCH",
+                    body: {
+                      slug: cityForm.slug.trim(),
+                      name: cityForm.name.trim(),
+                      countryCode: cityForm.countryCode.trim().toUpperCase(),
+                      currencyCode: cityForm.currencyCode.trim().toUpperCase(),
+                      timezone: cityForm.timezone.trim(),
+                      defaultSearchRadiusKm: Number(cityForm.defaultSearchRadiusKm),
+                      isEnabled: cityForm.isEnabled
+                    }
+                  })
+                }
+              >
+                {isCreateMode ? "Create city" : "Save city changes"}
+              </Button>
+              {!isCreateMode && selectedCity ? (
+                <Button
+                  onClick={() => {
+                    setCityForm(mapCityToForm(selectedCity));
+                  }}
+                  variant="outline"
+                >
+                  Reset changes
+                </Button>
+              ) : null}
+            </div>
+          </ActionDesk>
         </div>
       )}
 

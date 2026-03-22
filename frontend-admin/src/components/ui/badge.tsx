@@ -9,12 +9,12 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const badgeClasses: Record<BadgeVariant, string> = {
-  blue: "bg-blue-50 text-blue-700",
-  green: "bg-emerald-50 text-emerald-700",
-  amber: "bg-amber-50 text-amber-800",
-  red: "bg-red-50 text-red-700",
-  slate: "bg-slate-100 text-slate-600",
-  purple: "bg-violet-50 text-violet-700"
+  blue: "bg-[rgba(65,150,70,0.12)] text-[color:var(--jo-forest)]",
+  green: "bg-[rgba(65,150,70,0.16)] text-[color:var(--jo-forest)]",
+  amber: "bg-[rgba(246,179,19,0.18)] text-[#9a6a00]",
+  red: "bg-[rgba(255,75,25,0.14)] text-[color:var(--jo-coral)]",
+  slate: "bg-[rgba(217,212,202,0.55)] text-[color:var(--jo-muted)]",
+  purple: "bg-[rgba(233,119,155,0.16)] text-[color:var(--jo-rose)]"
 };
 
 const Badge = ({ className, children, variant = "slate", ...props }: BadgeProps) => {

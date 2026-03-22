@@ -35,11 +35,12 @@
   }
 
   body {
-    @apply m-0 min-w-[320px] bg-slate-50 text-text;
+    @apply m-0 min-w-[320px] text-text;
     background-image:
-      radial-gradient(circle at top left, rgba(65, 150, 70, 0.14), transparent 26%),
-      radial-gradient(circle at top right, rgba(246, 179, 19, 0.16), transparent 22%),
-      radial-gradient(circle at 65% 12%, rgba(233, 119, 155, 0.12), transparent 20%),
+      radial-gradient(circle at top left, rgba(65, 150, 70, 0.15), transparent 26%),
+      radial-gradient(circle at top right, rgba(246, 179, 19, 0.18), transparent 22%),
+      radial-gradient(circle at 64% 12%, rgba(233, 119, 155, 0.14), transparent 20%),
+      radial-gradient(circle at 88% 18%, rgba(255, 75, 25, 0.09), transparent 18%),
       linear-gradient(180deg, #fbfaf6 0%, #f3eee6 52%, #f8f4ec 100%);
   }
 

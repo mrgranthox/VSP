@@ -104,6 +104,7 @@ const staticPageTitleMap = new Map<string, string>(navSections.flatMap((section)
 const dynamicPageTitles: Array<{ matcher: RegExp; title: string }> = [
   { matcher: /^\/analytics\/overview$/, title: "Analytics Overview" },
   { matcher: /^\/notifications\/broadcast$/, title: "Broadcast Notification" },
+  { matcher: /^\/notifications\/[^/]+$/, title: "Notification Detail" },
   { matcher: /^\/profile\/mfa$/, title: "Admin MFA Setup" },
   { matcher: /^\/users\/[^/]+$/, title: "User Detail" },
   { matcher: /^\/users\/[^/]+\/suspend$/, title: "Suspend User" },

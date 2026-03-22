@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, BadgeCheck, ShieldAlert, Star, Users } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError } from "@/lib/api";
 import { formatDateTime, formatNumber } from "@/lib/utils";
@@ -24,11 +24,37 @@ const handleActionError = (error: unknown, fallback: string) => {
   toast.error(getApiErrorMessage(error, fallback));
 };
 
+const ActionDesk = ({ title, description, children }: { title: string; description: string; children: ReactNode }) => (
+  <Card className="h-fit xl:sticky xl:top-28">
+    <CardHeader>
+      <CardTitle>{title}</CardTitle>
+      <CardDescription>{description}</CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">{children}</CardContent>
+  </Card>
+);
+
+const defaultFeaturedExtensionEndsAt = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+const toDateTimeLocalValue = (isoValue: string) => {
+  const date = new Date(isoValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 const UsersPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [suspendReason, setSuspendReason] = useState("Manual admin review");
+  const [reactivateNotes, setReactivateNotes] = useState("Manual reactivation");
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -66,6 +92,20 @@ const UsersPage = () => {
   });
 
   const users = usersQuery.data?.data ?? [];
+  const selectedUser = users.find((user) => user.id === selectedUserId) ?? users[0];
+
+  useEffect(() => {
+    if (users.length === 0) {
+      if (selectedUserId) {
+        setSelectedUserId("");
+      }
+      return;
+    }
+
+    if (!users.some((user) => user.id === selectedUserId)) {
+      setSelectedUserId(users[0].id);
+    }
+  }, [selectedUserId, users]);
 
   return (
     <div className="space-y-6">
@@ -111,13 +151,17 @@ const UsersPage = () => {
       {users.length === 0 ? (
         <EmptyState description="No users matched the current filters." title="No users found" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.3fr)_minmax(20rem,0.7fr)]">
+          <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-1">
           {users.map((user) => {
             const displayName =
               user.profile?.displayName || [user.profile?.firstName, user.profile?.lastName].filter(Boolean).join(" ").trim() || user.email || "Unknown user";
 
             return (
-              <Card key={user.id}>
+              <Card
+                className={user.id === selectedUser?.id ? "border-[rgba(65,150,70,0.26)] shadow-[0_22px_45px_rgba(65,150,70,0.14)]" : undefined}
+                key={user.id}
+              >
                 <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
                     <CardTitle>{displayName}</CardTitle>
@@ -154,6 +198,12 @@ const UsersPage = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => setSelectedUserId(user.id)}
+                      variant={user.id === selectedUser?.id ? "primary" : "outline"}
+                    >
+                      {user.id === selectedUser?.id ? "Managing now" : "Manage account"}
+                    </Button>
                     <Link className="inline-flex" to={`/users/${user.id}`}>
                       <Button variant="outline">
                         Open detail
@@ -161,45 +211,8 @@ const UsersPage = () => {
                       </Button>
                     </Link>
 
-                    {user.status === "ACTIVE" ? (
-                      <Button
-                        onClick={() => {
-                          const reason = window.prompt("Reason for suspension", "Manual admin review");
-
-                          if (!reason) {
-                            return;
-                          }
-
-                          changeStatusMutation.mutate({
-                            userId: user.id,
-                            action: "suspend",
-                            body: { reason }
-                          });
-                        }}
-                        variant="danger"
-                      >
-                        Suspend user
-                      </Button>
-                    ) : null}
-
-                    {user.status === "SUSPENDED" ? (
-                      <Button
-                        onClick={() => {
-                          const notes = window.prompt("Reactivation notes", "Manual reactivation");
-                          changeStatusMutation.mutate({
-                            userId: user.id,
-                            action: "reactivate",
-                            body: notes ? { notes } : {}
-                          });
-                        }}
-                        variant="success"
-                      >
-                        Reactivate
-                      </Button>
-                    ) : null}
-
                     {user.workerProfile ? (
-                      <Link className="inline-flex" to="/workers">
+                      <Link className="inline-flex" to={`/workers/${user.workerProfile.id}`}>
                         <Button variant="outline">
                           Worker profile
                           <ArrowRight className="h-4 w-4" />
@@ -211,6 +224,105 @@ const UsersPage = () => {
               </Card>
             );
           })}
+          </div>
+
+          <ActionDesk description="All writes here go directly to the live admin user status endpoints." title="User action desk">
+            {selectedUser ? (
+              <>
+                <div className="rounded-[1.25rem] bg-[rgba(255,251,244,0.92)] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-[color:var(--jo-ink)]">
+                        {selectedUser.profile?.displayName ||
+                          [selectedUser.profile?.firstName, selectedUser.profile?.lastName].filter(Boolean).join(" ").trim() ||
+                          selectedUser.email ||
+                          "Unknown user"}
+                      </p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{selectedUser.email || "No email recorded"}</p>
+                    </div>
+                    <Badge variant={getStatusBadgeVariant(selectedUser.status)}>{selectedUser.status}</Badge>
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Last login</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-ink)]">{formatDateTime(selectedUser.lastLoginAt)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Role access</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-ink)]">
+                        {selectedUser.roles.length > 0 ? selectedUser.roles.join(" · ") : "No admin role"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedUser.status === "ACTIVE" ? (
+                  <>
+                    <label className="block space-y-2">
+                      <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Suspension reason</span>
+                      <Textarea
+                        className="min-h-[132px]"
+                        onChange={(event) => setSuspendReason(event.target.value)}
+                        value={suspendReason}
+                      />
+                    </label>
+                    <Button
+                      disabled={changeStatusMutation.isPending || suspendReason.trim().length < 5}
+                      onClick={() =>
+                        changeStatusMutation.mutate({
+                          userId: selectedUser.id,
+                          action: "suspend",
+                          body: { reason: suspendReason.trim() }
+                        })
+                      }
+                      variant="danger"
+                    >
+                      Suspend selected user
+                    </Button>
+                  </>
+                ) : null}
+
+                {selectedUser.status === "SUSPENDED" ? (
+                  <>
+                    <label className="block space-y-2">
+                      <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Reactivation notes</span>
+                      <Textarea
+                        className="min-h-[132px]"
+                        onChange={(event) => setReactivateNotes(event.target.value)}
+                        value={reactivateNotes}
+                      />
+                    </label>
+                    <Button
+                      disabled={changeStatusMutation.isPending}
+                      onClick={() =>
+                        changeStatusMutation.mutate({
+                          userId: selectedUser.id,
+                          action: "reactivate",
+                          body: reactivateNotes.trim() ? { notes: reactivateNotes.trim() } : {}
+                        })
+                      }
+                      variant="success"
+                    >
+                      Reactivate selected user
+                    </Button>
+                  </>
+                ) : null}
+
+                <div className="flex flex-wrap gap-3">
+                  <Link className="inline-flex" to={`/users/${selectedUser.id}`}>
+                    <Button variant="outline">Open full user detail</Button>
+                  </Link>
+                  {selectedUser.workerProfile ? (
+                    <Link className="inline-flex" to={`/workers/${selectedUser.workerProfile.id}`}>
+                      <Button variant="outline">Open worker profile</Button>
+                    </Link>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">Select a user from the list to open the action desk.</p>
+            )}
+          </ActionDesk>
         </div>
       )}
 
@@ -362,6 +474,9 @@ const WorkersPage = () => {
 const VerificationQueuePage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [approvalNotes, setApprovalNotes] = useState("Verification approved by admin");
+  const [reviewNotes, setReviewNotes] = useState("Please upload clearer verification documents.");
 
   const workersQuery = useQuery({
     queryKey: ["admin", "verification-queue", page],
@@ -393,6 +508,20 @@ const VerificationQueuePage = () => {
   });
 
   const workers = workersQuery.data?.data ?? [];
+  const selectedWorker = workers.find((worker) => worker.id === selectedWorkerId) ?? workers[0];
+
+  useEffect(() => {
+    if (workers.length === 0) {
+      if (selectedWorkerId) {
+        setSelectedWorkerId("");
+      }
+      return;
+    }
+
+    if (!workers.some((worker) => worker.id === selectedWorkerId)) {
+      setSelectedWorkerId(workers[0].id);
+    }
+  }, [selectedWorkerId, workers]);
 
   return (
     <div className="space-y-6">
@@ -401,9 +530,13 @@ const VerificationQueuePage = () => {
       {workers.length === 0 ? (
         <EmptyState description="There are no submitted worker verifications right now." title="Queue is empty" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,0.8fr)]">
+          <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-1">
           {workers.map((worker) => (
-            <Card key={worker.id}>
+            <Card
+              className={worker.id === selectedWorker?.id ? "border-[rgba(65,150,70,0.26)] shadow-[0_22px_45px_rgba(65,150,70,0.14)]" : undefined}
+              key={worker.id}
+            >
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
@@ -419,49 +552,85 @@ const VerificationQueuePage = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={() => setSelectedWorkerId(worker.id)}
+                    variant={worker.id === selectedWorker?.id ? "primary" : "outline"}
+                  >
+                    {worker.id === selectedWorker?.id ? "Reviewing now" : "Review in desk"}
+                  </Button>
                   <Link className="inline-flex" to={`/verification/${worker.id}`}>
                     <Button variant="outline">
                       Review evidence
                       <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Button
-                    onClick={() => {
-                      const notes = window.prompt("Approval notes", "Verification approved by admin");
-
-                      reviewMutation.mutate({
-                        workerId: worker.id,
-                        action: "verify",
-                        body: notes ? { notes } : {}
-                      });
-                    }}
-                    variant="success"
-                  >
-                    <BadgeCheck className="h-4 w-4" />
-                    Approve
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      const reviewNotes = window.prompt("Rejection reason", "Please upload clearer verification documents.");
-
-                      if (!reviewNotes) {
-                        return;
-                      }
-
-                      reviewMutation.mutate({
-                        workerId: worker.id,
-                        action: "reject-verification",
-                        body: { reviewNotes }
-                      });
-                    }}
-                    variant="danger"
-                  >
-                    Reject
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
+          </div>
+
+          <ActionDesk description="Review notes persist through the worker verification admin endpoints." title="Verification action desk">
+            {selectedWorker ? (
+              <>
+                <div className="rounded-[1.25rem] bg-[rgba(255,251,244,0.92)] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-[color:var(--jo-ink)]">{selectedWorker.displayName || "Unnamed worker"}</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{selectedWorker.headline || "No worker headline yet"}</p>
+                    </div>
+                    <Badge variant={getStatusBadgeVariant(selectedWorker.verificationStatus)}>{selectedWorker.verificationStatus}</Badge>
+                  </div>
+                  <p className="mt-4 text-sm text-[color:var(--jo-muted)]">Trades: {selectedWorker.trades.join(", ") || "No trades on profile"}</p>
+                </div>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Approval notes</span>
+                  <Textarea className="min-h-[116px]" onChange={(event) => setApprovalNotes(event.target.value)} value={approvalNotes} />
+                </label>
+
+                <Button
+                  disabled={reviewMutation.isPending}
+                  onClick={() =>
+                    reviewMutation.mutate({
+                      workerId: selectedWorker.id,
+                      action: "verify",
+                      body: approvalNotes.trim() ? { notes: approvalNotes.trim() } : {}
+                    })
+                  }
+                  variant="success"
+                >
+                  <BadgeCheck className="h-4 w-4" />
+                  Approve selected worker
+                </Button>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Rejection reason</span>
+                  <Textarea className="min-h-[132px]" onChange={(event) => setReviewNotes(event.target.value)} value={reviewNotes} />
+                </label>
+
+                <Button
+                  disabled={reviewMutation.isPending || reviewNotes.trim().length < 10}
+                  onClick={() =>
+                    reviewMutation.mutate({
+                      workerId: selectedWorker.id,
+                      action: "reject-verification",
+                      body: { reviewNotes: reviewNotes.trim() }
+                    })
+                  }
+                  variant="danger"
+                >
+                  Reject selected worker
+                </Button>
+
+                <Link className="inline-flex" to={`/verification/${selectedWorker.id}`}>
+                  <Button variant="outline">Open verification detail</Button>
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">Select a pending worker to review the submission.</p>
+            )}
+          </ActionDesk>
         </div>
       )}
 
@@ -474,6 +643,10 @@ const FeaturedWorkersPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [featuredOnly, setFeaturedOnly] = useState("");
+  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [featureNotes, setFeatureNotes] = useState("Feature placement enabled by admin");
+  const [extensionNotes, setExtensionNotes] = useState("Extended featured worker placement");
+  const [extensionEndsAt, setExtensionEndsAt] = useState(toDateTimeLocalValue(defaultFeaturedExtensionEndsAt()));
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -510,6 +683,20 @@ const FeaturedWorkersPage = () => {
   });
 
   const workers = featuredQuery.data?.data ?? [];
+  const selectedWorker = workers.find((worker) => worker.id === selectedWorkerId) ?? workers[0];
+
+  useEffect(() => {
+    if (workers.length === 0) {
+      if (selectedWorkerId) {
+        setSelectedWorkerId("");
+      }
+      return;
+    }
+
+    if (!workers.some((worker) => worker.id === selectedWorkerId)) {
+      setSelectedWorkerId(workers[0].id);
+    }
+  }, [selectedWorkerId, workers]);
 
   return (
     <div className="space-y-6">
@@ -545,9 +732,13 @@ const FeaturedWorkersPage = () => {
       {workers.length === 0 ? (
         <EmptyState description="No featured-worker entries matched the current filter." title="No workers found" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-6 2xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
+          <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-1">
           {workers.map((worker) => (
-            <Card key={worker.id}>
+            <Card
+              className={worker.id === selectedWorker?.id ? "border-[rgba(65,150,70,0.26)] shadow-[0_22px_45px_rgba(65,150,70,0.14)]" : undefined}
+              key={worker.id}
+            >
               <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <CardTitle>{worker.displayName || "Unnamed worker"}</CardTitle>
@@ -567,6 +758,17 @@ const FeaturedWorkersPage = () => {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={() => {
+                      setSelectedWorkerId(worker.id);
+                      setFeatureNotes(worker.isFeatured ? "Feature placement disabled by admin" : "Feature placement enabled by admin");
+                      setExtensionNotes("Extended featured worker placement");
+                      setExtensionEndsAt(toDateTimeLocalValue(defaultFeaturedExtensionEndsAt()));
+                    }}
+                    variant={worker.id === selectedWorker?.id ? "primary" : "outline"}
+                  >
+                    {worker.id === selectedWorker?.id ? "Managing now" : "Manage placement"}
+                  </Button>
                   <Link className="inline-flex" to={`/workers/${worker.id}`}>
                     <Button variant="outline">
                       Open detail
@@ -576,68 +778,81 @@ const FeaturedWorkersPage = () => {
                   <Link className="inline-flex" to={`/workers/${worker.id}/subscription`}>
                     <Button variant="outline">Subscription detail</Button>
                   </Link>
-                  {worker.isFeatured ? (
-                    <Button
-                      onClick={() => {
-                        const notes = window.prompt("Disable note", "Feature placement disabled by admin");
-
-                        if (!notes) {
-                          return;
-                        }
-
-                        actionMutation.mutate({
-                          workerId: worker.id,
-                          action: "DISABLE",
-                          body: { notes }
-                        });
-                      }}
-                      variant="danger"
-                    >
-                      Disable
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => {
-                        const notes = window.prompt("Enable note", "Feature placement enabled by admin");
-
-                        if (!notes) {
-                          return;
-                        }
-
-                        actionMutation.mutate({
-                          workerId: worker.id,
-                          action: "ENABLE",
-                          body: { notes }
-                        });
-                      }}
-                    >
-                      Enable
-                    </Button>
-                  )}
-
-                  <Button
-                    onClick={() => {
-                      const endsAt = window.prompt("Extension end date (ISO format)", new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString());
-                      const notes = window.prompt("Extension note", "Extended featured worker placement");
-
-                      if (!endsAt || !notes) {
-                        return;
-                      }
-
-                      actionMutation.mutate({
-                        workerId: worker.id,
-                        action: "EXTEND",
-                        body: { endsAt, notes }
-                      });
-                    }}
-                    variant="outline"
-                  >
-                    Extend
-                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
+          </div>
+
+          <ActionDesk description="Manage featured placement, extension windows, and notes against the live featured-worker endpoints." title="Featured placement desk">
+            {selectedWorker ? (
+              <>
+                <div className="rounded-[1.25rem] bg-[rgba(255,251,244,0.92)] p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-[color:var(--jo-ink)]">{selectedWorker.displayName || "Unnamed worker"}</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{selectedWorker.headline || "No worker headline yet"}</p>
+                    </div>
+                    <Badge variant={selectedWorker.isFeatured ? "purple" : "slate"}>{selectedWorker.isFeatured ? "FEATURED" : "STANDARD"}</Badge>
+                  </div>
+                  <p className="mt-4 text-sm text-[color:var(--jo-muted)]">
+                    Current subscription:{" "}
+                    <span className="font-semibold text-[color:var(--jo-ink)]">
+                      {selectedWorker.subscriptions[0] ? `${selectedWorker.subscriptions[0].status} until ${formatDateTime(selectedWorker.subscriptions[0].endsAt)}` : "No subscription"}
+                    </span>
+                  </p>
+                </div>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">{selectedWorker.isFeatured ? "Disable note" : "Enable note"}</span>
+                  <Textarea className="min-h-[120px]" onChange={(event) => setFeatureNotes(event.target.value)} value={featureNotes} />
+                </label>
+
+                <Button
+                  disabled={actionMutation.isPending || featureNotes.trim().length < 5}
+                  onClick={() =>
+                    actionMutation.mutate({
+                      workerId: selectedWorker.id,
+                      action: selectedWorker.isFeatured ? "DISABLE" : "ENABLE",
+                      body: { notes: featureNotes.trim() }
+                    })
+                  }
+                  variant={selectedWorker.isFeatured ? "danger" : "primary"}
+                >
+                  {selectedWorker.isFeatured ? "Disable featured placement" : "Enable featured placement"}
+                </Button>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Extension end time</span>
+                  <Input onChange={(event) => setExtensionEndsAt(event.target.value)} type="datetime-local" value={extensionEndsAt} />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Extension note</span>
+                  <Textarea className="min-h-[120px]" onChange={(event) => setExtensionNotes(event.target.value)} value={extensionNotes} />
+                </label>
+
+                <Button
+                  disabled={actionMutation.isPending || extensionNotes.trim().length < 5 || !extensionEndsAt}
+                  onClick={() =>
+                    actionMutation.mutate({
+                      workerId: selectedWorker.id,
+                      action: "EXTEND",
+                      body: {
+                        endsAt: new Date(extensionEndsAt).toISOString(),
+                        notes: extensionNotes.trim()
+                      }
+                    })
+                  }
+                  variant="outline"
+                >
+                  Extend placement window
+                </Button>
+              </>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">Select a worker to manage featured placement.</p>
+            )}
+          </ActionDesk>
         </div>
       )}
 

@@ -1,23 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, HeadphonesIcon, ShieldAlert, Workflow } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import { EmptyState, FilterCard, PaginationControls } from "@/components/admin/list-controls";
+import { ContentSnapshot } from "@/pages/admin-detail-pages.shared";
 import { PageHeader } from "@/components/layout/page-header";
 import { StatCard } from "@/components/layout/stat-card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useCurrentAdmin } from "@/features/auth/auth";
 import { apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError } from "@/lib/api";
 import { formatDateTime, formatDisplayName, formatJsonValue, formatNumber } from "@/lib/utils";
 import type {
   AdminAuditLogItem,
+  AdminContentView,
+  AdminModerationCaseDetail,
   AdminModerationCaseItem,
+  AdminReportDetail,
   AdminReportListItem,
   AdminSupportTicketItem,
   FraudSignalItem,
@@ -34,10 +38,35 @@ const handleActionError = (error: unknown, fallback: string) => {
   toast.error(getApiErrorMessage(error, fallback));
 };
 
+const resolveOpsEntityLink = (entityType?: string | null, entityId?: string | null) => {
+  if (!entityType || !entityId) {
+    return "/content";
+  }
+
+  switch (entityType) {
+    case "post":
+    case "comment":
+    case "review":
+    case "message":
+      return `/content/${entityType}/${entityId}`;
+    case "service_request":
+      return `/service-requests/${entityId}`;
+    case "booking":
+      return `/bookings/${entityId}`;
+    case "user":
+      return `/users/${entityId}`;
+    case "worker":
+      return `/workers/${entityId}`;
+    default:
+      return "/content";
+  }
+};
+
 const ReportsPage = () => {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [severity, setSeverity] = useState("");
+  const [selectedReportId, setSelectedReportId] = useState("");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -62,6 +91,28 @@ const ReportsPage = () => {
   });
 
   const reports = reportsQuery.data?.data ?? [];
+  const selectedReport = reports.find((item) => item.id === selectedReportId) ?? reports[0];
+
+  useEffect(() => {
+    if (!selectedReportId && reports[0]) {
+      setSelectedReportId(reports[0].id);
+    }
+  }, [reports, selectedReportId]);
+
+  const reportDetailQuery = useQuery({
+    queryKey: ["admin", "reports", "queue-detail", selectedReport?.id],
+    queryFn: () => apiRequest<AdminReportDetail>(`/admin/reports/${selectedReport?.id}`),
+    enabled: Boolean(selectedReport?.id)
+  });
+
+  const reportContentQuery = useQuery({
+    queryKey: ["admin", "reports", "queue-content", selectedReport?.id],
+    queryFn: async () => {
+      const report = await apiRequest<AdminReportDetail>(`/admin/reports/${selectedReport?.id}`);
+      return apiRequest<AdminContentView>(`/admin/content/${report.entityType}/${report.entityId}`);
+    },
+    enabled: Boolean(selectedReport?.id)
+  });
 
   return (
     <div className="space-y-6">
@@ -113,9 +164,10 @@ const ReportsPage = () => {
       {reports.length === 0 ? (
         <EmptyState description="No reports matched the current filter set." title="No reports found" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {reports.map((report) => (
-            <Card key={report.id}>
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-4">
+            {reports.map((report) => (
+              <Card key={report.id} className={selectedReport?.id === report.id ? "border-[rgba(65,150,70,0.24)]" : undefined}>
               <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <CardTitle>{report.reason}</CardTitle>
@@ -147,12 +199,83 @@ const ReportsPage = () => {
                     <Badge>No moderation case yet</Badge>
                   )}
                 </div>
-                <Link className="inline-flex" to={`/reports/${report.id}`}>
-                  <Button variant="outline">Open report detail</Button>
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={() => setSelectedReportId(report.id)} variant={selectedReport?.id === report.id ? "primary" : "outline"}>
+                    Inspect queue item
+                  </Button>
+                  <Link className="inline-flex" to={`/reports/${report.id}`}>
+                    <Button variant="outline">Open report detail</Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
-          ))}
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            {reportDetailQuery.data ? (
+              <Card className="overflow-hidden border-white/70 bg-white/95">
+                <CardHeader>
+                  <CardTitle>Report action desk</CardTitle>
+                  <CardDescription>Review the selected report, inspect linked evidence, and move into the correct moderation workflow.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={getStatusBadgeVariant(reportDetailQuery.data.status)}>{reportDetailQuery.data.status}</Badge>
+                    <Badge variant={getStatusBadgeVariant(reportDetailQuery.data.severity)}>{reportDetailQuery.data.severity}</Badge>
+                    <Badge variant="blue">{reportDetailQuery.data.entityType}</Badge>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Reporter</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatDisplayName(reportDetailQuery.data.reporterUser?.profile, reportDetailQuery.data.reporterUser?.email ?? "Unknown reporter")}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Entity</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {reportDetailQuery.data.entityType} · {reportDetailQuery.data.entityId}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Link className="inline-flex" to={`/reports/${reportDetailQuery.data.id}`}>
+                      <Button variant="outline">Open full report detail</Button>
+                    </Link>
+                    <Link className="inline-flex" to={`/content/${reportDetailQuery.data.entityType}/${reportDetailQuery.data.entityId}`}>
+                      <Button variant="outline">Open content viewer</Button>
+                    </Link>
+                    {reportDetailQuery.data.moderationCases[0] ? (
+                      <Link className="inline-flex" to={`/moderation-cases/${reportDetailQuery.data.moderationCases[0].id}`}>
+                        <Button>Open moderation case</Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Moderation cases</p>
+                    {reportDetailQuery.data.moderationCases.length === 0 ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">No moderation case is linked yet. Use the content viewer and moderation queue to investigate further.</div>
+                    ) : (
+                      reportDetailQuery.data.moderationCases.map((moderationCase) => (
+                        <div className="rounded-[1.25rem] bg-slate-50 p-4" key={moderationCase.id}>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-900">{moderationCase.id}</p>
+                            <Badge variant={getStatusBadgeVariant(moderationCase.status)}>{moderationCase.status}</Badge>
+                          </div>
+                          <p className="mt-2 text-sm text-slate-500">
+                            Assignee: {formatDisplayName(moderationCase.assignedAdminUser?.profile, moderationCase.assignedAdminUser?.email ?? "Unassigned")}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <ContentSnapshot contentView={reportContentQuery.data} />
+          </div>
         </div>
       )}
 
@@ -165,6 +288,9 @@ const ModerationCasesPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
+  const [selectedCaseId, setSelectedCaseId] = useState("");
+  const [actionType, setActionType] = useState("REVIEW_NOTE");
+  const [actionNotes, setActionNotes] = useState("Escalated in admin console after manual review.");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -184,32 +310,60 @@ const ModerationCasesPage = () => {
     queryFn: () => apiPaginatedRequest<AdminModerationCaseItem>(`/admin/moderation-cases?${queryString}`)
   });
 
+  const cases = casesQuery.data?.data ?? [];
+  const selectedCase = cases.find((item) => item.id === selectedCaseId) ?? cases[0];
+
+  useEffect(() => {
+    if (!selectedCaseId && cases[0]) {
+      setSelectedCaseId(cases[0].id);
+    }
+  }, [cases, selectedCaseId]);
+
+  const caseDetailQuery = useQuery({
+    queryKey: ["admin", "moderation-cases", "queue-detail", selectedCase?.id],
+    queryFn: () => apiRequest<AdminModerationCaseDetail>(`/admin/moderation-cases/${selectedCase?.id}`),
+    enabled: Boolean(selectedCase?.id)
+  });
+
+  const caseContentQuery = useQuery({
+    queryKey: ["admin", "moderation-cases", "queue-content", selectedCase?.id],
+    queryFn: async () => {
+      const moderationCase = await apiRequest<AdminModerationCaseDetail>(`/admin/moderation-cases/${selectedCase?.id}`);
+
+      if (!moderationCase.report) {
+        return undefined;
+      }
+
+      return apiRequest<AdminContentView>(`/admin/content/${moderationCase.report.entityType}/${moderationCase.report.entityId}`);
+    },
+    enabled: Boolean(selectedCase?.id)
+  });
+
   const actionMutation = useMutation({
-    mutationFn: async (item: AdminModerationCaseItem) => {
-      if (!item.report) {
+    mutationFn: async ({ caseId, moderationCase }: { caseId: string; moderationCase: Pick<AdminModerationCaseItem, "report"> }) => {
+      if (!moderationCase.report) {
         throw new Error("Case has no linked report");
       }
 
-      const notes = window.prompt("Moderation note", "Escalated in admin console");
-
-      return apiRequest(`/admin/moderation-cases/${item.id}/actions`, {
+      return apiRequest(`/admin/moderation-cases/${caseId}/actions`, {
         method: "POST",
         body: {
-          actionType: "REVIEW_NOTE",
-          entityType: item.report.entityType,
-          entityId: item.report.entityId,
-          notes: notes || "Escalated in admin console"
+          actionType,
+          entityType: moderationCase.report.entityType,
+          entityId: moderationCase.report.entityId,
+          notes: actionNotes
         }
       });
     },
     onSuccess: async () => {
       toast.success("Moderation action added");
-      await queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases", "queue-detail", selectedCase?.id] })
+      ]);
     },
     onError: (error) => handleActionError(error, "Unable to update moderation case")
   });
-
-  const cases = casesQuery.data?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -245,9 +399,10 @@ const ModerationCasesPage = () => {
       {cases.length === 0 ? (
         <EmptyState description="No moderation cases matched the current filter." title="No moderation cases found" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {cases.map((item) => (
-            <Card key={item.id}>
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-4">
+            {cases.map((item) => (
+            <Card className={selectedCase?.id === item.id ? "border-[rgba(65,150,70,0.24)]" : undefined} key={item.id}>
               <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <CardTitle>{item.report?.reason ?? "Moderation case"}</CardTitle>
@@ -273,16 +428,101 @@ const ModerationCasesPage = () => {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-3">
+                  <Button onClick={() => setSelectedCaseId(item.id)} variant={selectedCase?.id === item.id ? "primary" : "outline"}>
+                    Inspect case
+                  </Button>
                   <Link className="inline-flex" to={`/moderation-cases/${item.id}`}>
                     <Button variant="outline">Open case detail</Button>
                   </Link>
-                  <Button disabled={!item.report} onClick={() => actionMutation.mutate(item)} variant="outline">
-                    Add action
-                  </Button>
+                  {item.report ? (
+                    <Link className="inline-flex" to={`/moderation-cases/${item.id}/actions/new`}>
+                      <Button variant="outline">Open action panel</Button>
+                    </Link>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            {caseDetailQuery.data ? (
+              <Card className="overflow-hidden border-white/70 bg-white/95">
+                <CardHeader>
+                  <CardTitle>Moderation action desk</CardTitle>
+                  <CardDescription>Record the next action on the selected case and inspect its evidence without leaving the queue.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={getStatusBadgeVariant(caseDetailQuery.data.status)}>{caseDetailQuery.data.status}</Badge>
+                    {caseDetailQuery.data.report ? <Badge variant={getStatusBadgeVariant(caseDetailQuery.data.report.severity)}>{caseDetailQuery.data.report.severity}</Badge> : null}
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Assignee</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatDisplayName(caseDetailQuery.data.assignedAdminUser?.profile, caseDetailQuery.data.assignedAdminUser?.email ?? "Unassigned")}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Linked entity</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {caseDetailQuery.data.report ? `${caseDetailQuery.data.report.entityType} · ${caseDetailQuery.data.report.entityId}` : "No linked report"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Select onChange={(event) => setActionType(event.target.value)} value={actionType}>
+                    <option value="REVIEW_NOTE">Review note</option>
+                    <option value="ESCALATE">Escalate</option>
+                    <option value="CONTENT_REMOVE">Content remove</option>
+                    <option value="ACCOUNT_WARNING">Account warning</option>
+                    <option value="NO_ACTION">No action</option>
+                  </Select>
+                  <Textarea onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
+
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      disabled={!caseDetailQuery.data.report || actionMutation.isPending || actionNotes.trim().length < 4}
+                      onClick={() => actionMutation.mutate({ caseId: caseDetailQuery.data.id, moderationCase: caseDetailQuery.data })}
+                    >
+                      Record action
+                    </Button>
+                    {caseDetailQuery.data.report ? (
+                      <>
+                        <Link className="inline-flex" to={`/moderation-cases/${caseDetailQuery.data.id}`}>
+                          <Button variant="outline">Open case detail</Button>
+                        </Link>
+                        <Link className="inline-flex" to={resolveOpsEntityLink(caseDetailQuery.data.report.entityType, caseDetailQuery.data.report.entityId)}>
+                          <Button variant="outline">Open content</Button>
+                        </Link>
+                      </>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Action history</p>
+                    {caseDetailQuery.data.actions.length === 0 ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">No actions have been recorded yet.</div>
+                    ) : (
+                      caseDetailQuery.data.actions.map((action) => (
+                        <div className="rounded-[1.25rem] bg-slate-50 p-4" key={action.id}>
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-900">{action.actionType}</p>
+                            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(action.createdAt)}</p>
+                          </div>
+                          <p className="mt-2 text-sm text-slate-500">{action.notes || "No note recorded."}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <ContentSnapshot contentView={caseContentQuery.data} />
+          </div>
         </div>
       )}
 
@@ -295,6 +535,9 @@ const FraudSignalsPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
+  const [selectedSignalId, setSelectedSignalId] = useState("");
+  const [fraudAction, setFraudAction] = useState<"REVIEW" | "DISMISS" | "ACTION">("REVIEW");
+  const [fraudNotes, setFraudNotes] = useState("Risk reviewed in admin console.");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -314,13 +557,22 @@ const FraudSignalsPage = () => {
     queryFn: () => apiPaginatedRequest<FraudSignalItem>(`/admin/fraud-signals?${queryString}`)
   });
 
+  const signals = signalsQuery.data?.data ?? [];
+  const selectedSignal = signals.find((item) => item.id === selectedSignalId) ?? signals[0];
+
+  useEffect(() => {
+    if (!selectedSignalId && signals[0]) {
+      setSelectedSignalId(signals[0].id);
+    }
+  }, [selectedSignalId, signals]);
+
   const signalMutation = useMutation({
-    mutationFn: ({ signalId, action }: { signalId: string; action: "REVIEW" | "DISMISS" }) =>
+    mutationFn: ({ signalId, action, notes }: { signalId: string; action: "REVIEW" | "DISMISS" | "ACTION"; notes: string }) =>
       apiRequest(`/admin/fraud-signals/${signalId}`, {
         method: "PATCH",
         body: {
           action,
-          notes: `Frontend admin ${action.toLowerCase()} action`
+          notes
         }
       }),
     onSuccess: async (_, variables) => {
@@ -329,8 +581,6 @@ const FraudSignalsPage = () => {
     },
     onError: (error) => handleActionError(error, "Unable to update fraud signal")
   });
-
-  const signals = signalsQuery.data?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -365,9 +615,10 @@ const FraudSignalsPage = () => {
       {signals.length === 0 ? (
         <EmptyState description="No fraud signals matched the current filter." title="No fraud signals found" />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-2">
-          {signals.map((signal) => (
-            <Card key={signal.id}>
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-4">
+            {signals.map((signal) => (
+            <Card className={selectedSignal?.id === signal.id ? "border-[rgba(65,150,70,0.24)]" : undefined} key={signal.id}>
               <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                   <CardTitle>{signal.signalKey}</CardTitle>
@@ -389,16 +640,71 @@ const FraudSignalsPage = () => {
                   <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(signal.createdAt)}</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "REVIEW" })} variant="outline">
+                  <Button onClick={() => setSelectedSignalId(signal.id)} variant={selectedSignal?.id === signal.id ? "primary" : "outline"}>
+                    Inspect signal
+                  </Button>
+                  <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "REVIEW", notes: "Risk reviewed in admin console." })} variant="outline">
                     Mark reviewed
                   </Button>
-                  <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "DISMISS" })} variant="ghost">
+                  <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "DISMISS", notes: "Signal dismissed by admin review." })} variant="ghost">
                     Dismiss
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))}
+          </div>
+
+          <Card className="overflow-hidden border-white/70 bg-white/95">
+            <CardHeader>
+              <CardTitle>Fraud action desk</CardTitle>
+              <CardDescription>Review the selected risk signal, record the operator note, and apply the next trust action.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedSignal ? (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={getStatusBadgeVariant(selectedSignal.status)}>{selectedSignal.status}</Badge>
+                    <Badge variant="red">Score {selectedSignal.score}</Badge>
+                    {selectedSignal.entityType ? <Badge variant="blue">{selectedSignal.entityType}</Badge> : null}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">User</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatDisplayName(selectedSignal.user?.profile, selectedSignal.user?.email ?? "Unknown user")}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Linked entity</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {selectedSignal.entityType ?? "user"} · {selectedSignal.entityId ?? selectedSignal.userId ?? "unknown"}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedSignal.userId ? (
+                    <Link className="inline-flex" to={`/users/${selectedSignal.userId}`}>
+                      <Button variant="outline">Open user detail</Button>
+                    </Link>
+                  ) : null}
+                  <Select onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")} value={fraudAction}>
+                    <option value="REVIEW">Review</option>
+                    <option value="DISMISS">Dismiss</option>
+                    <option value="ACTION">Action and open trust trail</option>
+                  </Select>
+                  <Textarea onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
+                  <Button
+                    disabled={signalMutation.isPending || (fraudAction === "ACTION" && fraudNotes.trim().length < 4)}
+                    onClick={() => signalMutation.mutate({ signalId: selectedSignal.id, action: fraudAction, notes: fraudNotes })}
+                  >
+                    Apply fraud action
+                  </Button>
+                </>
+              ) : (
+                <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">Select a fraud signal to review and action it.</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 

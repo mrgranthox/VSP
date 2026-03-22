@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Activity, BadgeCheck, BriefcaseBusiness, CalendarCheck2, Users } from "lucide-react";
 
-import { AreaTrendCard, BarMetricCard, DonutChartCard, InsightMetricCard, RevenueRibbon } from "@/components/admin/dashboard-charts";
+import { AreaTrendCard, BarMetricCard, DonutChartCard } from "@/components/admin/lazy-dashboard-charts";
+import { InsightMetricCard, RevenueRibbon } from "@/components/admin/dashboard-metrics";
 import { PageHeader } from "@/components/layout/page-header";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,11 +70,11 @@ const OverviewPage = () => {
       <RevenueRibbon amountMinor={overview?.revenueMinor ?? 0} subtitle="Succeeded marketplace payment volume, paired with live request, booking, and engagement telemetry from the admin analytics layer." title="Revenue pulse" />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <InsightMetricCard accent="linear-gradient(135deg,#2457F5,#8FB7FF)" helper="Registered users in the active analytics window." icon={Users} label="Users" value={formatNumber(overview?.users ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#16A34A,#6EE7B7)" helper="Approved worker accounts currently in the marketplace." icon={BadgeCheck} label="Approved workers" value={formatNumber(overview?.workersApproved ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#F59E0B,#FCD34D)" helper="Requests that are still open, matched, accepted, or in progress." icon={BriefcaseBusiness} label="Open demand" value={formatNumber(overview?.requestsOpen ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#7C3AED,#C4B5FD)" helper="Completed bookings across the current analytics window." icon={CalendarCheck2} label="Completed jobs" value={formatNumber(overview?.bookingsCompleted ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#DC2626,#FDA4AF)" helper="Websocket connections and real-time infrastructure heartbeat." icon={Activity} label="Live sockets" value={formatNumber(health?.websocketConnections ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Registered users in the active analytics window." icon={Users} label="Users" value={formatNumber(overview?.users ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#f6b313,#ffd25e)" helper="Approved worker accounts currently in the marketplace." icon={BadgeCheck} label="Approved workers" value={formatNumber(overview?.workersApproved ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#e9779b,#f4acc4)" helper="Requests that are still open, matched, accepted, or in progress." icon={BriefcaseBusiness} label="Open demand" value={formatNumber(overview?.requestsOpen ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#ff4b19,#ff8c63)" helper="Completed bookings across the current analytics window." icon={CalendarCheck2} label="Completed jobs" value={formatNumber(overview?.bookingsCompleted ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#173328,#4c6e63)" helper="Websocket connections and real-time infrastructure heartbeat." icon={Activity} label="Live sockets" value={formatNumber(health?.websocketConnections ?? 0)} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -110,7 +111,29 @@ const OverviewPage = () => {
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden border-white/70 bg-white/95">
+        <div className="grid gap-6">
+          <Card className="overflow-hidden border-white/70 bg-white/95">
+            <CardHeader>
+              <CardTitle>Runtime footprint</CardTitle>
+              <CardDescription>Live operational totals pulled from the backend health and metrics endpoints.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-2">
+              {[
+                { label: "Active websocket connections", value: formatNumber(health?.websocketConnections ?? 0), detail: "Live realtime sessions reported by the gateway" },
+                { label: "Search documents", value: formatNumber(health?.typesense.docCount ?? 0), detail: health?.typesense.enabled ? "Indexed Typesense records" : "Search index disabled" },
+                { label: "Recent job runs", value: formatNumber(health?.recentJobRuns.length ?? 0), detail: "Latest worker and scheduler executions in the health payload" },
+                { label: "Revenue total", value: formatNumber((overview?.revenueMinor ?? 0) / 100), detail: "Marketplace revenue reported by analytics overview" }
+              ].map((item) => (
+                <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/80 px-4 py-3" key={item.label}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{item.label}</p>
+                  <p className="mt-2 text-2xl font-black tracking-tight text-slate-950">{item.value}</p>
+                  <p className="mt-1 text-sm text-slate-500">{item.detail}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border-white/70 bg-white/95">
           <CardHeader>
             <CardTitle>Recent job ledger</CardTitle>
             <CardDescription>The latest recurring and worker-triggered job runs from the backend job ledger.</CardDescription>
@@ -131,7 +154,8 @@ const OverviewPage = () => {
               </div>
             ))}
           </CardContent>
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   );

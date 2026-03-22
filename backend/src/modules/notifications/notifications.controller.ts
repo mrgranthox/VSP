@@ -36,6 +36,15 @@ class NotificationsController {
     );
   };
 
+  getOne = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+
+    const result = await this.notificationsService.getNotification(req.actor, req.params.notificationId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
   markRead = async (req: Request, res: Response): Promise<void> => {
     if (!req.actor) {
       throw Errors.AUTH_SESSION_EXPIRED();

@@ -110,6 +110,39 @@ export interface NotificationItem {
   createdAt: string;
 }
 
+export interface AdminMediaAssetItem {
+  id: string;
+  category: string;
+  visibility: string;
+  mimeType: string;
+  status: string;
+  originalFilename?: string | null;
+  finalCdnUrl?: string | null;
+  storageKey: string;
+  createdAt: string;
+  confirmedAt?: string | null;
+}
+
+export interface AdminActivityItem {
+  id: string;
+  kind: string;
+  title: string;
+  subtitle?: string | null;
+  status?: string | null;
+  createdAt: string;
+  linkPath?: string | null;
+}
+
+export interface AdminUserSessionItem {
+  id: string;
+  deviceType?: string | null;
+  ipAddress?: string | null;
+  mfaVerified: boolean;
+  mfaMethod?: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
 export interface NotificationPreferences {
   userId: string;
   chatPushEnabled: boolean;
@@ -409,6 +442,31 @@ export interface AdminPermissionItem {
 export interface AdminUserDetail extends AdminUserListItem {
   sessionCount: number;
   openTicketCount: number;
+  updatedAt: string;
+  activeSessions: AdminUserSessionItem[];
+  recentMediaAssets: AdminMediaAssetItem[];
+  activitySummary: {
+    posts: number;
+    comments: number;
+    postLikes: number;
+    commentLikes: number;
+    postSaves: number;
+    follows: number;
+    followers: number;
+    savedWorkers: number;
+    reports: number;
+    messages: number;
+    conversations: number;
+    notifications: number;
+    serviceRequests: number;
+    bookings: number;
+    reviewsWritten: number;
+    reviewsReceived: number;
+    supportTickets: number;
+    fraudSignals: number;
+    mediaAssets: number;
+  };
+  activityTimeline: AdminActivityItem[];
 }
 
 export interface VerificationDocumentItem {
@@ -500,6 +558,70 @@ export interface WorkerDetail extends AdminWorkerListItem {
   verificationRequests: Array<Record<string, unknown>>;
   featuredSubscriptions: WorkerSubscriptionSnapshot["subscriptions"];
   subscriptionInvoices: WorkerSubscriptionSnapshot["invoices"];
+  portfolioItems: Array<{
+    id: string;
+    workerProfileId: string;
+    mediaAssetId?: string | null;
+    title?: string | null;
+    caption?: string | null;
+    mediaUrl: string;
+    sortOrder: number;
+    createdAt: string;
+    mediaAsset?: AdminMediaAssetItem | null;
+  }>;
+  availabilityRules: Array<{
+    id: string;
+    workerProfileId: string;
+    dayOfWeek: number;
+    startMinute: number;
+    endMinute: number;
+    timezone: string;
+    createdAt: string;
+  }>;
+  availabilityExceptions: Array<{
+    id: string;
+    workerProfileId: string;
+    startsAt: string;
+    endsAt: string;
+    reason?: string | null;
+    createdAt: string;
+  }>;
+  recentMediaAssets: AdminMediaAssetItem[];
+  activitySummary: {
+    posts: number;
+    comments: number;
+    postLikes: number;
+    commentLikes: number;
+    postSaves: number;
+    follows: number;
+    followers: number;
+    savedWorkers: number;
+    reports: number;
+    messages: number;
+    conversations: number;
+    notifications: number;
+    serviceRequests: number;
+    bookings: number;
+    reviewsWritten: number;
+    reviewsReceived: number;
+    supportTickets: number;
+    fraudSignals: number;
+    mediaAssets: number;
+    assignments: number;
+    bookingsAsWorker: number;
+    savedByUsers: number;
+    searchImpressions: number;
+    services: number;
+    serviceAreas: number;
+    certifications: number;
+    verificationRequests: number;
+    portfolioItems: number;
+    availabilityRules: number;
+    availabilityExceptions: number;
+    featuredSubscriptions: number;
+    subscriptionInvoices: number;
+  };
+  activityTimeline: AdminActivityItem[];
 }
 
 export interface AdminContentHistoryReport {

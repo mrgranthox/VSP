@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellDot, CheckCheck, Megaphone, MessageCircleMore, ShieldAlert, Wrench } from "lucide-react";
+import { BellDot, CheckCheck, ChevronRight, Megaphone, MessageCircleMore, ShieldAlert, Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError } from "@/lib/api";
-import { cn, formatRelativeDate } from "@/lib/utils";
+import { cn, formatDateTime, formatJsonValue, formatRelativeDate } from "@/lib/utils";
 import type { NotificationItem } from "@/types/admin";
 
 const iconMap = {
@@ -31,14 +31,81 @@ const variantMap = {
 } as const;
 
 const notificationIconClasses = {
-  blue: "bg-blue-50 text-blue-700",
-  amber: "bg-amber-50 text-amber-700",
-  purple: "bg-violet-50 text-violet-700",
-  red: "bg-red-50 text-red-700"
+  blue: "bg-[rgba(65,150,70,0.12)] text-[color:var(--jo-forest)]",
+  amber: "bg-[rgba(246,179,19,0.18)] text-[#9a6a00]",
+  purple: "bg-[rgba(233,119,155,0.16)] text-[color:var(--jo-rose)]",
+  red: "bg-[rgba(255,75,25,0.14)] text-[color:var(--jo-coral)]"
 } as const;
+
+const readString = (payload: Record<string, unknown>, ...keys: string[]) => {
+  for (const key of keys) {
+    const value = payload[key];
+
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+  }
+
+  return null;
+};
+
+const resolveNotificationActionLinks = (notification: NotificationItem) => {
+  const payload = notification.payloadJson ?? {};
+  const links: Array<{ label: string; to: string }> = [];
+  const bookingId = readString(payload, "bookingId");
+  const requestId = readString(payload, "requestId", "serviceRequestId");
+  const workerId = readString(payload, "workerProfileId", "workerId");
+  const userId = readString(payload, "userId");
+  const postId = readString(payload, "postId");
+  const commentId = readString(payload, "commentId");
+  const reviewId = readString(payload, "reviewId");
+  const reportId = readString(payload, "reportId");
+
+  if (bookingId) {
+    links.push({ label: "Open booking", to: `/bookings/${bookingId}` });
+  }
+
+  if (requestId) {
+    links.push({ label: "Open request", to: `/service-requests/${requestId}` });
+  }
+
+  if (workerId) {
+    links.push({ label: "Open worker", to: `/workers/${workerId}` });
+  }
+
+  if (userId) {
+    links.push({ label: "Open user", to: `/users/${userId}` });
+  }
+
+  if (postId) {
+    links.push({ label: "Open post", to: `/content/post/${postId}` });
+  }
+
+  if (commentId) {
+    links.push({ label: "Open comment", to: `/content/comment/${commentId}` });
+  }
+
+  if (reviewId) {
+    links.push({ label: "Open review", to: `/content/review/${reviewId}` });
+  }
+
+  if (reportId) {
+    links.push({ label: "Open report", to: `/reports/${reportId}` });
+  }
+
+  return links;
+};
+
+const getNotificationSummary = (notification: NotificationItem) =>
+  Object.entries(notification.payloadJson ?? {})
+    .slice(0, 3)
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join(" · ");
 
 const NotificationsPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { notificationId } = useParams();
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [broadcastForm, setBroadcastForm] = useState({
     targetAudience: "ALL_USERS",
@@ -55,6 +122,12 @@ const NotificationsPage = () => {
     queryFn: () => apiPaginatedRequest<NotificationItem>(`/notifications?page=1&limit=20${unreadOnly ? "&isRead=false" : ""}`)
   });
 
+  const notificationDetailQuery = useQuery({
+    queryKey: ["notifications", "detail", notificationId],
+    queryFn: () => apiRequest<NotificationItem>(`/notifications/${notificationId}`),
+    enabled: Boolean(notificationId)
+  });
+
   const markAllMutation = useMutation({
     mutationFn: () => apiRequest<{ updatedCount: number }>("/notifications/read-all", { method: "POST", body: {} }),
     onSuccess: () => {
@@ -64,8 +137,8 @@ const NotificationsPage = () => {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (notificationId: string) =>
-      apiRequest(`/notifications/${notificationId}/read`, {
+    mutationFn: (id: string) =>
+      apiRequest<NotificationItem>(`/notifications/${id}/read`, {
         method: "POST",
         body: {}
       }),
@@ -110,6 +183,7 @@ const NotificationsPage = () => {
   const roles = adminQuery.data?.roles ?? [];
   const canBroadcast = hasPermission(roles, "NOTIFICATION_BROADCAST");
   const isBroadcastRoute = location.pathname.endsWith("/broadcast");
+  const selectedNotification = notificationDetailQuery.data ?? notifications.find((item) => item.id === notificationId) ?? null;
 
   const groupedTypes = useMemo(() => {
     const counts = new Map<string, number>();
@@ -121,11 +195,23 @@ const NotificationsPage = () => {
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
   }, [notifications]);
 
+  const handleOpenNotification = async (notification: NotificationItem) => {
+    if (!notification.isRead) {
+      try {
+        await markReadMutation.mutateAsync(notification.id);
+      } catch (error) {
+        toast.error(getApiErrorMessage(error, "Unable to update notification"));
+      }
+    }
+
+    navigate(`/notifications/${notification.id}`);
+  };
+
   const broadcastCard = canBroadcast ? (
     <Card>
       <CardHeader>
         <CardTitle>{isBroadcastRoute ? "Broadcast composer" : "Broadcast notification"}</CardTitle>
-        <CardDescription>Send an in-app, push, or email broadcast with the admin notification endpoint.</CardDescription>
+        <CardDescription>Send in-app, push, or email broadcasts through the admin notifications endpoint.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4">
@@ -173,52 +259,61 @@ const NotificationsPage = () => {
     </Card>
   ) : null;
 
+  const actionLinks = selectedNotification ? resolveNotificationActionLinks(selectedNotification) : [];
+
   return (
     <div className="space-y-6">
       <PageHeader
         subtitle={
           isBroadcastRoute
-            ? "Audience selection, channel choice, and broadcast delivery are routed through the backend admin notifications endpoint."
-            : "Read state, unread counts, and event fan-in are all wired to the backend notifications module."
+            ? "Audience selection, channel choice, and durable delivery are routed through the backend admin notifications endpoint."
+            : notificationId
+              ? "Notification detail desk with payload evidence, read-state controls, and contextual jump links."
+              : "Unread state, payload evidence, and event fan-in are all wired to the backend notifications module."
         }
-        title={isBroadcastRoute ? "Broadcast Notification" : "Notifications Center"}
+        title={isBroadcastRoute ? "Broadcast Notification" : notificationId ? "Notification Detail" : "Notifications Center"}
       >
-        <Button onClick={() => markAllMutation.mutate()} variant="outline">
-          <CheckCheck className="h-4 w-4" />
-          Mark all as read
-        </Button>
+        {!isBroadcastRoute ? (
+          <Button onClick={() => markAllMutation.mutate()} variant="outline">
+            <CheckCheck className="h-4 w-4" />
+            Mark all as read
+          </Button>
+        ) : null}
       </PageHeader>
 
-      <div className="grid gap-6 xl:grid-cols-[280px_1fr]">
+      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-6">
           {isBroadcastRoute ? broadcastCard : null}
+
           <Card>
             <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              <CardDescription>Trim the feed down while you wire the rest of the admin flows.</CardDescription>
+              <CardTitle>Filters & queue stats</CardTitle>
+              <CardDescription>Keep the feed focused while you investigate or respond.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm font-medium text-slate-500">Unread notifications</p>
-                <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{unreadCount}</p>
+              <div className="rounded-[1.35rem] border border-[rgba(112,104,84,0.12)] bg-[linear-gradient(135deg,rgba(65,150,70,0.08),rgba(255,253,248,0.92))] p-4">
+                <p className="text-sm font-medium text-[color:var(--jo-muted)]">Unread notifications</p>
+                <p className="mt-2 text-3xl font-extrabold tracking-tight text-[color:var(--jo-ink)]">{unreadCount}</p>
               </div>
 
               <button
                 className={cn(
                   "flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm font-semibold transition",
-                  unreadOnly ? "border-blue-200 bg-blue-50 text-blue-800" : "border-slate-200 bg-white text-slate-700"
+                  unreadOnly
+                    ? "border-[rgba(65,150,70,0.24)] bg-[rgba(65,150,70,0.08)] text-[color:var(--jo-forest)]"
+                    : "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] text-[color:var(--jo-ink)]"
                 )}
                 onClick={() => setUnreadOnly((value) => !value)}
               >
                 Unread only
-                <span className={`h-3 w-3 rounded-full ${unreadOnly ? "bg-blue-600" : "bg-slate-300"}`} />
+                <span className={`h-3 w-3 rounded-full ${unreadOnly ? "bg-[color:var(--jo-forest)]" : "bg-[color:rgba(107,114,102,0.35)]"}`} />
               </button>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Types in current feed</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Types in current feed</p>
                 {groupedTypes.map(([type, count]) => (
-                  <div key={type} className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
-                    <span className="text-sm font-medium text-slate-700">{type.replaceAll("_", " ")}</span>
+                  <div key={type} className="flex items-center justify-between rounded-2xl bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                    <span className="text-sm font-medium text-[color:var(--jo-ink)]">{type.replaceAll("_", " ")}</span>
                     <Badge variant="blue">{count}</Badge>
                   </div>
                 ))}
@@ -229,45 +324,136 @@ const NotificationsPage = () => {
           {!isBroadcastRoute ? broadcastCard : null}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Notification feed</CardTitle>
-            <CardDescription>Clicking a row marks it as read. Payload summaries are rendered from the durable notification records.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {notifications.map((notification) => {
-              const Icon = iconMap[notification.notificationType as keyof typeof iconMap] ?? BellDot;
-              const variant = variantMap[notification.notificationType as keyof typeof variantMap] ?? "blue";
-              const payloadSummary = Object.entries(notification.payloadJson ?? {})
-                .slice(0, 2)
-                .map(([key, value]) => `${key}: ${String(value)}`)
-                .join(" · ");
+        <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notification feed</CardTitle>
+              <CardDescription>Every row opens a route-backed detail view and preserves a clean audit trail of the payload.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {notifications.map((notification) => {
+                const Icon = iconMap[notification.notificationType as keyof typeof iconMap] ?? BellDot;
+                const variant = variantMap[notification.notificationType as keyof typeof variantMap] ?? "blue";
+                const payloadSummary = getNotificationSummary(notification);
+                const isSelected = notification.id === notificationId;
 
-              return (
-                <button
-                  key={notification.id}
-                  className={cn(
-                    "flex w-full items-start gap-4 rounded-[1.5rem] border p-4 text-left transition hover:border-blue-200 hover:bg-blue-50/30",
-                    notification.isRead ? "border-slate-200 bg-white" : "border-blue-100 bg-blue-50/50"
-                  )}
-                  onClick={() => markReadMutation.mutate(notification.id)}
-                >
-                  <div className={cn("mt-1 flex h-11 w-11 items-center justify-center rounded-2xl", notificationIconClasses[variant])}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-bold text-slate-950">{notification.notificationType.replaceAll("_", " ")}</p>
-                      {!notification.isRead ? <Badge variant="blue">Unread</Badge> : null}
+                return (
+                  <button
+                    key={notification.id}
+                    className={cn(
+                      "flex w-full items-start gap-4 rounded-[1.5rem] border p-4 text-left transition",
+                      isSelected
+                        ? "border-[rgba(65,150,70,0.24)] bg-[rgba(65,150,70,0.08)]"
+                        : notification.isRead
+                          ? "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] hover:border-[rgba(65,150,70,0.24)]"
+                          : "border-[rgba(246,179,19,0.22)] bg-[rgba(246,179,19,0.08)] hover:border-[rgba(65,150,70,0.24)]"
+                    )}
+                    onClick={() => void handleOpenNotification(notification)}
+                  >
+                    <div className={cn("mt-1 flex h-11 w-11 items-center justify-center rounded-2xl", notificationIconClasses[variant])}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <p className="mt-1 text-sm text-slate-600">{payloadSummary || "Notification payload recorded."}</p>
-                    <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-slate-400">{formatRelativeDate(notification.createdAt)}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold text-[color:var(--jo-ink)]">{notification.notificationType.replaceAll("_", " ")}</p>
+                        {!notification.isRead ? <Badge variant="amber">Unread</Badge> : <Badge variant="slate">Read</Badge>}
+                      </div>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{payloadSummary || "Notification payload recorded."}</p>
+                      <p className="mt-2 text-xs font-medium uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{formatRelativeDate(notification.createdAt)}</p>
+                    </div>
+                    <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[color:rgba(107,114,102,0.6)]" />
+                  </button>
+                );
+              })}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{selectedNotification ? selectedNotification.notificationType.replaceAll("_", " ") : "Notification detail"}</CardTitle>
+              <CardDescription>
+                {selectedNotification
+                  ? "Inspect payload evidence, read state, and jump straight into the linked admin workflow."
+                  : "Select a notification to inspect its payload and related admin actions."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {selectedNotification ? (
+                <>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={(variantMap[selectedNotification.notificationType as keyof typeof variantMap] ?? "blue") as "blue" | "green" | "amber" | "red" | "slate" | "purple"}>
+                      {selectedNotification.channel ?? "IN_APP"}
+                    </Badge>
+                    <Badge variant={selectedNotification.isRead ? "slate" : "amber"}>{selectedNotification.isRead ? "Read" : "Unread"}</Badge>
+                    <Badge variant="green">{formatRelativeDate(selectedNotification.createdAt)}</Badge>
                   </div>
-                </button>
-              );
-            })}
-          </CardContent>
-        </Card>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Created</p>
+                      <p className="mt-2 text-sm font-semibold text-[color:var(--jo-ink)]">{formatDateTime(selectedNotification.createdAt)}</p>
+                    </div>
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Read at</p>
+                      <p className="mt-2 text-sm font-semibold text-[color:var(--jo-ink)]">{formatDateTime(selectedNotification.readAt)}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.4rem] border border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Payload summary</p>
+                    <p className="mt-3 text-sm leading-7 text-[color:var(--jo-ink)]">{getNotificationSummary(selectedNotification) || "No summary keys were available in this payload."}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Actions</p>
+                    <div className="flex flex-wrap gap-3">
+                      {!selectedNotification.isRead ? (
+                        <Button onClick={() => markReadMutation.mutate(selectedNotification.id)} variant="outline">
+                          <CheckCheck className="h-4 w-4" />
+                          Mark as read
+                        </Button>
+                      ) : null}
+                      <Link className="inline-flex" to="/notifications">
+                        <Button variant="outline">Back to feed</Button>
+                      </Link>
+                      {selectedNotification.notificationType === "ADMIN_BROADCAST" && canBroadcast ? (
+                        <Link className="inline-flex" to="/notifications/broadcast">
+                          <Button variant="outline">
+                            <Megaphone className="h-4 w-4" />
+                            Open broadcast desk
+                          </Button>
+                        </Link>
+                      ) : null}
+                      {actionLinks.map((action) => (
+                        <Link className="inline-flex" key={`${action.label}-${action.to}`} to={action.to}>
+                          <Button variant="primary">
+                            {action.label}
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Payload JSON</p>
+                    <pre className="overflow-x-auto rounded-[1.5rem] border border-[rgba(112,104,84,0.12)] bg-[rgba(255,251,244,0.96)] p-4 text-xs leading-6 text-[color:var(--jo-ink)]">
+                      {formatJsonValue(selectedNotification.payloadJson)}
+                    </pre>
+                  </div>
+                </>
+              ) : (
+                <div className="flex min-h-[320px] items-center justify-center rounded-[1.5rem] border border-dashed border-[rgba(112,104,84,0.18)] bg-[rgba(255,251,244,0.72)] px-6 text-center">
+                  <div className="space-y-3">
+                    <BellDot className="mx-auto h-8 w-8 text-[color:var(--jo-forest)]" />
+                    <p className="text-lg font-semibold text-[color:var(--jo-ink)]">Select a notification</p>
+                    <p className="max-w-md text-sm text-[color:var(--jo-muted)]">Open a row from the feed to inspect the payload, mark read state, and jump into the related admin surface.</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -13,8 +13,8 @@ import { getStoredSession } from "@/lib/auth-storage";
 import type { AuthMeResponse } from "@/types/auth";
 
 const LoginPage = () => {
-  const [email, setEmail] = useState("superadmin@vocationalplatform.com");
-  const [password, setPassword] = useState("Change-This-Password-123!");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showMfaModal, setShowMfaModal] = useState(false);
   const [mfaMethod, setMfaMethod] = useState<"totp" | "sms" | "backup_code">("totp");
   const [mfaCode, setMfaCode] = useState("");
@@ -87,9 +87,9 @@ const LoginPage = () => {
 
         <div className="grid gap-4">
           {[
-            "65 admin endpoints already implemented in the backend",
-            "MFA-aware sessions for dangerous actions",
-            "Live notifications, audit logs, fraud signals, and system health"
+            "Role-aware admin access backed by the live auth service",
+            "MFA-aware sessions for dangerous operations",
+            "Notifications, audit trails, fraud signals, and runtime health from the database"
           ].map((item) => (
             <div key={item} className="glass-panel flex items-start gap-3 rounded-[1.5rem] px-5 py-4">
               <ShieldCheck className="mt-0.5 h-5 w-5 text-blue-300" />
@@ -104,7 +104,7 @@ const LoginPage = () => {
           <CardHeader className="pb-4">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-700">Secure admin access</p>
             <CardTitle className="text-3xl font-extrabold">Welcome back</CardTitle>
-            <CardDescription>Sign in with one of the seeded admin accounts to start wiring the dashboard end to end.</CardDescription>
+            <CardDescription>Sign in with a real admin account provisioned in the platform database.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <label className="block space-y-2">
@@ -124,8 +124,10 @@ const LoginPage = () => {
             </label>
 
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-semibold text-slate-900">Local seeded credentials</p>
-              <p className="mt-1">`superadmin@vocationalplatform.com` / `Change-This-Password-123!`</p>
+              <p className="font-semibold text-slate-900">Database-backed admin access</p>
+              <p className="mt-2 leading-6">
+                Sign in with a real admin, moderator, support, or super-admin account provisioned in the platform database.
+              </p>
             </div>
 
             <Button className="w-full" disabled={isPending} onClick={() => loginMutation.mutate()}>
