@@ -1,9 +1,9 @@
 {
   "summary": {
-    "routeCount": 201,
-    "staticHttpInvocationCount": 341,
-    "uniqueStaticHttpInvocationCount": 201,
-    "coveredRouteCount": 201,
+    "routeCount": 213,
+    "staticHttpInvocationCount": 370,
+    "uniqueStaticHttpInvocationCount": 213,
+    "coveredRouteCount": 213,
     "uncoveredRouteCount": 0,
     "coverageRate": 1
   },
@@ -53,6 +53,15 @@
     {
       "method": "GET",
       "path": "/api/v1/admin/audit-logs",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/audit-logs/export",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -119,6 +128,7 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
     },
@@ -128,6 +138,7 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
     },
@@ -157,6 +168,8 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
     },
@@ -197,6 +210,24 @@
       ]
     },
     {
+      "method": "PATCH",
+      "path": "/api/v1/admin/fraud-signals/bulk",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/fraud-signals/export",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
       "method": "GET",
       "path": "/api/v1/admin/moderation-cases",
       "module": "admin",
@@ -217,6 +248,24 @@
     {
       "method": "POST",
       "path": "/api/v1/admin/moderation-cases/:caseId/actions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/moderation-cases/bulk-actions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/moderation-cases/export",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -265,12 +314,34 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
     },
     {
       "method": "GET",
       "path": "/api/v1/admin/reports/:reportId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/reports/bulk",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/reports/export",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -329,6 +400,7 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
     },
@@ -344,6 +416,24 @@
     {
       "method": "PATCH",
       "path": "/api/v1/admin/support-tickets/:ticketId/status",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/support-tickets/bulk",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/support-tickets/export",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -383,6 +473,7 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
     },
@@ -407,6 +498,25 @@
     {
       "method": "DELETE",
       "path": "/api/v1/admin/users/:userId/roles/:roleId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/users/:userId/sessions/:sessionId/revoke",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/users/:userId/sessions/revoke-all",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
@@ -493,6 +603,7 @@
       "coveredBy": [
         "src/gateway/websocket.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.role-matrix.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
@@ -532,6 +643,10 @@
       "module": "auth",
       "sourceFile": "src/modules/auth/auth.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.role-matrix.integration.test.ts",
+        "src/modules/admin/admin.role-matrix.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts"
@@ -621,6 +736,7 @@
       "coveredBy": [
         "src/gateway/websocket.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts",
+        "src/modules/admin/admin.role-matrix.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
         "src/modules/auth/auth.integration.test.ts",
@@ -1129,6 +1245,15 @@
         "src/modules/admin/admin.integration.test.ts",
         "src/modules/notifications/notifications.integration.test.ts",
         "src/modules/notifications/notifications.integration.test.ts",
+        "src/modules/notifications/notifications.integration.test.ts"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/notifications/:notificationId",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "coveredBy": [
         "src/modules/notifications/notifications.integration.test.ts"
       ]
     },

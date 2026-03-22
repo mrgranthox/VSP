@@ -64,6 +64,7 @@ interface CreateSessionInput {
   deviceType?: string;
   ipAddress?: string;
   mfaVerified?: boolean;
+  mfaVerifiedAt?: Date | null;
   mfaMethod?: string | null;
   expiresAt: Date;
 }
@@ -142,6 +143,7 @@ class AuthRepository {
         deviceType: input.deviceType,
         ipAddress: input.ipAddress,
         mfaVerified: input.mfaVerified ?? false,
+        mfaVerifiedAt: input.mfaVerifiedAt ?? (input.mfaVerified ? new Date() : null),
         mfaMethod: input.mfaMethod ?? null,
         expiresAt: input.expiresAt
       }
@@ -236,6 +238,7 @@ class AuthRepository {
           deviceType: nextSession.deviceType,
           ipAddress: nextSession.ipAddress,
           mfaVerified: nextSession.mfaVerified ?? false,
+          mfaVerifiedAt: nextSession.mfaVerifiedAt ?? (nextSession.mfaVerified ? new Date() : null),
           mfaMethod: nextSession.mfaMethod ?? null,
           expiresAt: nextSession.expiresAt
         }
@@ -310,6 +313,7 @@ class AuthRepository {
       },
       data: {
         mfaVerified: true,
+        mfaVerifiedAt: new Date(),
         mfaMethod: method
       }
     });
@@ -326,6 +330,7 @@ class AuthRepository {
       },
       data: {
         mfaVerified: false,
+        mfaVerifiedAt: null,
         mfaMethod: null
       }
     });

@@ -1,5 +1,5 @@
 {
-  "routeCount": 201,
+  "routeCount": 213,
   "routes": [
     {
       "method": "get",
@@ -100,6 +100,26 @@
       "requiredPermission": "AUDIT_LOG_VIEW",
       "optionalAuth": false,
       "operationId": "admin_get_admin_audit_logs"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/audit-logs/export",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.exportAuditLogs",
+      "middlewares": [
+        "requirePermission(\"AUDIT_LOG_VIEW\")",
+        "validate(AdminAuditLogQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminAuditLogQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "AUDIT_LOG_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_audit_logs_export"
     },
     {
       "method": "get",
@@ -407,6 +427,46 @@
       "operationId": "admin_patch_admin_fraud_signals_by_signalId"
     },
     {
+      "method": "patch",
+      "path": "/api/v1/admin/fraud-signals/bulk",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.bulkActionFraudSignals",
+      "middlewares": [
+        "requirePermission(\"FRAUD_SIGNAL_ACTION\")",
+        "validate(BulkFraudSignalActionBody)"
+      ],
+      "validation": {
+        "body": "BulkFraudSignalActionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FRAUD_SIGNAL_ACTION",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_fraud_signals_bulk"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/fraud-signals/export",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.exportFraudSignals",
+      "middlewares": [
+        "requirePermission(\"FRAUD_SIGNAL_VIEW\")",
+        "validate(AdminFraudSignalsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminFraudSignalsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "FRAUD_SIGNAL_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_fraud_signals_export"
+    },
+    {
       "method": "get",
       "path": "/api/v1/admin/moderation-cases",
       "module": "admin",
@@ -467,6 +527,46 @@
       "requiredPermission": "MODERATION_CASE_ACTION",
       "optionalAuth": false,
       "operationId": "admin_post_admin_moderation_cases_by_caseId_actions"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/moderation-cases/bulk-actions",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.bulkAddModerationActions",
+      "middlewares": [
+        "requirePermission(\"MODERATION_CASE_ACTION\")",
+        "validate(BulkModerationActionBody)"
+      ],
+      "validation": {
+        "body": "BulkModerationActionBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "MODERATION_CASE_ACTION",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_moderation_cases_bulk_actions"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/moderation-cases/export",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.exportModerationCases",
+      "middlewares": [
+        "requirePermission(\"REPORT_VIEW\")",
+        "validate(AdminListModerationCasesQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListModerationCasesQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_moderation_cases_export"
     },
     {
       "method": "post",
@@ -585,6 +685,46 @@
       "requiredPermission": "REPORT_VIEW",
       "optionalAuth": false,
       "operationId": "admin_get_admin_reports_by_reportId"
+    },
+    {
+      "method": "patch",
+      "path": "/api/v1/admin/reports/bulk",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.bulkUpdateReports",
+      "middlewares": [
+        "requirePermission(\"REPORT_UPDATE\")",
+        "validate(BulkUpdateReportsBody)"
+      ],
+      "validation": {
+        "body": "BulkUpdateReportsBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_UPDATE",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_reports_bulk"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/reports/export",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.exportReports",
+      "middlewares": [
+        "requirePermission(\"REPORT_VIEW\")",
+        "validate(AdminListReportsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListReportsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "REPORT_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_reports_export"
     },
     {
       "method": "delete",
@@ -751,6 +891,46 @@
       "operationId": "admin_patch_admin_support_tickets_by_ticketId_status"
     },
     {
+      "method": "patch",
+      "path": "/api/v1/admin/support-tickets/bulk",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.bulkUpdateSupportTickets",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_ASSIGN\")",
+        "validate(BulkUpdateSupportTicketsBody)"
+      ],
+      "validation": {
+        "body": "BulkUpdateSupportTicketsBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_ASSIGN",
+      "optionalAuth": false,
+      "operationId": "admin_patch_admin_support_tickets_bulk"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/admin/support-tickets/export",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.exportSupportTickets",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_VIEW\")",
+        "validate(AdminListSupportTicketsQuery, \"query\")"
+      ],
+      "validation": {
+        "query": "AdminListSupportTicketsQuery"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_support_tickets_export"
+    },
+    {
       "method": "get",
       "path": "/api/v1/admin/system/health",
       "module": "admin",
@@ -889,6 +1069,46 @@
       "requiredPermission": "ADMIN_ROLE_REMOVE",
       "optionalAuth": false,
       "operationId": "admin_delete_admin_users_by_userId_roles_by_roleId"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/users/:userId/sessions/:sessionId/revoke",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.revokeUserSession",
+      "middlewares": [
+        "requirePermission(\"USER_SESSION_REVOKE\")",
+        "validate(AdminUserSessionParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AdminUserSessionParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "USER_SESSION_REVOKE",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_users_by_userId_sessions_by_sessionId_revoke"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/users/:userId/sessions/revoke-all",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.revokeAllUserSessions",
+      "middlewares": [
+        "requirePermission(\"USER_SESSION_REVOKE\")",
+        "validate(AdminUserIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "AdminUserIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "USER_SESSION_REVOKE",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_users_by_userId_sessions_revoke_all"
     },
     {
       "method": "post",
@@ -2183,6 +2403,25 @@
       ],
       "optionalAuth": false,
       "operationId": "notifications_get_notifications"
+    },
+    {
+      "method": "get",
+      "path": "/api/v1/notifications/:notificationId",
+      "module": "notifications",
+      "sourceFile": "src/modules/notifications/notifications.routes.ts",
+      "handler": "notificationsController.getOne",
+      "middlewares": [
+        "authenticate",
+        "validate(NotificationIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "NotificationIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "optionalAuth": false,
+      "operationId": "notifications_get_notifications_by_notificationId"
     },
     {
       "method": "post",

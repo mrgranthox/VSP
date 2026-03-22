@@ -77,6 +77,7 @@ const EnvironmentSchema = z
     MFA_ENCRYPTION_KEY_BASE64: z.string().min(1),
     MFA_ENCRYPTION_KEY_BASE64_PREVIOUS: z.string().optional(),
     MFA_ISSUER: z.string().min(1).default("Vocational Services Platform"),
+    ADMIN_MFA_STEP_UP_TTL_SECONDS: z.string().default("900").transform((value) => toInt(value, "ADMIN_MFA_STEP_UP_TTL_SECONDS")),
     TWILIO_ACCOUNT_SID: z.string().optional(),
     TWILIO_AUTH_TOKEN: z.string().optional(),
     TWILIO_VERIFY_SERVICE_SID: z.string().optional(),

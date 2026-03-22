@@ -1,6 +1,8 @@
 import { type NextFunction, type Request, type Response } from "express";
 
 import { Errors } from "../../lib/errors";
+import { assertFreshMfa } from "../../middleware/requireMfa";
+import { DANGEROUS_ADMIN_PERMISSIONS } from "./admin.permissions";
 import { AdminRepository } from "./admin.repository";
 
 const repository = new AdminRepository();
@@ -18,6 +20,10 @@ const requirePermission = (permissionKey: string) => {
       throw Errors.PERMISSION_DENIED();
     }
 
+    if (!["GET", "HEAD", "OPTIONS"].includes(req.method.toUpperCase()) && DANGEROUS_ADMIN_PERMISSIONS.has(permissionKey)) {
+      assertFreshMfa(req.actor);
+    }
+
     next();
   };
 };
@@ -27,10 +33,7 @@ const requireMfa = (req: Request, _res: Response, next: NextFunction): void => {
     throw Errors.AUTH_SESSION_EXPIRED();
   }
 
-  if (!req.actor.mfaVerified) {
-    throw Errors.MFA_REQUIRED();
-  }
-
+  assertFreshMfa(req.actor);
   next();
 };
 

@@ -215,6 +215,13 @@ test("notifications module covers event fan-in, read state, preferences, and pus
   assert.equal(workerNotificationsResponse.body.meta.unreadCount, workerNotificationsResponse.body.data.length);
 
   const firstWorkerNotificationId = workerNotificationsResponse.body.data[0].id as string;
+  const notificationDetailResponse = await api
+    .get(`/api/v1/notifications/${firstWorkerNotificationId}`)
+    .set("Authorization", `Bearer ${worker.accessToken}`);
+
+  assert.equal(notificationDetailResponse.status, 200);
+  assert.equal(notificationDetailResponse.body.data.id, firstWorkerNotificationId);
+
   const markReadResponse = await api
     .post(`/api/v1/notifications/${firstWorkerNotificationId}/read`)
     .set("Authorization", `Bearer ${worker.accessToken}`)

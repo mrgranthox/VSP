@@ -28,6 +28,7 @@
     "smoke:test": "tsx scripts/smoke-test.ts",
     "test": "node --import ./src/test/setup-env.js --import tsx --test --test-concurrency=1 $(find src -name '*.test.ts' -print)",
     "test:auth": "node --import ./src/test/setup-env.js --import tsx --test src/modules/auth/*.test.ts",
+    "test:admin": "node --import ./src/test/setup-env.js --import tsx --test --test-concurrency=1 src/modules/admin/*.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "prisma:generate": "prisma generate",
     "prisma:format": "prisma format",

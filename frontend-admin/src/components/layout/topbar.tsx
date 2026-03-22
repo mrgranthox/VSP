@@ -113,6 +113,7 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                 "relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white",
                 notificationsOpen && "border-[rgba(65,150,70,0.24)] bg-white"
               )}
+              data-testid="topbar-notifications-toggle"
               onClick={() => setNotificationsOpen((current) => !current)}
               title="Open notifications"
             >
@@ -128,7 +129,10 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
             </button>
 
             {notificationsOpen ? (
-              <div className="absolute right-0 top-[calc(100%+0.85rem)] z-30 w-[min(92vw,24rem)] rounded-[1.6rem] border border-[rgba(112,104,84,0.14)] bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(250,245,236,0.96))] p-3 shadow-[0_26px_56px_rgba(71,61,45,0.16)]">
+              <div
+                className="absolute right-0 top-[calc(100%+0.85rem)] z-30 w-[min(92vw,24rem)] rounded-[1.6rem] border border-[rgba(112,104,84,0.14)] bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(250,245,236,0.96))] p-3 shadow-[0_26px_56px_rgba(71,61,45,0.16)]"
+                data-testid="topbar-notifications-panel"
+              >
                 <div className="flex items-start justify-between gap-3 px-2 pb-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Notifications</p>
@@ -136,6 +140,7 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                   </div>
                   <button
                     className="text-xs font-semibold text-[color:var(--jo-forest)]"
+                    data-testid="topbar-notifications-open-inbox"
                     onClick={() => {
                       setNotificationsOpen(false);
                       navigate(firstUnread ? `/notifications/${firstUnread}` : "/notifications");
@@ -159,6 +164,7 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                             ? "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] hover:border-[rgba(65,150,70,0.24)]"
                             : "border-[rgba(246,179,19,0.22)] bg-[rgba(246,179,19,0.08)] hover:border-[rgba(65,150,70,0.24)]"
                         )}
+                        data-testid={`topbar-notification-item-${notification.id}`}
                         key={notification.id}
                         onClick={() => {
                           setNotificationsOpen(false);
@@ -191,6 +197,7 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                 <div className="mt-3 flex flex-wrap gap-2 px-1">
                   <button
                     className="inline-flex items-center gap-2 rounded-xl border border-[rgba(112,104,84,0.14)] bg-white px-3 py-2 text-sm font-semibold text-[color:var(--jo-ink)] transition hover:border-[rgba(65,150,70,0.24)]"
+                    data-testid="topbar-notifications-center"
                     onClick={() => {
                       setNotificationsOpen(false);
                       navigate("/notifications");
@@ -201,6 +208,7 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                   {canBroadcast ? (
                     <button
                       className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--jo-forest),var(--jo-gold))] px-3 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(65,150,70,0.2)]"
+                      data-testid="topbar-notifications-broadcast"
                       onClick={() => {
                         setNotificationsOpen(false);
                         navigate("/notifications/broadcast");

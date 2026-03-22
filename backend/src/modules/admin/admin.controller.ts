@@ -23,6 +23,20 @@ class AdminController {
     res.status(200).json(paginated(result.data, result.pagination, { requestId: this.getRequestId(req) }));
   }
 
+  private sendCsv(req: Request, res: Response, result: { filename: string; csv: string }) {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${result.filename}"`);
+
+    const requestId = this.getRequestId(req);
+
+    if (requestId) {
+      res.setHeader("X-Request-ID", requestId);
+    }
+
+    res.status(200).send(result.csv);
+  }
+
   listUsers = async (req: Request, res: Response): Promise<void> => {
     const result = await this.adminService.listUsers(req.query as never, req.query as never);
     this.sendPaginated(req, res, result);
@@ -41,6 +55,16 @@ class AdminController {
   reactivateUser = async (req: Request, res: Response): Promise<void> => {
     await this.adminService.reactivateUser(this.requireActor(req), req.params.userId, req.body);
     res.status(200).json(success({ reactivated: true }, { requestId: this.getRequestId(req) }));
+  };
+
+  revokeUserSession = async (req: Request, res: Response): Promise<void> => {
+    await this.adminService.revokeUserSession(this.requireActor(req), req.params.userId, req.params.sessionId);
+    res.status(200).json(success({ revoked: true }, { requestId: this.getRequestId(req) }));
+  };
+
+  revokeAllUserSessions = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.revokeAllUserSessions(this.requireActor(req), req.params.userId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
   };
 
   listWorkers = async (req: Request, res: Response): Promise<void> => {
@@ -88,6 +112,16 @@ class AdminController {
     this.sendPaginated(req, res, result);
   };
 
+  exportReports = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.exportReports(req.query as never);
+    this.sendCsv(req, res, result);
+  };
+
+  bulkUpdateReports = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.bulkUpdateReports(this.requireActor(req), req.body);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
   getReport = async (req: Request, res: Response): Promise<void> => {
     const result = await this.adminService.getReportDetail(req.params.reportId);
     res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
@@ -96,6 +130,11 @@ class AdminController {
   listModerationCases = async (req: Request, res: Response): Promise<void> => {
     const result = await this.adminService.listModerationCases(req.query as never, req.query as never);
     this.sendPaginated(req, res, result);
+  };
+
+  exportModerationCases = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.exportModerationCases(req.query as never);
+    this.sendCsv(req, res, result);
   };
 
   getModerationCase = async (req: Request, res: Response): Promise<void> => {
@@ -108,9 +147,19 @@ class AdminController {
     res.status(201).json(success({ created: true }, { requestId: this.getRequestId(req) }));
   };
 
+  bulkAddModerationActions = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.bulkAddModerationActions(this.requireActor(req), req.body);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
   listSupportTickets = async (req: Request, res: Response): Promise<void> => {
     const result = await this.adminService.listSupportTickets(req.query as never, req.query as never);
     this.sendPaginated(req, res, result);
+  };
+
+  exportSupportTickets = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.exportSupportTickets(req.query as never);
+    this.sendCsv(req, res, result);
   };
 
   assignSupportTicket = async (req: Request, res: Response): Promise<void> => {
@@ -123,9 +172,19 @@ class AdminController {
     res.status(200).json(success({ updated: true }, { requestId: this.getRequestId(req) }));
   };
 
+  bulkUpdateSupportTickets = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.bulkUpdateSupportTickets(this.requireActor(req), req.body);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
   listAuditLogs = async (req: Request, res: Response): Promise<void> => {
     const result = await this.adminService.listAuditLogs(req.query as never, req.query as never);
     this.sendPaginated(req, res, result);
+  };
+
+  exportAuditLogs = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.exportAuditLogs(req.query as never);
+    this.sendCsv(req, res, result);
   };
 
   getAnalyticsOverview = async (req: Request, res: Response): Promise<void> => {
@@ -258,9 +317,19 @@ class AdminController {
     this.sendPaginated(req, res, result);
   };
 
+  exportFraudSignals = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.exportFraudSignals(req.query as never);
+    this.sendCsv(req, res, result);
+  };
+
   actionFraudSignal = async (req: Request, res: Response): Promise<void> => {
     await this.adminService.actionFraudSignal(this.requireActor(req), req.params.signalId, req.body);
     res.status(200).json(success({ updated: true }, { requestId: this.getRequestId(req) }));
+  };
+
+  bulkActionFraudSignals = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.bulkActionFraudSignals(this.requireActor(req), req.body);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
   };
 
   getContent = async (req: Request, res: Response): Promise<void> => {

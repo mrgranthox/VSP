@@ -116,6 +116,36 @@ const emptyWorkerActivitySummary: WorkerDetail["activitySummary"] = {
   subscriptionInvoices: 0
 };
 
+const emptyUserActivityCollections: AdminUserDetail["activityCollections"] = {
+  posts: [],
+  comments: [],
+  postLikes: [],
+  commentLikes: [],
+  postSaves: [],
+  follows: [],
+  followers: [],
+  savedWorkers: [],
+  reports: [],
+  messages: [],
+  conversations: [],
+  notifications: [],
+  serviceRequests: [],
+  bookings: [],
+  reviewsWritten: [],
+  reviewsReceived: [],
+  supportTickets: [],
+  fraudSignals: [],
+  mediaAssets: []
+};
+
+const emptyWorkerActivityCollections: WorkerDetail["activityCollections"] = {
+  ...emptyUserActivityCollections,
+  assignments: [],
+  bookingsAsWorker: [],
+  savedByUsers: [],
+  searchImpressions: []
+};
+
 const activityDomainConfig = [
   {
     key: "content",
@@ -161,6 +191,76 @@ const groupActivityIntoDomains = (items: AdminActivityItem[]) =>
       items: items.filter((item) => domain.matches.has(item.kind)).slice(0, 4)
     }))
     .filter((domain) => domain.items.length > 0);
+
+const userCollectionGroups = [
+  {
+    key: "content",
+    title: "Content & Engagement",
+    description: "Posts, comments, likes, saves, and review activity tied to this account.",
+    icon: MessageSquareText,
+    items: [
+      { key: "posts", label: "Posts", description: "Recent authored feed posts." },
+      { key: "comments", label: "Comments", description: "Recent post or review comments." },
+      { key: "postLikes", label: "Post likes", description: "Posts the account liked." },
+      { key: "commentLikes", label: "Comment likes", description: "Comments the account liked." },
+      { key: "postSaves", label: "Saved posts", description: "Posts saved for later." },
+      { key: "reviewsWritten", label: "Reviews written", description: "Reviews authored by the account." },
+      { key: "reviewsReceived", label: "Reviews received", description: "Reviews received by the account." }
+    ]
+  },
+  {
+    key: "relationships",
+    title: "Relationships & Communication",
+    description: "Social graph, conversations, and outbound/inbound communication surfaces.",
+    icon: Users,
+    items: [
+      { key: "follows", label: "Follows", description: "Users and workers this account followed." },
+      { key: "followers", label: "Followers", description: "Recent followers of the account." },
+      { key: "savedWorkers", label: "Saved workers", description: "Worker profiles saved by the user." },
+      { key: "messages", label: "Messages", description: "Recent sent chat messages." },
+      { key: "conversations", label: "Conversations", description: "Recent chat or request-linked conversations." },
+      { key: "notifications", label: "Notifications", description: "Recent in-app notifications delivered to the account." }
+    ]
+  },
+  {
+    key: "commerce",
+    title: "Marketplace Activity",
+    description: "Demand-side marketplace operations linked to the account.",
+    icon: BriefcaseBusiness,
+    items: [
+      { key: "serviceRequests", label: "Service requests", description: "Requests opened by the user." },
+      { key: "bookings", label: "Bookings", description: "Bookings made as a customer." }
+    ]
+  },
+  {
+    key: "risk",
+    title: "Trust, Support & Evidence",
+    description: "Signals and evidence operators need during investigations.",
+    icon: ShieldAlert,
+    items: [
+      { key: "reports", label: "Reports", description: "Moderation reports filed by the user." },
+      { key: "supportTickets", label: "Support tickets", description: "Support tickets opened by the account." },
+      { key: "fraudSignals", label: "Fraud signals", description: "Risk signals attached to the account." },
+      { key: "mediaAssets", label: "Media assets", description: "Recent uploaded media and documents." }
+    ]
+  }
+] as const;
+
+const workerCollectionGroups = [
+  ...userCollectionGroups,
+  {
+    key: "worker-marketplace",
+    title: "Worker Marketplace Record",
+    description: "Supply-side marketplace activity and discovery performance.",
+    icon: WalletCards,
+    items: [
+      { key: "assignments", label: "Assignments", description: "Recent service request assignments." },
+      { key: "bookingsAsWorker", label: "Bookings as worker", description: "Completed or active worker-side bookings." },
+      { key: "savedByUsers", label: "Saved by users", description: "Users who recently saved this worker." },
+      { key: "searchImpressions", label: "Search impressions", description: "Recent marketplace search exposure." }
+    ]
+  }
+] as const;
 
 const getVerificationRequestValue = (record: Record<string, unknown> | null | undefined, key: string) => {
   const value = record?.[key];
@@ -243,6 +343,106 @@ const ActivityDomainBoard = ({ items }: { items: AdminActivityItem[] }) => {
   );
 };
 
+const ActivityCollectionBoard = ({
+  groups,
+  collections
+}: {
+  groups: ReadonlyArray<{
+    key: string;
+    title: string;
+    description: string;
+    icon: typeof MessageSquareText;
+    items: ReadonlyArray<{
+      key: string;
+      label: string;
+      description: string;
+    }>;
+  }>;
+  collections: AdminUserDetail["activityCollections"] | WorkerDetail["activityCollections"];
+}) => {
+  const normalizedCollections = collections as unknown as Record<string, AdminActivityItem[]>;
+  const totalRecords = groups.reduce((sum, group) => sum + group.items.reduce((groupSum, item) => groupSum + (normalizedCollections[item.key] ?? []).length, 0), 0);
+
+  if (totalRecords === 0) {
+    return <p className="text-sm text-[color:var(--jo-muted)]">No structured activity records are available yet for this entity.</p>;
+  }
+
+  return (
+    <div className="space-y-5">
+      {groups.map((group) => (
+        <div className="rounded-[1.5rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-5" key={group.key}>
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(65,150,70,0.12),rgba(246,179,19,0.18))] text-[color:var(--jo-forest)]">
+              <group.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-[color:var(--jo-ink)]">{group.title}</p>
+              <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{group.description}</p>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {group.items.map((item) => {
+              const records = normalizedCollections[item.key] ?? [];
+
+              return (
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-white/90 p-4" key={`${group.key}-${item.key}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{item.label}</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{item.description}</p>
+                    </div>
+                    <div className="rounded-2xl bg-[rgba(65,150,70,0.1)] px-3 py-2 text-right">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(65,150,70,0.82)]">Recent</p>
+                      <p className="mt-1 text-lg font-black text-[color:var(--jo-ink)]">{formatNumber(records.length)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {records.length === 0 ? (
+                      <p className="rounded-[1rem] bg-[rgba(255,251,244,0.88)] px-4 py-3 text-sm text-[color:var(--jo-muted)]">No recent records in this lane.</p>
+                    ) : (
+                      records.map((record) => {
+                        const content = (
+                          <div className="rounded-[1rem] bg-[rgba(255,251,244,0.88)] px-4 py-3 transition hover:bg-[rgba(255,248,238,0.98)]">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{record.title}</p>
+                              {record.status ? <Badge variant={getStatusBadgeVariant(record.status)}>{record.status}</Badge> : null}
+                            </div>
+                            {record.subtitle ? <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{record.subtitle}</p> : null}
+                            {record.meta?.length ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {record.meta.map((entry) => (
+                                  <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:rgba(107,114,102,0.82)]" key={`${record.id}-${entry.label}`}>
+                                    {entry.label}: {entry.value}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{formatDateTime(record.createdAt)}</p>
+                          </div>
+                        );
+
+                        return record.linkPath ? (
+                          <Link className="block" key={record.id} to={record.linkPath}>
+                            {content}
+                          </Link>
+                        ) : (
+                          <div key={record.id}>{content}</div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const MediaAssetStrip = ({ assets, emptyLabel }: { assets: AdminMediaAssetItem[]; emptyLabel: string }) => {
   if (assets.length === 0) {
     return <p className="text-sm text-[color:var(--jo-muted)]">{emptyLabel}</p>;
@@ -289,8 +489,12 @@ const UserDetailPage = () => {
   const location = useLocation();
   const { userId = "" } = useParams();
   const queryClient = useQueryClient();
+  const adminQuery = useCurrentAdmin();
+  const roles = adminQuery.data?.roles ?? [];
   const [suspendReason, setSuspendReason] = useState("Manual risk or trust review");
   const [reactivateNotes, setReactivateNotes] = useState("Reactivated after manual review");
+  const [pendingSessionRevokeId, setPendingSessionRevokeId] = useState<string | null>(null);
+  const [confirmRevokeAll, setConfirmRevokeAll] = useState(false);
 
   const userQuery = useQuery({
     queryKey: ["admin", "users", "detail", userId],
@@ -310,9 +514,45 @@ const UserDetailPage = () => {
       }),
     onSuccess: async (_, variables) => {
       toast.success(variables.action === "suspend" ? "User suspended" : "User reactivated");
-      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "users", "detail", userId] })
+      ]);
     },
     onError: (error) => handleActionError(error, "Unable to update user status")
+  });
+
+  const revokeSessionMutation = useMutation({
+    mutationFn: (sessionId: string) =>
+      apiRequest(`/admin/users/${userId}/sessions/${sessionId}/revoke`, {
+        method: "POST"
+      }),
+    onSuccess: async () => {
+      toast.success("User session revoked");
+      setPendingSessionRevokeId(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "users", "detail", userId] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to revoke this session")
+  });
+
+  const revokeAllSessionsMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<{ revokedCount: number }>(`/admin/users/${userId}/sessions/revoke-all`, {
+        method: "POST"
+      }),
+    onSuccess: async (result) => {
+      toast.success(result.revokedCount > 0 ? `Revoked ${result.revokedCount} active session${result.revokedCount === 1 ? "" : "s"}` : "No active sessions to revoke");
+      setConfirmRevokeAll(false);
+      setPendingSessionRevokeId(null);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "users", "detail", userId] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to revoke all sessions for this user")
   });
 
   if (!user) {
@@ -327,8 +567,10 @@ const UserDetailPage = () => {
 
   const userActivitySummary = user.activitySummary ?? emptyUserActivitySummary;
   const userActiveSessions = user.activeSessions ?? [];
+  const userActivityCollections = user.activityCollections ?? emptyUserActivityCollections;
   const userActivityTimeline = user.activityTimeline ?? [];
   const userRecentMediaAssets = user.recentMediaAssets ?? [];
+  const canRevokeSessions = hasPermission(roles, "USER_SESSION_REVOKE");
 
   return (
     <div className="space-y-6">
@@ -375,7 +617,11 @@ const UserDetailPage = () => {
                 { label: "Email verified", value: user.isEmailVerified ? "Verified" : "Pending" },
                 { label: "Phone verified", value: user.isPhoneVerified ? "Verified" : "Pending" },
                 { label: "Last login", value: formatDateTime(user.lastLoginAt) },
-                { label: "City", value: user.profile?.cityId ?? "No city", mono: true },
+                { label: "City", value: user.profile?.city?.name ?? user.profile?.cityId ?? "No city" },
+                {
+                  label: "Coordinates",
+                  value: user.profile?.lat && user.profile?.lng ? `${user.profile.lat}, ${user.profile.lng}` : "Not recorded"
+                },
                 { label: "Worker profile", value: user.workerProfile?.verificationStatus ?? "No worker profile" },
                 { label: "Updated", value: formatDateTime(user.updatedAt) }
               ]}
@@ -451,7 +697,30 @@ const UserDetailPage = () => {
             ) : null}
 
             <div className="space-y-3 border-t border-[rgba(112,104,84,0.12)] pt-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Active sessions</p>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Active sessions</p>
+                {canRevokeSessions ? (
+                  confirmRevokeAll ? (
+                    <div className="flex flex-wrap gap-2">
+                      <Button className="px-3 py-2 text-xs" disabled={revokeAllSessionsMutation.isPending} onClick={() => revokeAllSessionsMutation.mutate()} variant="danger">
+                        Confirm revoke all
+                      </Button>
+                      <Button className="px-3 py-2 text-xs" disabled={revokeAllSessionsMutation.isPending} onClick={() => setConfirmRevokeAll(false)} variant="outline">
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      className="px-3 py-2 text-xs"
+                      disabled={revokeAllSessionsMutation.isPending || userActiveSessions.length === 0}
+                      onClick={() => setConfirmRevokeAll(true)}
+                      variant="outline"
+                    >
+                      Force logout all
+                    </Button>
+                  )
+                ) : null}
+              </div>
               {userActiveSessions.length === 0 ? (
                 <p className="text-sm text-[color:var(--jo-muted)]">No active sessions recorded.</p>
               ) : (
@@ -463,7 +732,43 @@ const UserDetailPage = () => {
                     </div>
                     <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{session.deviceType ?? "Unknown device"}</p>
                     <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{session.ipAddress ?? "No IP recorded"}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">
+                      {session.mfaVerified ? `Step-up ${formatDateTime(session.mfaVerifiedAt)}` : "Step-up not verified"}
+                    </p>
                     <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Expires {formatDateTime(session.expiresAt)}</p>
+                    {canRevokeSessions ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {pendingSessionRevokeId === session.id ? (
+                          <>
+                            <Button
+                              className="px-3 py-2 text-xs"
+                              disabled={revokeSessionMutation.isPending}
+                              onClick={() => revokeSessionMutation.mutate(session.id)}
+                              variant="danger"
+                            >
+                              Confirm force logout
+                            </Button>
+                            <Button
+                              className="px-3 py-2 text-xs"
+                              disabled={revokeSessionMutation.isPending}
+                              onClick={() => setPendingSessionRevokeId(null)}
+                              variant="outline"
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            className="px-3 py-2 text-xs"
+                            disabled={revokeSessionMutation.isPending || revokeAllSessionsMutation.isPending}
+                            onClick={() => setPendingSessionRevokeId(session.id)}
+                            variant="outline"
+                          >
+                            Force logout
+                          </Button>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}
@@ -503,6 +808,13 @@ const UserDetailPage = () => {
 
       <SectionCard description="A faster investigative cut of the same timeline, grouped by operational domain so moderators and support agents can scan patterns quickly." title="Activity Evidence Lanes">
         <ActivityDomainBoard items={userActivityTimeline} />
+      </SectionCard>
+
+      <SectionCard
+        description="Structured recent records across content, comms, commerce, support, and trust so operators can inspect what this account actually did without leaving the detail desk."
+        title="Structured Operational Record"
+      >
+        <ActivityCollectionBoard collections={userActivityCollections} groups={userCollectionGroups} />
       </SectionCard>
 
       <SectionCard description="Recent media and document uploads owned by this user account." title="Media & Documents">
@@ -593,6 +905,7 @@ const WorkerDetailPage = () => {
   const canReject = hasPermission(roles, "WORKER_REJECT_VERIFICATION");
   const canManageFeatured = hasPermission(roles, "FEATURED_WORKER_MANAGE");
   const workerActivitySummary = worker.activitySummary ?? emptyWorkerActivitySummary;
+  const workerActivityCollections = worker.activityCollections ?? emptyWorkerActivityCollections;
   const workerActivityTimeline = worker.activityTimeline ?? [];
   const workerRecentMediaAssets = worker.recentMediaAssets ?? [];
   const workerPortfolioItems = worker.portfolioItems ?? [];
@@ -659,7 +972,8 @@ const WorkerDetailPage = () => {
                 { label: "Last login", value: formatDateTime(worker.user.lastLoginAt) },
                 { label: "Email", value: worker.user.email ?? "No email" },
                 { label: "Phone", value: worker.user.phone ?? "No phone" },
-                { label: "Portfolio", value: formatNumber(workerPortfolioItems.length) }
+                { label: "Portfolio", value: formatNumber(workerPortfolioItems.length) },
+                { label: "City", value: worker.user.profile?.city?.name ?? worker.user.profile?.cityId ?? "No city" }
               ]}
             />
 
@@ -968,6 +1282,13 @@ const WorkerDetailPage = () => {
 
       <SectionCard description="Domain-grouped evidence for the worker and linked user account, useful for fast trust, support, and marketplace reviews." title="Worker Evidence Lanes">
         <ActivityDomainBoard items={workerActivityTimeline} />
+      </SectionCard>
+
+      <SectionCard
+        description="Recent structured records across social, support, marketplace, and worker-specific supply-side operations for deeper investigations."
+        title="Structured Worker Record"
+      >
+        <ActivityCollectionBoard collections={workerActivityCollections} groups={workerCollectionGroups} />
       </SectionCard>
 
       <SectionCard description="Most recent uploads and processed media tied to the worker account." title="Recent Media">

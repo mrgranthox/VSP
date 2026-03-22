@@ -9,6 +9,15 @@ const publicUserProfileSelect = {
   avatarUrl: true,
   bio: true,
   cityId: true,
+  city: {
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      countryCode: true,
+      timezone: true
+    }
+  },
   lat: true,
   lng: true,
   createdAt: true,

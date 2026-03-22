@@ -20,11 +20,14 @@ Backend runtime for the Vocational Services Platform.
    cp .env.example .env
    ```
 
-2. Set these values in `.env` before using auth or MFA:
+2. Set these values in `.env` before starting the API and before using auth or MFA:
 
+   - `APP_BASE_URL`
+   - `STORAGE_SIGNING_SECRET`
    - `JWT_PRIVATE_KEY_BASE64`
    - `JWT_PUBLIC_KEY_BASE64`
    - `MFA_ENCRYPTION_KEY_BASE64`
+   - `ADMIN_MFA_STEP_UP_TTL_SECONDS` if you want to tune the recent-MFA window for high-risk admin actions
 
    For production-like environments, prefer mounted secret files over raw inline values. Any env key can be supplied as `<KEY>_FILE`, for example `JWT_PRIVATE_KEY_BASE64_FILE=/run/secrets/jwt_private_key_base64.secret`.
 
@@ -66,6 +69,7 @@ Backend runtime for the Vocational Services Platform.
    curl -H "authorization: Bearer $INTERNAL_API_KEY" http://localhost:3000/api/v1/internal/metrics
    npm run smoke:test
    npm run release:gate
+   RELEASE_GATE_ADMIN_URL=http://127.0.0.1:4173 npm run release:gate
    ```
 
 ## Operations
@@ -82,7 +86,7 @@ npm run ops:restore:verify
 - To verify a specific dump file, run `npm run ops:restore:verify -- --dump ./backups/pre-release.dump`.
 - `ops:secrets:generate` prints a fresh secret set. Use `--write-dir ./.secrets` to write file-backed secrets and print matching `*_FILE` entries.
 - `ops:mfa:rewrap` re-encrypts stored MFA secrets with the current `MFA_ENCRYPTION_KEY_BASE64`. Use `--dry-run` first during key rotation.
-- `release:gate` verifies `health`, `ready`, the internal metrics endpoint, and the auth smoke flow against a running server.
+- `release:gate` verifies `health`, `ready`, the internal metrics endpoint, and the auth smoke flow against a running server. Set `RELEASE_GATE_GATEWAY_URL` to include the websocket gateway checks and `RELEASE_GATE_ADMIN_URL` to include the admin frontend health and HTML checks.
 - `ops:tracing:verify` starts a local OTLP receiver, boots the built API with tracing enabled, runs the release gate, and fails unless real spans are exported. Run `npm run build` first when invoking it manually.
 - `ops:error-reporting:verify` starts a local Sentry-compatible receiver, emits a test exception through the runtime error-reporting path, and fails unless an envelope is delivered.
 - `api:contracts:generate` emits `contracts/openapi.json`, `reports/route-inventory.json`, and the static HTTP test coverage reports.
@@ -97,6 +101,15 @@ Minimal operational alerting is also supported:
 When enabled, the API, workers, and websocket gateway raise alerts on startup failure, fatal runtime errors, and final background job failures after retries are exhausted.
 
 JWT verification also supports `JWT_PUBLIC_KEY_BASE64_PREVIOUS` during key rotation, so existing access tokens can remain valid until the access-token TTL expires.
+
+High-risk admin mutations also require a recent MFA step-up. The window defaults to 15 minutes and is controlled by `ADMIN_MFA_STEP_UP_TTL_SECONDS`.
+
+Admins with `USER_SESSION_REVOKE` can also force-logout one active session or all active sessions for a user from the admin API and admin console. That path is intended for compromised-session containment and support-led account recovery.
+
+Admin RBAC is now exercised in two layers:
+
+- `npm run test:admin` runs the dedicated admin suite serially.
+- `npm test` keeps the full backend integration sweep green, including the route-matrix check that covers every declared admin route with allowed and denied actors.
 
 Optional Sentry-compatible error reporting is also supported:
 
@@ -139,6 +152,7 @@ The repo root includes [`compose.yml`](/home/edward-nyame/Desktop/VJS/compose.ym
 - `postgres` on `localhost:5432`
 - `redis` on `localhost:6379`
 - `api` on `localhost:3000`
+- `admin-web` on `localhost:4173`
 - `gateway` on `localhost:3002` when the `realtime` profile is enabled
 - `typesense` on `localhost:8108` when the `search` profile is enabled
 - `prometheus` on `localhost:9090` when the `monitoring` profile is enabled
@@ -147,12 +161,18 @@ The repo root includes [`compose.yml`](/home/edward-nyame/Desktop/VJS/compose.ym
 - `alert-echo` on `localhost:18080` when the `monitoring` profile is enabled
 - `jaeger` on `localhost:16686` when the `tracing` profile is enabled
 
-If those ports are already taken on your machine, override them at launch time with `API_PORT`, `WS_GATEWAY_PUBLISHED_PORT`, `POSTGRES_PORT`, `REDIS_PORT`, or `TYPESENSE_PUBLISHED_PORT`.
+If those ports are already taken on your machine, override them at launch time with `API_PORT`, `ADMIN_PORT`, `WS_GATEWAY_PUBLISHED_PORT`, `POSTGRES_PORT`, `REDIS_PORT`, or `TYPESENSE_PUBLISHED_PORT`.
 
 Compose reads:
 
-- `.env.example` for the general backend defaults
-- `.env.compose.example` for container-specific overrides and dev-only JWT/MFA defaults
+- `BACKEND_ENV_FILE` for the general backend defaults, which defaults to `./backend/.env.example`
+- `BACKEND_COMPOSE_ENV_FILE` for container-specific overrides and dev-only JWT/MFA defaults, which defaults to `./backend/.env.compose.example`
+
+If you want the compose stack to use your local secret-bearing `backend/.env`, set:
+
+```bash
+BACKEND_ENV_FILE=./backend/.env
+```
 
 ### API Only
 
@@ -174,6 +194,18 @@ docker compose up --build api
 docker compose --profile setup run --rm seed
 ```
 
+### API + Admin Frontend
+
+```bash
+docker compose up --build api admin-web
+```
+
+Verify the admin frontend:
+
+```bash
+curl http://localhost:4173/healthz
+```
+
 ### API + Workers
 
 Workers only process queued events if the API publishes to the queue. For that mode, start the stack with `EVENT_BUS_MODE=queue`.
@@ -186,6 +218,36 @@ EVENT_BUS_MODE=queue docker compose --profile workers up --build
 
 ```bash
 EVENT_BUS_MODE=queue docker compose --profile workers --profile realtime up --build
+```
+
+### Staging-Like Stack
+
+The root [`Makefile`](/home/edward-nyame/Desktop/VJS/Makefile) wraps the recommended local staging flow. It boots the API, workers, gateway, and `admin-web` on alternate ports so it can coexist with your main local dev stack.
+
+```bash
+make staging-up
+make staging-seed
+make staging-gate
+```
+
+That flow defaults to:
+
+- API: `http://localhost:3300`
+- admin-web: `http://localhost:3401`
+- gateway: `http://localhost:3302`
+- PostgreSQL: `localhost:55432`
+- Redis: `localhost:56379`
+
+The gate runs:
+
+- API release checks
+- websocket gateway metrics checks
+- admin frontend health and HTML checks
+
+Tear it down with:
+
+```bash
+make staging-down
 ```
 
 ### Monitoring Stack

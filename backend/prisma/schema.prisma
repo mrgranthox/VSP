@@ -272,6 +272,7 @@ model UserSession {
   deviceType       String?
   ipAddress        String?
   mfaVerified      Boolean   @default(false)
+  mfaVerifiedAt    DateTime?
   mfaMethod        String?
   expiresAt        DateTime
   revokedAt        DateTime?

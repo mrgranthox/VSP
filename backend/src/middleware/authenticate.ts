@@ -18,6 +18,7 @@ const buildActor = async (req: Request) => {
     select: {
       userId: true,
       mfaVerified: true,
+      mfaVerifiedAt: true,
       expiresAt: true,
       revokedAt: true
     }
@@ -35,6 +36,7 @@ const buildActor = async (req: Request) => {
     userId: payload.sub,
     roles: payload.roles,
     mfaVerified: session.mfaVerified,
+    mfaVerifiedAt: session.mfaVerifiedAt ?? undefined,
     ipAddress: req.ip,
     sessionId: payload.jti
   };

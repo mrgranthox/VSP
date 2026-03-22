@@ -69,6 +69,21 @@ Current alert sources:
 - Uncaught exceptions and unhandled promise rejections in those runtimes
 - Background jobs that fail after exhausting retries
 
+## Admin Session Containment
+
+The admin API supports forced session revocation for incident response and account recovery:
+
+- `POST /api/v1/admin/users/:userId/sessions/:sessionId/revoke`
+- `POST /api/v1/admin/users/:userId/sessions/revoke-all`
+
+Both routes require:
+
+- an authenticated admin actor with `USER_SESSION_REVOKE`
+- a fresh MFA step-up inside `ADMIN_MFA_STEP_UP_TTL_SECONDS`
+- audit logging through the admin audit ledger
+
+Use them when a user reports account compromise, a device is lost, or support/admin needs to invalidate active access tokens without waiting for refresh or access TTL expiry.
+
 ## Metrics
 
 Protected metrics endpoints:
@@ -116,6 +131,18 @@ Optional gateway verification:
 RELEASE_GATE_GATEWAY_URL=http://127.0.0.1:3002 npm run release:gate
 ```
 
+Optional admin frontend verification:
+
+```bash
+RELEASE_GATE_ADMIN_URL=http://127.0.0.1:4173 npm run release:gate
+```
+
+Recent MFA verification is now enforced for dangerous admin writes such as role changes, feature-flag/config updates, moderation actions, featured-worker actions, fraud actions, content deletions, and notification broadcasts. Tune the window with:
+
+```bash
+ADMIN_MFA_STEP_UP_TTL_SECONDS=900
+```
+
 For OTLP export verification against a local collector and a traced API runtime:
 
 ```bash
@@ -139,12 +166,30 @@ npm run api:contracts:generate
 npm run api:contracts:check
 ```
 
+For admin-only backend verification without running the entire suite:
+
+```bash
+cd backend
+npm run test:admin
+```
+
 The release gate checks:
 
 1. API metrics endpoint
 2. API health and readiness
 3. register/login/me/logout smoke flow
 4. gateway health and metrics when `RELEASE_GATE_GATEWAY_URL` is set
+5. admin frontend `/healthz` and root HTML when `RELEASE_GATE_ADMIN_URL` is set
+
+For the full local staging-like flow from the repo root:
+
+```bash
+make staging-up
+make staging-seed
+make staging-gate
+```
+
+That boots the API, workers, gateway, and admin frontend on alternate ports and then runs the release gate against all three surfaces.
 
 The tracing verifier reuses the release gate and then asserts that a real OTLP receiver observed exported spans, including the `USER_REGISTERED` domain-event span.
 The error-reporting verifier emits a test exception through the runtime integration and asserts that a Sentry-compatible envelope was delivered.

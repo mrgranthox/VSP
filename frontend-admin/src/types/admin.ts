@@ -54,6 +54,14 @@ export interface SystemMetrics {
   health: SystemHealth;
 }
 
+export interface BasicCity {
+  id: string;
+  slug: string;
+  name: string;
+  countryCode?: string;
+  timezone?: string;
+}
+
 export interface BasicProfile {
   id?: string;
   userId?: string;
@@ -63,8 +71,9 @@ export interface BasicProfile {
   avatarUrl?: string | null;
   bio?: string | null;
   cityId?: string | null;
-  lat?: number | null;
-  lng?: number | null;
+  city?: BasicCity | null;
+  lat?: string | number | null;
+  lng?: string | number | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -90,8 +99,9 @@ export interface UserProfile {
   bio?: string | null;
   avatarUrl?: string | null;
   cityId?: string | null;
-  lat?: number | null;
-  lng?: number | null;
+  city?: BasicCity | null;
+  lat?: string | number | null;
+  lng?: string | number | null;
   user: {
     id: string;
     email?: string | null;
@@ -131,6 +141,39 @@ export interface AdminActivityItem {
   status?: string | null;
   createdAt: string;
   linkPath?: string | null;
+  meta?: Array<{
+    label: string;
+    value: string;
+  }>;
+}
+
+export interface AdminActivityCollections {
+  posts: AdminActivityItem[];
+  comments: AdminActivityItem[];
+  postLikes: AdminActivityItem[];
+  commentLikes: AdminActivityItem[];
+  postSaves: AdminActivityItem[];
+  follows: AdminActivityItem[];
+  followers: AdminActivityItem[];
+  savedWorkers: AdminActivityItem[];
+  reports: AdminActivityItem[];
+  messages: AdminActivityItem[];
+  conversations: AdminActivityItem[];
+  notifications: AdminActivityItem[];
+  serviceRequests: AdminActivityItem[];
+  bookings: AdminActivityItem[];
+  reviewsWritten: AdminActivityItem[];
+  reviewsReceived: AdminActivityItem[];
+  supportTickets: AdminActivityItem[];
+  fraudSignals: AdminActivityItem[];
+  mediaAssets: AdminActivityItem[];
+}
+
+export interface WorkerActivityCollections extends AdminActivityCollections {
+  assignments: AdminActivityItem[];
+  bookingsAsWorker: AdminActivityItem[];
+  savedByUsers: AdminActivityItem[];
+  searchImpressions: AdminActivityItem[];
 }
 
 export interface AdminUserSessionItem {
@@ -138,6 +181,7 @@ export interface AdminUserSessionItem {
   deviceType?: string | null;
   ipAddress?: string | null;
   mfaVerified: boolean;
+  mfaVerifiedAt?: string | null;
   mfaMethod?: string | null;
   createdAt: string;
   expiresAt: string;
@@ -445,6 +489,7 @@ export interface AdminUserDetail extends AdminUserListItem {
   updatedAt: string;
   activeSessions: AdminUserSessionItem[];
   recentMediaAssets: AdminMediaAssetItem[];
+  activityCollections: AdminActivityCollections;
   activitySummary: {
     posts: number;
     comments: number;
@@ -587,6 +632,7 @@ export interface WorkerDetail extends AdminWorkerListItem {
     createdAt: string;
   }>;
   recentMediaAssets: AdminMediaAssetItem[];
+  activityCollections: WorkerActivityCollections;
   activitySummary: {
     posts: number;
     comments: number;

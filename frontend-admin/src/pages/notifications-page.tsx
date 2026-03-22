@@ -274,7 +274,7 @@ const NotificationsPage = () => {
         title={isBroadcastRoute ? "Broadcast Notification" : notificationId ? "Notification Detail" : "Notifications Center"}
       >
         {!isBroadcastRoute ? (
-          <Button onClick={() => markAllMutation.mutate()} variant="outline">
+          <Button data-testid="notifications-mark-all-read" onClick={() => markAllMutation.mutate()} variant="outline">
             <CheckCheck className="h-4 w-4" />
             Mark all as read
           </Button>
@@ -303,6 +303,7 @@ const NotificationsPage = () => {
                     ? "border-[rgba(65,150,70,0.24)] bg-[rgba(65,150,70,0.08)] text-[color:var(--jo-forest)]"
                     : "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] text-[color:var(--jo-ink)]"
                 )}
+                data-testid="notifications-unread-filter"
                 onClick={() => setUnreadOnly((value) => !value)}
               >
                 Unread only
@@ -348,6 +349,7 @@ const NotificationsPage = () => {
                           ? "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] hover:border-[rgba(65,150,70,0.24)]"
                           : "border-[rgba(246,179,19,0.22)] bg-[rgba(246,179,19,0.08)] hover:border-[rgba(65,150,70,0.24)]"
                     )}
+                    data-testid={`notification-feed-item-${notification.id}`}
                     onClick={() => void handleOpenNotification(notification)}
                   >
                     <div className={cn("mt-1 flex h-11 w-11 items-center justify-center rounded-2xl", notificationIconClasses[variant])}>
@@ -408,7 +410,7 @@ const NotificationsPage = () => {
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Actions</p>
                     <div className="flex flex-wrap gap-3">
                       {!selectedNotification.isRead ? (
-                        <Button onClick={() => markReadMutation.mutate(selectedNotification.id)} variant="outline">
+                        <Button data-testid="notification-mark-read" onClick={() => markReadMutation.mutate(selectedNotification.id)} variant="outline">
                           <CheckCheck className="h-4 w-4" />
                           Mark as read
                         </Button>

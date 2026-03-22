@@ -3,6 +3,7 @@ import { runSmokeTest } from "./smoke-test";
 interface ReleaseGateOptions {
   baseUrl?: string;
   gatewayBaseUrl?: string;
+  adminBaseUrl?: string;
   internalApiKey?: string;
 }
 
@@ -61,15 +62,34 @@ const runGatewayMetricsCheck = async (gatewayBaseUrl?: string, internalApiKey?: 
   assert(metrics.body.includes("vsp_ws_active_connections"), "gateway metrics missing vsp_ws_active_connections");
 };
 
+const runAdminCheck = async (adminBaseUrl?: string): Promise<void> => {
+  if (!adminBaseUrl) {
+    return;
+  }
+
+  const health = await fetchText(`${adminBaseUrl}/healthz`);
+  assert(health.status === 200, `admin health failed: ${health.status}`);
+  assert(health.body.trim() === "ok", "admin health body mismatch");
+
+  const root = await fetchText(adminBaseUrl);
+  assert(root.status === 200, `admin root failed: ${root.status}`);
+  assert(root.headers.get("content-type")?.includes("text/html") ?? false, "admin root did not return html");
+  assert(root.body.includes("<title>VSP Admin</title>"), "admin root missing expected title");
+};
+
 const runReleaseGate = async (options: ReleaseGateOptions = {}): Promise<void> => {
   const baseUrl = options.baseUrl ?? process.env.RELEASE_GATE_BASE_URL ?? process.env.SMOKE_BASE_URL ?? "http://127.0.0.1:3000";
   const gatewayBaseUrl = options.gatewayBaseUrl ?? process.env.RELEASE_GATE_GATEWAY_URL;
+  const adminBaseUrl = options.adminBaseUrl ?? process.env.RELEASE_GATE_ADMIN_URL;
   const internalApiKey = options.internalApiKey ?? process.env.INTERNAL_API_KEY;
 
   await runApiMetricsCheck(baseUrl, internalApiKey);
   await runSmokeTest({ baseUrl });
   await runGatewayMetricsCheck(gatewayBaseUrl, internalApiKey);
-  console.log(`Release gate passed against ${baseUrl}${gatewayBaseUrl ? ` and ${gatewayBaseUrl}` : ""}`);
+  await runAdminCheck(adminBaseUrl);
+  console.log(
+    `Release gate passed against ${[baseUrl, gatewayBaseUrl, adminBaseUrl].filter(Boolean).join(" and ")}`
+  );
 };
 
 if (require.main === module) {

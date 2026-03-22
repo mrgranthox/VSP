@@ -21,6 +21,7 @@ const PERMISSION_DESCRIPTIONS: Record<string, string> = {
   USER_VIEW: "View users",
   USER_SUSPEND: "Suspend users",
   USER_REACTIVATE: "Reactivate users",
+  USER_SESSION_REVOKE: "Revoke user sessions",
   WORKER_VIEW: "View workers",
   WORKER_VERIFY: "Approve worker verification",
   WORKER_REJECT_VERIFICATION: "Reject worker verification",
@@ -28,6 +29,7 @@ const PERMISSION_DESCRIPTIONS: Record<string, string> = {
   COMMENT_DELETE: "Delete comments",
   REVIEW_DELETE: "Delete reviews",
   REPORT_VIEW: "View reports",
+  REPORT_UPDATE: "Update reports",
   MODERATION_CASE_ASSIGN: "Assign moderation cases",
   MODERATION_CASE_ACTION: "Action moderation cases",
   SUPPORT_TICKET_VIEW: "View support tickets",
@@ -122,16 +124,6 @@ class AdminRepository {
         const role = roleByKey.get(roleKey);
 
         if (!role) {
-          continue;
-        }
-
-        const existingCount = await tx.adminRolePermission.count({
-          where: {
-            roleId: role.id
-          }
-        });
-
-        if (existingCount > 0) {
           continue;
         }
 

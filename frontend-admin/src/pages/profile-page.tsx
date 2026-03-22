@@ -211,13 +211,17 @@ const ProfilePage = () => {
               <p className="text-sm text-slate-500">Scan the QR or use the secret, then verify with a 6-digit code.</p>
             </div>
           </div>
-          <Button onClick={() => totpSetupMutation.mutate()} variant="outline">
+          <Button data-testid="mfa-start-totp-setup" onClick={() => totpSetupMutation.mutate()} variant="outline">
             Start TOTP setup
           </Button>
           {totpQr ? <img alt="TOTP QR code" className="w-full rounded-2xl border border-slate-200 bg-white p-4" src={totpQr} /> : null}
-          {totpSecret ? <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 font-mono text-xs">{totpSecret}</div> : null}
-          <Input onChange={(event) => setTotpCode(event.target.value)} placeholder="123456" value={totpCode} />
-          <Button disabled={totpCode.length < 6} onClick={() => verifyTotpMutation.mutate()}>
+          {totpSecret ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 font-mono text-xs" data-testid="mfa-totp-secret">
+              {totpSecret}
+            </div>
+          ) : null}
+          <Input data-testid="mfa-totp-setup-code" onChange={(event) => setTotpCode(event.target.value)} placeholder="123456" value={totpCode} />
+          <Button data-testid="mfa-totp-verify-setup" disabled={totpCode.length < 6} onClick={() => verifyTotpMutation.mutate()}>
             Verify setup
           </Button>
         </div>
@@ -238,6 +242,7 @@ const ProfilePage = () => {
             ].map(([value, label]) => (
               <button
                 key={value}
+                data-testid={`mfa-step-up-method-${value}`}
                 className={`rounded-xl px-3 py-2 text-sm font-semibold ${mfaChallengeMethod === value ? "bg-slate-950 text-white" : "text-slate-500"}`}
                 onClick={() => setMfaChallengeMethod(value as "totp" | "sms" | "backup_code")}
               >
@@ -245,7 +250,12 @@ const ProfilePage = () => {
               </button>
             ))}
           </div>
-          <Input onChange={(event) => setMfaChallengeCode(event.target.value)} placeholder="Enter code or backup code" value={mfaChallengeCode} />
+          <Input
+            data-testid="mfa-step-up-code"
+            onChange={(event) => setMfaChallengeCode(event.target.value)}
+            placeholder="Enter code or backup code"
+            value={mfaChallengeCode}
+          />
           <div className="flex flex-wrap gap-3">
             {mfaChallengeMethod === "sms" ? (
               <Button
@@ -260,7 +270,7 @@ const ProfilePage = () => {
                 Send SMS
               </Button>
             ) : null}
-            <Button disabled={mfaChallengeCode.length < 6} onClick={() => stepUpMutation.mutate()}>
+            <Button data-testid="mfa-step-up-verify" disabled={mfaChallengeCode.length < 6} onClick={() => stepUpMutation.mutate()}>
               Verify session
             </Button>
             <Button onClick={() => fetchBackupCodesMutation.mutate()} variant="ghost">

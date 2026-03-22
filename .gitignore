@@ -5,7 +5,16 @@ backend/.tmp/
 backend/backups/
 backend/.secrets/
 
+# Frontend admin dependencies and build/test output
+frontend-admin/node_modules/
+frontend-admin/dist/
+frontend-admin/playwright-report/
+frontend-admin/test-results/
+frontend-admin/e2e/.auth/
+
 # Local environment files
+/.env
+/.env.local
 backend/.env
 backend/.env.local
 

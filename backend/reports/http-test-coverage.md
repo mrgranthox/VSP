@@ -2,10 +2,10 @@
 
 Generated from the current TypeScript source tree.
 
-- Routes: 201
-- Static HTTP test invocations: 341
-- Unique static HTTP invocations: 201
-- Covered routes: 201
+- Routes: 213
+- Static HTTP test invocations: 370
+- Unique static HTTP invocations: 213
+- Covered routes: 213
 - Uncovered routes: 0
 - Static coverage rate: 100.00%
 
@@ -26,6 +26,7 @@ Generated from the current TypeScript source tree.
 - `GET /api/v1/admin/analytics/overview` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/analytics/search` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/audit-logs` via src/modules/admin/admin.integration.test.ts
+- `GET /api/v1/admin/audit-logs/export` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/bookings` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/bookings/:bookingId` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/cities` via src/modules/admin/admin.integration.test.ts
@@ -41,8 +42,7 @@ Generated from the current TypeScript source tree.
 - `PATCH /api/v1/admin/featured-workers/:workerId` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/fraud-signals` via src/modules/admin/admin.integration.test.ts
 - `PATCH /api/v1/admin/fraud-signals/:signalId` via src/modules/admin/admin.integration.test.ts
+- `PATCH /api/v1/admin/fraud-signals/bulk` via src/modules/admin/admin.integration.test.ts
+- `GET /api/v1/admin/fraud-signals/export` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/moderation-cases` via src/modules/admin/admin.integration.test.ts
 - `GET /api/v1/admin/moderation-cases/:caseId` via src/modules/admin/admin.integration.test.ts
-- `POST /api/v1/admin/moderation-cases/:caseId/actions` via src/modules/admin/admin.integration.test.ts
-- `POST /api/v1/admin/notifications/broadcast` via src/modules/admin/admin.integration.test.ts
-- `GET /api/v1/admin/permissions` via src/modules/admin/admin.integration.test.ts

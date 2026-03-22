@@ -24,6 +24,10 @@ import {
   AssignTicketBody,
   BookingIdParams,
   BroadcastNotificationBody,
+  BulkFraudSignalActionBody,
+  BulkModerationActionBody,
+  BulkUpdateReportsBody,
+  BulkUpdateSupportTicketsBody,
   CityIdParams,
   CommentIdParams,
   ConfigKeyParams,
@@ -36,6 +40,7 @@ import {
   ModerationCaseIdParams,
   PostIdParams,
   ReactivateUserBody,
+  AdminUserSessionParams,
   RejectVerificationBody,
   RemoveAdminRoleParams,
   ReportIdParams,
@@ -73,6 +78,18 @@ adminRoutes.post(
   validate(AdminUserIdParams, "params"),
   validate(ReactivateUserBody),
   adminController.reactivateUser
+);
+adminRoutes.post(
+  "/admin/users/:userId/sessions/:sessionId/revoke",
+  requirePermission("USER_SESSION_REVOKE"),
+  validate(AdminUserSessionParams, "params"),
+  adminController.revokeUserSession
+);
+adminRoutes.post(
+  "/admin/users/:userId/sessions/revoke-all",
+  requirePermission("USER_SESSION_REVOKE"),
+  validate(AdminUserIdParams, "params"),
+  adminController.revokeAllUserSessions
 );
 
 adminRoutes.get("/admin/workers", requirePermission("WORKER_VIEW"), validate(AdminListWorkersQuery, "query"), adminController.listWorkers);
@@ -129,12 +146,36 @@ adminRoutes.delete(
 );
 
 adminRoutes.get("/admin/reports", requirePermission("REPORT_VIEW"), validate(AdminListReportsQuery, "query"), adminController.listReports);
+adminRoutes.get(
+  "/admin/reports/export",
+  requirePermission("REPORT_VIEW"),
+  validate(AdminListReportsQuery, "query"),
+  adminController.exportReports
+);
+adminRoutes.patch(
+  "/admin/reports/bulk",
+  requirePermission("REPORT_UPDATE"),
+  validate(BulkUpdateReportsBody),
+  adminController.bulkUpdateReports
+);
 adminRoutes.get("/admin/reports/:reportId", requirePermission("REPORT_VIEW"), validate(ReportIdParams, "params"), adminController.getReport);
 adminRoutes.get(
   "/admin/moderation-cases",
   requirePermission("REPORT_VIEW"),
   validate(AdminListModerationCasesQuery, "query"),
   adminController.listModerationCases
+);
+adminRoutes.get(
+  "/admin/moderation-cases/export",
+  requirePermission("REPORT_VIEW"),
+  validate(AdminListModerationCasesQuery, "query"),
+  adminController.exportModerationCases
+);
+adminRoutes.post(
+  "/admin/moderation-cases/bulk-actions",
+  requirePermission("MODERATION_CASE_ACTION"),
+  validate(BulkModerationActionBody),
+  adminController.bulkAddModerationActions
 );
 adminRoutes.get(
   "/admin/moderation-cases/:caseId",
@@ -156,6 +197,18 @@ adminRoutes.get(
   validate(AdminListSupportTicketsQuery, "query"),
   adminController.listSupportTickets
 );
+adminRoutes.get(
+  "/admin/support-tickets/export",
+  requirePermission("SUPPORT_TICKET_VIEW"),
+  validate(AdminListSupportTicketsQuery, "query"),
+  adminController.exportSupportTickets
+);
+adminRoutes.patch(
+  "/admin/support-tickets/bulk",
+  requirePermission("SUPPORT_TICKET_ASSIGN"),
+  validate(BulkUpdateSupportTicketsBody),
+  adminController.bulkUpdateSupportTickets
+);
 adminRoutes.patch(
   "/admin/support-tickets/:ticketId/assign",
   requirePermission("SUPPORT_TICKET_ASSIGN"),
@@ -172,6 +225,12 @@ adminRoutes.patch(
 );
 
 adminRoutes.get("/admin/audit-logs", requirePermission("AUDIT_LOG_VIEW"), validate(AdminAuditLogQuery, "query"), adminController.listAuditLogs);
+adminRoutes.get(
+  "/admin/audit-logs/export",
+  requirePermission("AUDIT_LOG_VIEW"),
+  validate(AdminAuditLogQuery, "query"),
+  adminController.exportAuditLogs
+);
 adminRoutes.get(
   "/admin/analytics/overview",
   requirePermission("ANALYTICS_VIEW_OVERVIEW"),
@@ -285,6 +344,18 @@ adminRoutes.get(
   requirePermission("FRAUD_SIGNAL_VIEW"),
   validate(AdminFraudSignalsQuery, "query"),
   adminController.listFraudSignals
+);
+adminRoutes.get(
+  "/admin/fraud-signals/export",
+  requirePermission("FRAUD_SIGNAL_VIEW"),
+  validate(AdminFraudSignalsQuery, "query"),
+  adminController.exportFraudSignals
+);
+adminRoutes.patch(
+  "/admin/fraud-signals/bulk",
+  requirePermission("FRAUD_SIGNAL_ACTION"),
+  validate(BulkFraudSignalActionBody),
+  adminController.bulkActionFraudSignals
 );
 adminRoutes.patch(
   "/admin/fraud-signals/:signalId",

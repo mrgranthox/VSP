@@ -20,6 +20,11 @@ const AdminUserIdParams = z.object({
   userId: z.string().uuid()
 });
 
+const AdminUserSessionParams = z.object({
+  userId: z.string().uuid(),
+  sessionId: z.string().uuid()
+});
+
 const SuspendUserBody = z
   .object({
     reason: z.string().min(5).max(500)
@@ -80,6 +85,16 @@ const ReportIdParams = z.object({
   reportId: z.string().uuid()
 });
 
+const BulkUuidArray = z.array(z.string().uuid()).min(1).max(100);
+
+const BulkUpdateReportsBody = z
+  .object({
+    reportIds: BulkUuidArray,
+    status: z.enum(["OPEN", "UNDER_REVIEW", "RESOLVED", "DISMISSED"]),
+    notes: z.string().max(2000).optional()
+  })
+  .strict();
+
 const AdminListModerationCasesQuery = PaginationQuery.extend({
   status: z.enum(["OPEN", "IN_REVIEW", "ACTIONED", "DISMISSED", "CLOSED"]).optional()
 });
@@ -93,6 +108,14 @@ const AddModerationActionBody = z
     actionType: z.string().min(1).max(100),
     entityType: z.string().min(1).max(50),
     entityId: z.string().uuid(),
+    notes: z.string().max(2000).optional()
+  })
+  .strict();
+
+const BulkModerationActionBody = z
+  .object({
+    caseIds: BulkUuidArray,
+    actionType: z.string().min(1).max(100),
     notes: z.string().max(2000).optional()
   })
   .strict();
@@ -117,6 +140,17 @@ const UpdateTicketStatusBody = z
     status: z.enum(["OPEN", "ASSIGNED", "WAITING_USER", "WAITING_INTERNAL", "RESOLVED", "CLOSED"])
   })
   .strict();
+
+const BulkUpdateSupportTicketsBody = z
+  .object({
+    ticketIds: BulkUuidArray,
+    assignedSupportUserId: z.string().uuid().optional(),
+    status: z.enum(["OPEN", "ASSIGNED", "WAITING_USER", "WAITING_INTERNAL", "RESOLVED", "CLOSED"]).optional()
+  })
+  .strict()
+  .refine((data) => Boolean(data.assignedSupportUserId || data.status), {
+    message: "assignedSupportUserId or status is required"
+  });
 
 const AdminAuditLogQuery = PaginationQuery.extend({
   action: z.string().max(100).optional(),
@@ -184,6 +218,7 @@ const UpdateRolePermissionsBody = z
       "USER_VIEW",
       "USER_SUSPEND",
       "USER_REACTIVATE",
+      "USER_SESSION_REVOKE",
       "WORKER_VIEW",
       "WORKER_VERIFY",
       "WORKER_REJECT_VERIFICATION",
@@ -191,6 +226,7 @@ const UpdateRolePermissionsBody = z
       "COMMENT_DELETE",
       "REVIEW_DELETE",
       "REPORT_VIEW",
+      "REPORT_UPDATE",
       "MODERATION_CASE_ASSIGN",
       "MODERATION_CASE_ACTION",
       "SUPPORT_TICKET_VIEW",
@@ -304,6 +340,18 @@ const FraudSignalActionBody = z
     message: "notes required when actioning a fraud signal"
   });
 
+const BulkFraudSignalActionBody = z
+  .object({
+    signalIds: BulkUuidArray,
+    action: z.enum(["REVIEW", "DISMISS", "ACTION"]),
+    notes: z.string().max(2000).optional(),
+    moderationCaseId: z.string().uuid().optional()
+  })
+  .strict()
+  .refine((data) => data.action !== "ACTION" || Boolean(data.notes), {
+    message: "notes required when actioning a fraud signal"
+  });
+
 const ContentViewerParams = z.object({
   entityType: z.enum(["post", "comment", "review", "message"]),
   entityId: z.string().uuid()
@@ -338,11 +386,16 @@ export {
   AdminPostsQuery,
   AdminServiceRequestsQuery,
   AdminUserIdParams,
+  AdminUserSessionParams,
   AdminWorkerIdParams,
   AssignAdminRoleBody,
   AssignTicketBody,
   BookingIdParams,
   BroadcastNotificationBody,
+  BulkFraudSignalActionBody,
+  BulkModerationActionBody,
+  BulkUpdateReportsBody,
+  BulkUpdateSupportTicketsBody,
   CityIdParams,
   CommentIdParams,
   ConfigKeyParams,

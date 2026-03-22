@@ -311,6 +311,7 @@ class AuthService {
       deviceType: session.deviceType ?? undefined,
       ipAddress: session.ipAddress ?? undefined,
       mfaVerified: session.mfaVerified,
+      mfaVerifiedAt: session.mfaVerifiedAt,
       mfaMethod: session.mfaMethod,
       expiresAt: refreshTokenExpiresAt
     });

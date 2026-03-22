@@ -359,6 +359,65 @@
         ]
       }
     },
+    "/admin/audit-logs/export": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/audit-logs/export",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.exportAuditLogs",
+        "operationId": "admin_get_admin_audit_logs_export",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.exportAuditLogs",
+        "x-vsp-middlewares": [
+          "requirePermission(\"AUDIT_LOG_VIEW\")",
+          "validate(AdminAuditLogQuery, \"query\")"
+        ],
+        "x-vsp-validation": {
+          "query": "AdminAuditLogQuery"
+        },
+        "x-vsp-required-permission": "AUDIT_LOG_VIEW",
+        "x-vsp-query-schema": "AdminAuditLogQuery",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/admin/bookings": {
       "get": {
         "tags": [
@@ -1429,6 +1488,139 @@
         ]
       }
     },
+    "/admin/fraud-signals/bulk": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "PATCH /admin/fraud-signals/bulk",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.bulkActionFraudSignals",
+        "operationId": "admin_patch_admin_fraud_signals_bulk",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.bulkActionFraudSignals",
+        "x-vsp-middlewares": [
+          "requirePermission(\"FRAUD_SIGNAL_ACTION\")",
+          "validate(BulkFraudSignalActionBody)"
+        ],
+        "x-vsp-validation": {
+          "body": "BulkFraudSignalActionBody"
+        },
+        "x-vsp-required-permission": "FRAUD_SIGNAL_ACTION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GenericObject"
+                  }
+                ],
+                "title": "BulkFraudSignalActionBody",
+                "x-vsp-validation-schema": "BulkFraudSignalActionBody"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/fraud-signals/export": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/fraud-signals/export",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.exportFraudSignals",
+        "operationId": "admin_get_admin_fraud_signals_export",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.exportFraudSignals",
+        "x-vsp-middlewares": [
+          "requirePermission(\"FRAUD_SIGNAL_VIEW\")",
+          "validate(AdminFraudSignalsQuery, \"query\")"
+        ],
+        "x-vsp-validation": {
+          "query": "AdminFraudSignalsQuery"
+        },
+        "x-vsp-required-permission": "FRAUD_SIGNAL_VIEW",
+        "x-vsp-query-schema": "AdminFraudSignalsQuery",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/admin/moderation-cases": {
       "get": {
         "tags": [
@@ -1637,6 +1829,139 @@
           }
         },
         "x-vsp-params-schema": "ModerationCaseIdParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/moderation-cases/bulk-actions": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /admin/moderation-cases/bulk-actions",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.bulkAddModerationActions",
+        "operationId": "admin_post_admin_moderation_cases_bulk_actions",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.bulkAddModerationActions",
+        "x-vsp-middlewares": [
+          "requirePermission(\"MODERATION_CASE_ACTION\")",
+          "validate(BulkModerationActionBody)"
+        ],
+        "x-vsp-validation": {
+          "body": "BulkModerationActionBody"
+        },
+        "x-vsp-required-permission": "MODERATION_CASE_ACTION",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GenericObject"
+                  }
+                ],
+                "title": "BulkModerationActionBody",
+                "x-vsp-validation-schema": "BulkModerationActionBody"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/moderation-cases/export": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/moderation-cases/export",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.exportModerationCases",
+        "operationId": "admin_get_admin_moderation_cases_export",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.exportModerationCases",
+        "x-vsp-middlewares": [
+          "requirePermission(\"REPORT_VIEW\")",
+          "validate(AdminListModerationCasesQuery, \"query\")"
+        ],
+        "x-vsp-validation": {
+          "query": "AdminListModerationCasesQuery"
+        },
+        "x-vsp-required-permission": "REPORT_VIEW",
+        "x-vsp-query-schema": "AdminListModerationCasesQuery",
         "security": [
           {
             "bearerAuth": []
@@ -2023,6 +2348,139 @@
         },
         "x-vsp-required-permission": "REPORT_VIEW",
         "x-vsp-params-schema": "ReportIdParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/reports/bulk": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "PATCH /admin/reports/bulk",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.bulkUpdateReports",
+        "operationId": "admin_patch_admin_reports_bulk",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.bulkUpdateReports",
+        "x-vsp-middlewares": [
+          "requirePermission(\"REPORT_UPDATE\")",
+          "validate(BulkUpdateReportsBody)"
+        ],
+        "x-vsp-validation": {
+          "body": "BulkUpdateReportsBody"
+        },
+        "x-vsp-required-permission": "REPORT_UPDATE",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GenericObject"
+                  }
+                ],
+                "title": "BulkUpdateReportsBody",
+                "x-vsp-validation-schema": "BulkUpdateReportsBody"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/reports/export": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/reports/export",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.exportReports",
+        "operationId": "admin_get_admin_reports_export",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.exportReports",
+        "x-vsp-middlewares": [
+          "requirePermission(\"REPORT_VIEW\")",
+          "validate(AdminListReportsQuery, \"query\")"
+        ],
+        "x-vsp-validation": {
+          "query": "AdminListReportsQuery"
+        },
+        "x-vsp-required-permission": "REPORT_VIEW",
+        "x-vsp-query-schema": "AdminListReportsQuery",
         "security": [
           {
             "bearerAuth": []
@@ -2603,6 +3061,139 @@
         ]
       }
     },
+    "/admin/support-tickets/bulk": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "PATCH /admin/support-tickets/bulk",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.bulkUpdateSupportTickets",
+        "operationId": "admin_patch_admin_support_tickets_bulk",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.bulkUpdateSupportTickets",
+        "x-vsp-middlewares": [
+          "requirePermission(\"SUPPORT_TICKET_ASSIGN\")",
+          "validate(BulkUpdateSupportTicketsBody)"
+        ],
+        "x-vsp-validation": {
+          "body": "BulkUpdateSupportTicketsBody"
+        },
+        "x-vsp-required-permission": "SUPPORT_TICKET_ASSIGN",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GenericObject"
+                  }
+                ],
+                "title": "BulkUpdateSupportTicketsBody",
+                "x-vsp-validation-schema": "BulkUpdateSupportTicketsBody"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/support-tickets/export": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/support-tickets/export",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.exportSupportTickets",
+        "operationId": "admin_get_admin_support_tickets_export",
+        "parameters": [],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.exportSupportTickets",
+        "x-vsp-middlewares": [
+          "requirePermission(\"SUPPORT_TICKET_VIEW\")",
+          "validate(AdminListSupportTicketsQuery, \"query\")"
+        ],
+        "x-vsp-validation": {
+          "query": "AdminListSupportTicketsQuery"
+        },
+        "x-vsp-required-permission": "SUPPORT_TICKET_VIEW",
+        "x-vsp-query-schema": "AdminListSupportTicketsQuery",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/admin/system/health": {
       "get": {
         "tags": [
@@ -3088,6 +3679,153 @@
         },
         "x-vsp-required-permission": "ADMIN_ROLE_REMOVE",
         "x-vsp-params-schema": "RemoveAdminRoleParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/users/{userId}/sessions/{sessionId}/revoke": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /admin/users/:userId/sessions/:sessionId/revoke",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.revokeUserSession",
+        "operationId": "admin_post_admin_users_by_userId_sessions_by_sessionId_revoke",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "userId path parameter",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "description": "sessionId path parameter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.revokeUserSession",
+        "x-vsp-middlewares": [
+          "requirePermission(\"USER_SESSION_REVOKE\")",
+          "validate(AdminUserSessionParams, \"params\")"
+        ],
+        "x-vsp-validation": {
+          "params": "AdminUserSessionParams"
+        },
+        "x-vsp-required-permission": "USER_SESSION_REVOKE",
+        "x-vsp-params-schema": "AdminUserSessionParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/users/{userId}/sessions/revoke-all": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /admin/users/:userId/sessions/revoke-all",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.revokeAllUserSessions",
+        "operationId": "admin_post_admin_users_by_userId_sessions_revoke_all",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "description": "userId path parameter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.revokeAllUserSessions",
+        "x-vsp-middlewares": [
+          "requirePermission(\"USER_SESSION_REVOKE\")",
+          "validate(AdminUserIdParams, \"params\")"
+        ],
+        "x-vsp-validation": {
+          "params": "AdminUserIdParams"
+        },
+        "x-vsp-required-permission": "USER_SESSION_REVOKE",
+        "x-vsp-params-schema": "AdminUserIdParams",
         "security": [
           {
             "bearerAuth": []
@@ -7914,6 +8652,74 @@
           "query": "GetNotificationsQuery"
         },
         "x-vsp-query-schema": "GetNotificationsQuery",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/notifications/{notificationId}": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "GET /notifications/:notificationId",
+        "description": "Generated from src/modules/notifications/notifications.routes.ts. Handler: notificationsController.getOne",
+        "operationId": "notifications_get_notifications_by_notificationId",
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "description": "notificationId path parameter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/notifications/notifications.routes.ts",
+        "x-vsp-handler": "notificationsController.getOne",
+        "x-vsp-middlewares": [
+          "authenticate",
+          "validate(NotificationIdParams, \"params\")"
+        ],
+        "x-vsp-validation": {
+          "params": "NotificationIdParams"
+        },
+        "x-vsp-params-schema": "NotificationIdParams",
         "security": [
           {
             "bearerAuth": []

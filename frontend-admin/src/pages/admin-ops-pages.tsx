@@ -14,7 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useCurrentAdmin } from "@/features/auth/auth";
-import { apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError } from "@/lib/api";
+import { apiDownload, apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError } from "@/lib/api";
+import { hasPermission } from "@/lib/admin-permissions";
 import { formatDateTime, formatDisplayName, formatJsonValue, formatNumber } from "@/lib/utils";
 import type {
   AdminAuditLogItem,
@@ -62,11 +63,30 @@ const resolveOpsEntityLink = (entityType?: string | null, entityId?: string | nu
   }
 };
 
+const toggleSelection = (selectedIds: string[], id: string) =>
+  selectedIds.includes(id) ? selectedIds.filter((selectedId) => selectedId !== id) : [...selectedIds, id];
+
+const togglePageSelection = (selectedIds: string[], pageIds: string[]) => {
+  if (pageIds.every((pageId) => selectedIds.includes(pageId))) {
+    return selectedIds.filter((selectedId) => !pageIds.includes(selectedId));
+  }
+
+  return Array.from(new Set([...selectedIds, ...pageIds]));
+};
+
 const ReportsPage = () => {
+  const queryClient = useQueryClient();
+  const adminQuery = useCurrentAdmin();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [severity, setSeverity] = useState("");
   const [selectedReportId, setSelectedReportId] = useState("");
+  const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState("UNDER_REVIEW");
+  const [bulkNotes, setBulkNotes] = useState("Bulk triage from the reports queue.");
+  const roles = adminQuery.data?.roles ?? [];
+  const canExportReports = hasPermission(roles, "REPORT_VIEW");
+  const canBulkUpdateReports = hasPermission(roles, "REPORT_UPDATE");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -91,10 +111,11 @@ const ReportsPage = () => {
   });
 
   const reports = reportsQuery.data?.data ?? [];
+  const reportIdsOnPage = reports.map((report) => report.id);
   const selectedReport = reports.find((item) => item.id === selectedReportId) ?? reports[0];
 
   useEffect(() => {
-    if (!selectedReportId && reports[0]) {
+    if ((!selectedReportId || !reports.some((report) => report.id === selectedReportId)) && reports[0]) {
       setSelectedReportId(reports[0].id);
     }
   }, [reports, selectedReportId]);
@@ -114,8 +135,39 @@ const ReportsPage = () => {
     enabled: Boolean(selectedReport?.id)
   });
 
+  const bulkUpdateMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<{ updatedCount: number }>("/admin/reports/bulk", {
+        method: "PATCH",
+        body: {
+          reportIds: selectedReportIds,
+          status: bulkStatus,
+          notes: bulkNotes
+        }
+      }),
+    onSuccess: async (result) => {
+      toast.success(`${result.updatedCount} reports updated`);
+      setSelectedReportIds([]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports", "queue-detail", selectedReport?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports", "queue-content", selectedReport?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to bulk update reports")
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () => apiDownload(`/admin/reports/export?${queryString}`, `admin-reports-page-${page}.csv`),
+    onSuccess: (fileName) => {
+      toast.success(`Downloaded ${fileName}`);
+    },
+    onError: (error) => handleActionError(error, "Unable to export reports")
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="reports-page">
       <PageHeader subtitle="Content and entity reports flowing into the moderation pipeline." title="Reports Queue" />
 
       <FilterCard>
@@ -159,7 +211,53 @@ const ReportsPage = () => {
             <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(reportsQuery.data?.pagination.total ?? 0)}</p>
           </CardContent>
         </Card>
+
+        <Card className="border-dashed">
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Selection</p>
+                <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(selectedReportIds.length)}</p>
+              </div>
+              <Button data-testid="reports-select-page" onClick={() => setSelectedReportIds(togglePageSelection(selectedReportIds, reportIdsOnPage))} variant="outline">
+                {reportIdsOnPage.length > 0 && reportIdsOnPage.every((reportId) => selectedReportIds.includes(reportId)) ? "Clear page" : "Select page"}
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {canExportReports ? (
+                <Button data-testid="reports-export" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()} variant="outline">
+                  Export CSV
+                </Button>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
       </FilterCard>
+
+      {canBulkUpdateReports ? (
+        <Card className="border-[rgba(65,150,70,0.22)] bg-[rgba(247,252,246,0.92)]">
+          <CardHeader>
+            <CardTitle>Bulk report triage</CardTitle>
+            <CardDescription>Update queue status for the selected reports and write a single operator note into the admin audit trail.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_auto]">
+            <Select data-testid="reports-bulk-status" onChange={(event) => setBulkStatus(event.target.value)} value={bulkStatus}>
+              <option value="OPEN">Open</option>
+              <option value="UNDER_REVIEW">Under review</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="DISMISSED">Dismissed</option>
+            </Select>
+            <Textarea data-testid="reports-bulk-notes" onChange={(event) => setBulkNotes(event.target.value)} value={bulkNotes} />
+            <Button
+              data-testid="reports-bulk-submit"
+              disabled={bulkUpdateMutation.isPending || selectedReportIds.length === 0 || bulkNotes.trim().length < 4}
+              onClick={() => bulkUpdateMutation.mutate()}
+            >
+              Update {selectedReportIds.length || ""} report{selectedReportIds.length === 1 ? "" : "s"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {reports.length === 0 ? (
         <EmptyState description="No reports matched the current filter set." title="No reports found" />
@@ -168,47 +266,57 @@ const ReportsPage = () => {
           <div className="space-y-4">
             {reports.map((report) => (
               <Card key={report.id} className={selectedReport?.id === report.id ? "border-[rgba(65,150,70,0.24)]" : undefined}>
-              <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <CardTitle>{report.reason}</CardTitle>
-                  <CardDescription>
-                    {report.entityType} · {report.entityId}
-                  </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant={getStatusBadgeVariant(report.status)}>{report.status}</Badge>
-                  <Badge variant={getStatusBadgeVariant(report.severity)}>{report.severity}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-[1.25rem] bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">Reporter</p>
-                  <p className="mt-1 font-semibold text-slate-900">
-                    {formatDisplayName(report.reporterUser?.profile, report.reporterUser?.email ?? "Unknown reporter")}
-                  </p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(report.createdAt)}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {report.moderationCases.length > 0 ? (
-                    report.moderationCases.map((moderationCase) => (
-                      <Badge key={moderationCase.id} variant={getStatusBadgeVariant(moderationCase.status)}>
-                        Case {moderationCase.status}
-                      </Badge>
-                    ))
-                  ) : (
-                    <Badge>No moderation case yet</Badge>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => setSelectedReportId(report.id)} variant={selectedReport?.id === report.id ? "primary" : "outline"}>
-                    Inspect queue item
-                  </Button>
-                  <Link className="inline-flex" to={`/reports/${report.id}`}>
-                    <Button variant="outline">Open report detail</Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+                <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex items-start gap-3">
+                    {canBulkUpdateReports ? (
+                      <input
+                        checked={selectedReportIds.includes(report.id)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
+                        onChange={() => setSelectedReportIds((current) => toggleSelection(current, report.id))}
+                        type="checkbox"
+                      />
+                    ) : null}
+                    <div>
+                      <CardTitle>{report.reason}</CardTitle>
+                      <CardDescription>
+                        {report.entityType} · {report.entityId}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={getStatusBadgeVariant(report.status)}>{report.status}</Badge>
+                    <Badge variant={getStatusBadgeVariant(report.severity)}>{report.severity}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-500">Reporter</p>
+                    <p className="mt-1 font-semibold text-slate-900">
+                      {formatDisplayName(report.reporterUser?.profile, report.reporterUser?.email ?? "Unknown reporter")}
+                    </p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(report.createdAt)}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {report.moderationCases.length > 0 ? (
+                      report.moderationCases.map((moderationCase) => (
+                        <Badge key={moderationCase.id} variant={getStatusBadgeVariant(moderationCase.status)}>
+                          Case {moderationCase.status}
+                        </Badge>
+                      ))
+                    ) : (
+                      <Badge>No moderation case yet</Badge>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button onClick={() => setSelectedReportId(report.id)} variant={selectedReport?.id === report.id ? "primary" : "outline"}>
+                      Inspect queue item
+                    </Button>
+                    <Link className="inline-flex" to={`/reports/${report.id}`}>
+                      <Button variant="outline">Open report detail</Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
 
@@ -286,11 +394,16 @@ const ReportsPage = () => {
 
 const ModerationCasesPage = () => {
   const queryClient = useQueryClient();
+  const adminQuery = useCurrentAdmin();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState("");
+  const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
   const [actionType, setActionType] = useState("REVIEW_NOTE");
   const [actionNotes, setActionNotes] = useState("Escalated in admin console after manual review.");
+  const roles = adminQuery.data?.roles ?? [];
+  const canExportCases = hasPermission(roles, "REPORT_VIEW");
+  const canActionCases = hasPermission(roles, "MODERATION_CASE_ACTION");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -311,10 +424,11 @@ const ModerationCasesPage = () => {
   });
 
   const cases = casesQuery.data?.data ?? [];
+  const caseIdsOnPage = cases.map((item) => item.id);
   const selectedCase = cases.find((item) => item.id === selectedCaseId) ?? cases[0];
 
   useEffect(() => {
-    if (!selectedCaseId && cases[0]) {
+    if ((!selectedCaseId || !cases.some((item) => item.id === selectedCaseId)) && cases[0]) {
       setSelectedCaseId(cases[0].id);
     }
   }, [cases, selectedCaseId]);
@@ -365,8 +479,39 @@ const ModerationCasesPage = () => {
     onError: (error) => handleActionError(error, "Unable to update moderation case")
   });
 
+  const bulkActionMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<{ updatedCount: number }>("/admin/moderation-cases/bulk-actions", {
+        method: "POST",
+        body: {
+          caseIds: selectedCaseIds,
+          actionType,
+          notes: actionNotes
+        }
+      }),
+    onSuccess: async (result) => {
+      toast.success(`${result.updatedCount} moderation cases updated`);
+      setSelectedCaseIds([]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases", "queue-detail", selectedCase?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "moderation-cases", "queue-content", selectedCase?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to bulk update moderation cases")
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () => apiDownload(`/admin/moderation-cases/export?${queryString}`, `admin-moderation-cases-page-${page}.csv`),
+    onSuccess: (fileName) => {
+      toast.success(`Downloaded ${fileName}`);
+    },
+    onError: (error) => handleActionError(error, "Unable to export moderation cases")
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="moderation-cases-page">
       <PageHeader subtitle="Moderation case handling, assignees, and action history." title="Moderation Cases" />
 
       <FilterCard>
@@ -394,7 +539,52 @@ const ModerationCasesPage = () => {
             <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(casesQuery.data?.pagination.total ?? 0)}</p>
           </CardContent>
         </Card>
+
+        <Card className="border-dashed">
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Selection</p>
+                <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(selectedCaseIds.length)}</p>
+              </div>
+              <Button data-testid="moderation-select-page" onClick={() => setSelectedCaseIds(togglePageSelection(selectedCaseIds, caseIdsOnPage))} variant="outline">
+                {caseIdsOnPage.length > 0 && caseIdsOnPage.every((caseId) => selectedCaseIds.includes(caseId)) ? "Clear page" : "Select page"}
+              </Button>
+            </div>
+            {canExportCases ? (
+              <Button data-testid="moderation-export" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()} variant="outline">
+                Export CSV
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
       </FilterCard>
+
+      {canActionCases ? (
+        <Card className="border-[rgba(65,150,70,0.22)] bg-[rgba(247,252,246,0.92)]">
+          <CardHeader>
+            <CardTitle>Bulk moderation action</CardTitle>
+            <CardDescription>Apply the next moderation action to the selected cases and refresh the review queue in one pass.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_auto]">
+            <Select data-testid="moderation-bulk-action-type" onChange={(event) => setActionType(event.target.value)} value={actionType}>
+              <option value="REVIEW_NOTE">Review note</option>
+              <option value="ESCALATE">Escalate</option>
+              <option value="CONTENT_REMOVE">Content remove</option>
+              <option value="ACCOUNT_WARNING">Account warning</option>
+              <option value="NO_ACTION">No action</option>
+            </Select>
+            <Textarea data-testid="moderation-bulk-notes" onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
+            <Button
+              data-testid="moderation-bulk-submit"
+              disabled={bulkActionMutation.isPending || selectedCaseIds.length === 0 || actionNotes.trim().length < 4}
+              onClick={() => bulkActionMutation.mutate()}
+            >
+              Apply to {selectedCaseIds.length || ""} case{selectedCaseIds.length === 1 ? "" : "s"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {cases.length === 0 ? (
         <EmptyState description="No moderation cases matched the current filter." title="No moderation cases found" />
@@ -402,46 +592,56 @@ const ModerationCasesPage = () => {
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
             {cases.map((item) => (
-            <Card className={selectedCase?.id === item.id ? "border-[rgba(65,150,70,0.24)]" : undefined} key={item.id}>
-              <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <CardTitle>{item.report?.reason ?? "Moderation case"}</CardTitle>
-                  <CardDescription>
-                    Assignee: {formatDisplayName(item.assignedAdminUser?.profile, item.assignedAdminUser?.email ?? "Unassigned")}
-                  </CardDescription>
-                </div>
-                <Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-[1.25rem] bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">Linked report</p>
-                  <p className="mt-1 font-semibold text-slate-900">
-                    {item.report?.entityType ?? "Unknown"} · {item.report?.entityId ?? "—"}
-                  </p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(item.updatedAt)}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {item.actions.map((action) => (
-                    <Badge key={action.id} variant="blue">
-                      {action.actionType}
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => setSelectedCaseId(item.id)} variant={selectedCase?.id === item.id ? "primary" : "outline"}>
-                    Inspect case
-                  </Button>
-                  <Link className="inline-flex" to={`/moderation-cases/${item.id}`}>
-                    <Button variant="outline">Open case detail</Button>
-                  </Link>
-                  {item.report ? (
-                    <Link className="inline-flex" to={`/moderation-cases/${item.id}/actions/new`}>
-                      <Button variant="outline">Open action panel</Button>
+              <Card className={selectedCase?.id === item.id ? "border-[rgba(65,150,70,0.24)]" : undefined} key={item.id}>
+                <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex items-start gap-3">
+                    {canActionCases ? (
+                      <input
+                        checked={selectedCaseIds.includes(item.id)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
+                        onChange={() => setSelectedCaseIds((current) => toggleSelection(current, item.id))}
+                        type="checkbox"
+                      />
+                    ) : null}
+                    <div>
+                      <CardTitle>{item.report?.reason ?? "Moderation case"}</CardTitle>
+                      <CardDescription>
+                        Assignee: {formatDisplayName(item.assignedAdminUser?.profile, item.assignedAdminUser?.email ?? "Unassigned")}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-500">Linked report</p>
+                    <p className="mt-1 font-semibold text-slate-900">
+                      {item.report?.entityType ?? "Unknown"} · {item.report?.entityId ?? "—"}
+                    </p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(item.updatedAt)}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {item.actions.map((action) => (
+                      <Badge key={action.id} variant="blue">
+                        {action.actionType}
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button onClick={() => setSelectedCaseId(item.id)} variant={selectedCase?.id === item.id ? "primary" : "outline"}>
+                      Inspect case
+                    </Button>
+                    <Link className="inline-flex" to={`/moderation-cases/${item.id}`}>
+                      <Button variant="outline">Open case detail</Button>
                     </Link>
-                  ) : null}
-                </div>
-              </CardContent>
-            </Card>
+                    {item.report ? (
+                      <Link className="inline-flex" to={`/moderation-cases/${item.id}/actions/new`}>
+                        <Button variant="outline">Open action panel</Button>
+                      </Link>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
 
@@ -533,11 +733,16 @@ const ModerationCasesPage = () => {
 
 const FraudSignalsPage = () => {
   const queryClient = useQueryClient();
+  const adminQuery = useCurrentAdmin();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [selectedSignalId, setSelectedSignalId] = useState("");
+  const [selectedSignalIds, setSelectedSignalIds] = useState<string[]>([]);
   const [fraudAction, setFraudAction] = useState<"REVIEW" | "DISMISS" | "ACTION">("REVIEW");
   const [fraudNotes, setFraudNotes] = useState("Risk reviewed in admin console.");
+  const roles = adminQuery.data?.roles ?? [];
+  const canExportSignals = hasPermission(roles, "FRAUD_SIGNAL_VIEW");
+  const canActionSignals = hasPermission(roles, "FRAUD_SIGNAL_ACTION");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -558,10 +763,11 @@ const FraudSignalsPage = () => {
   });
 
   const signals = signalsQuery.data?.data ?? [];
+  const signalIdsOnPage = signals.map((signal) => signal.id);
   const selectedSignal = signals.find((item) => item.id === selectedSignalId) ?? signals[0];
 
   useEffect(() => {
-    if (!selectedSignalId && signals[0]) {
+    if ((!selectedSignalId || !signals.some((signal) => signal.id === selectedSignalId)) && signals[0]) {
       setSelectedSignalId(signals[0].id);
     }
   }, [selectedSignalId, signals]);
@@ -582,8 +788,37 @@ const FraudSignalsPage = () => {
     onError: (error) => handleActionError(error, "Unable to update fraud signal")
   });
 
+  const bulkSignalMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<{ updatedCount: number }>("/admin/fraud-signals/bulk", {
+        method: "PATCH",
+        body: {
+          signalIds: selectedSignalIds,
+          action: fraudAction,
+          notes: fraudNotes
+        }
+      }),
+    onSuccess: async (result) => {
+      toast.success(`${result.updatedCount} fraud signals updated`);
+      setSelectedSignalIds([]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "fraud-signals"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to bulk update fraud signals")
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () => apiDownload(`/admin/fraud-signals/export?${queryString}`, `admin-fraud-signals-page-${page}.csv`),
+    onSuccess: (fileName) => {
+      toast.success(`Downloaded ${fileName}`);
+    },
+    onError: (error) => handleActionError(error, "Unable to export fraud signals")
+  });
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="fraud-signals-page">
       <PageHeader subtitle="Risk signals scored by the backend fraud and moderation systems." title="Fraud Signals" />
 
       <FilterCard>
@@ -610,7 +845,50 @@ const FraudSignalsPage = () => {
             <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(signalsQuery.data?.pagination.total ?? 0)}</p>
           </CardContent>
         </Card>
+
+        <Card className="border-dashed">
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Selection</p>
+                <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(selectedSignalIds.length)}</p>
+              </div>
+              <Button data-testid="fraud-select-page" onClick={() => setSelectedSignalIds(togglePageSelection(selectedSignalIds, signalIdsOnPage))} variant="outline">
+                {signalIdsOnPage.length > 0 && signalIdsOnPage.every((signalId) => selectedSignalIds.includes(signalId)) ? "Clear page" : "Select page"}
+              </Button>
+            </div>
+            {canExportSignals ? (
+              <Button data-testid="fraud-export" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()} variant="outline">
+                Export CSV
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
       </FilterCard>
+
+      {canActionSignals ? (
+        <Card className="border-[rgba(65,150,70,0.22)] bg-[rgba(247,252,246,0.92)]">
+          <CardHeader>
+            <CardTitle>Bulk fraud action</CardTitle>
+            <CardDescription>Apply a trust action across the selected signals and write the operator note once.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr_auto]">
+            <Select data-testid="fraud-bulk-action" onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")} value={fraudAction}>
+              <option value="REVIEW">Review</option>
+              <option value="DISMISS">Dismiss</option>
+              <option value="ACTION">Action and open trust trail</option>
+            </Select>
+            <Textarea data-testid="fraud-bulk-notes" onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
+            <Button
+              data-testid="fraud-bulk-submit"
+              disabled={bulkSignalMutation.isPending || selectedSignalIds.length === 0 || (fraudAction === "ACTION" && fraudNotes.trim().length < 4)}
+              onClick={() => bulkSignalMutation.mutate()}
+            >
+              Apply to {selectedSignalIds.length || ""} signal{selectedSignalIds.length === 1 ? "" : "s"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {signals.length === 0 ? (
         <EmptyState description="No fraud signals matched the current filter." title="No fraud signals found" />
@@ -618,40 +896,54 @@ const FraudSignalsPage = () => {
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
             {signals.map((signal) => (
-            <Card className={selectedSignal?.id === signal.id ? "border-[rgba(65,150,70,0.24)]" : undefined} key={signal.id}>
-              <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <CardTitle>{signal.signalKey}</CardTitle>
-                  <CardDescription>
-                    {signal.entityType ?? "user"} · {signal.entityId ?? signal.userId ?? "unknown"}
-                  </CardDescription>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant={getStatusBadgeVariant(signal.status)}>{signal.status}</Badge>
-                  <Badge variant="red">Score {signal.score}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-[1.25rem] bg-slate-50 p-4">
-                  <p className="text-sm font-medium text-slate-500">User</p>
-                  <p className="mt-1 font-semibold text-slate-900">
-                    {formatDisplayName(signal.user?.profile, signal.user?.email ?? "Unknown user")}
-                  </p>
-                  <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(signal.createdAt)}</p>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => setSelectedSignalId(signal.id)} variant={selectedSignal?.id === signal.id ? "primary" : "outline"}>
-                    Inspect signal
-                  </Button>
-                  <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "REVIEW", notes: "Risk reviewed in admin console." })} variant="outline">
-                    Mark reviewed
-                  </Button>
-                  <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "DISMISS", notes: "Signal dismissed by admin review." })} variant="ghost">
-                    Dismiss
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              <Card className={selectedSignal?.id === signal.id ? "border-[rgba(65,150,70,0.24)]" : undefined} key={signal.id}>
+                <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
+                  <div className="flex items-start gap-3">
+                    {canActionSignals ? (
+                      <input
+                        checked={selectedSignalIds.includes(signal.id)}
+                        className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
+                        onChange={() => setSelectedSignalIds((current) => toggleSelection(current, signal.id))}
+                        type="checkbox"
+                      />
+                    ) : null}
+                    <div>
+                      <CardTitle>{signal.signalKey}</CardTitle>
+                      <CardDescription>
+                        {signal.entityType ?? "user"} · {signal.entityId ?? signal.userId ?? "unknown"}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={getStatusBadgeVariant(signal.status)}>{signal.status}</Badge>
+                    <Badge variant="red">Score {signal.score}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                    <p className="text-sm font-medium text-slate-500">User</p>
+                    <p className="mt-1 font-semibold text-slate-900">
+                      {formatDisplayName(signal.user?.profile, signal.user?.email ?? "Unknown user")}
+                    </p>
+                    <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(signal.createdAt)}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button onClick={() => setSelectedSignalId(signal.id)} variant={selectedSignal?.id === signal.id ? "primary" : "outline"}>
+                      Inspect signal
+                    </Button>
+                    {canActionSignals ? (
+                      <>
+                        <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "REVIEW", notes: "Risk reviewed in admin console." })} variant="outline">
+                          Mark reviewed
+                        </Button>
+                        <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "DISMISS", notes: "Signal dismissed by admin review." })} variant="ghost">
+                          Dismiss
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
 
@@ -719,6 +1011,12 @@ const SupportTicketsPage = () => {
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
+  const [selectedTicketIds, setSelectedTicketIds] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState("WAITING_USER");
+  const [bulkAssignToMe, setBulkAssignToMe] = useState(true);
+  const roles = adminQuery.data?.roles ?? [];
+  const canViewTickets = hasPermission(roles, "SUPPORT_TICKET_VIEW");
+  const canAssignTickets = hasPermission(roles, "SUPPORT_TICKET_ASSIGN");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -768,9 +1066,39 @@ const SupportTicketsPage = () => {
   });
 
   const tickets = ticketsQuery.data?.data ?? [];
+  const ticketIdsOnPage = tickets.map((ticket) => ticket.id);
+
+  const bulkTicketMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<{ updatedCount: number }>("/admin/support-tickets/bulk", {
+        method: "PATCH",
+        body: {
+          ticketIds: selectedTicketIds,
+          assignedSupportUserId: bulkAssignToMe ? adminQuery.data?.user.id : undefined,
+          status: bulkStatus
+        }
+      }),
+    onSuccess: async (result) => {
+      toast.success(`${result.updatedCount} support tickets updated`);
+      setSelectedTicketIds([]);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to bulk update support tickets")
+  });
+
+  const exportMutation = useMutation({
+    mutationFn: () => apiDownload(`/admin/support-tickets/export?${queryString}`, `admin-support-tickets-page-${page}.csv`),
+    onSuccess: (fileName) => {
+      toast.success(`Downloaded ${fileName}`);
+    },
+    onError: (error) => handleActionError(error, "Unable to export support tickets")
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="support-tickets-page">
       <PageHeader subtitle="Support operations backed by the real support ticket module and admin assignment/status actions." title="Support Tickets" />
 
       <FilterCard>
@@ -816,7 +1144,56 @@ const SupportTicketsPage = () => {
             <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(ticketsQuery.data?.pagination.total ?? 0)}</p>
           </CardContent>
         </Card>
+
+        <Card className="border-dashed">
+          <CardContent className="space-y-4 pt-6">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500">Selection</p>
+                <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(selectedTicketIds.length)}</p>
+              </div>
+              <Button data-testid="support-select-page" onClick={() => setSelectedTicketIds(togglePageSelection(selectedTicketIds, ticketIdsOnPage))} variant="outline">
+                {ticketIdsOnPage.length > 0 && ticketIdsOnPage.every((ticketId) => selectedTicketIds.includes(ticketId)) ? "Clear page" : "Select page"}
+              </Button>
+            </div>
+            {canViewTickets ? (
+              <Button data-testid="support-export" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()} variant="outline">
+                Export CSV
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
       </FilterCard>
+
+      {canAssignTickets ? (
+        <Card className="border-[rgba(65,150,70,0.22)] bg-[rgba(247,252,246,0.92)]">
+          <CardHeader>
+            <CardTitle>Bulk support update</CardTitle>
+            <CardDescription>Assign the selected tickets to yourself and move them into the next support state without leaving the queue.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 lg:grid-cols-[0.8fr_0.8fr_auto]">
+            <Select data-testid="support-bulk-status" onChange={(event) => setBulkStatus(event.target.value)} value={bulkStatus}>
+              <option value="OPEN">Open</option>
+              <option value="ASSIGNED">Assigned</option>
+              <option value="WAITING_USER">Waiting user</option>
+              <option value="WAITING_INTERNAL">Waiting internal</option>
+              <option value="RESOLVED">Resolved</option>
+              <option value="CLOSED">Closed</option>
+            </Select>
+            <label className="flex items-center gap-3 rounded-[1rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700">
+              <input checked={bulkAssignToMe} data-testid="support-bulk-assign-to-me" onChange={(event) => setBulkAssignToMe(event.target.checked)} type="checkbox" />
+              Assign selected tickets to me
+            </label>
+            <Button
+              data-testid="support-bulk-submit"
+              disabled={bulkTicketMutation.isPending || selectedTicketIds.length === 0 || (bulkAssignToMe && !adminQuery.data?.user.id)}
+              onClick={() => bulkTicketMutation.mutate()}
+            >
+              Update {selectedTicketIds.length || ""} ticket{selectedTicketIds.length === 1 ? "" : "s"}
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {tickets.length === 0 ? (
         <EmptyState description="No support tickets matched the current filters." title="No tickets found" />
@@ -825,9 +1202,19 @@ const SupportTicketsPage = () => {
           {tickets.map((ticket) => (
             <Card key={ticket.id}>
               <CardHeader className="gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <CardTitle>{ticket.subject}</CardTitle>
-                  <CardDescription>{ticket.body}</CardDescription>
+                <div className="flex items-start gap-3">
+                  {canAssignTickets ? (
+                    <input
+                      checked={selectedTicketIds.includes(ticket.id)}
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600"
+                      onChange={() => setSelectedTicketIds((current) => toggleSelection(current, ticket.id))}
+                      type="checkbox"
+                    />
+                  ) : null}
+                  <div>
+                    <CardTitle>{ticket.subject}</CardTitle>
+                    <CardDescription>{ticket.body}</CardDescription>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant={getStatusBadgeVariant(ticket.status)}>{ticket.status}</Badge>
@@ -867,9 +1254,12 @@ const SupportTicketsPage = () => {
 };
 
 const AuditLogsPage = () => {
+  const adminQuery = useCurrentAdmin();
   const [page, setPage] = useState(1);
   const [action, setAction] = useState("");
   const [entityType, setEntityType] = useState("");
+  const roles = adminQuery.data?.roles ?? [];
+  const canExportAuditLogs = hasPermission(roles, "AUDIT_LOG_VIEW");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({
@@ -894,9 +1284,16 @@ const AuditLogsPage = () => {
   });
 
   const logs = auditQuery.data?.data ?? [];
+  const exportMutation = useMutation({
+    mutationFn: () => apiDownload(`/admin/audit-logs/export?${queryString}`, `admin-audit-logs-page-${page}.csv`),
+    onSuccess: (fileName) => {
+      toast.success(`Downloaded ${fileName}`);
+    },
+    onError: (error) => handleActionError(error, "Unable to export audit logs")
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="audit-logs-page">
       <PageHeader subtitle="Immutable admin actions and entity changes written by the backend audit system." title="Audit Logs" />
 
       <FilterCard>
@@ -926,6 +1323,20 @@ const AuditLogsPage = () => {
           <CardContent className="pt-6">
             <p className="text-sm font-medium text-slate-500">Log entries in view</p>
             <p className="mt-2 text-3xl font-extrabold tracking-tight text-slate-950">{formatNumber(auditQuery.data?.pagination.total ?? 0)}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-dashed">
+          <CardContent className="flex items-center justify-between gap-4 pt-6">
+            <div>
+              <p className="text-sm font-medium text-slate-500">Export</p>
+              <p className="mt-2 text-sm text-slate-600">Download the filtered audit stream for investigation, incident review, or compliance handoff.</p>
+            </div>
+            {canExportAuditLogs ? (
+              <Button data-testid="audit-export" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate()} variant="outline">
+                Export CSV
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       </FilterCard>

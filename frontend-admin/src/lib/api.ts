@@ -85,6 +85,21 @@ interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   retryOnAuthFailure?: boolean;
 }
 
+const parseDownloadFilename = (contentDisposition: string | null, fallback: string): string => {
+  if (!contentDisposition) {
+    return fallback;
+  }
+
+  const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const plainMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+  return plainMatch?.[1] ?? fallback;
+};
+
 const apiRequest = async <T>(path: string, options: ApiRequestOptions = {}): Promise<T> => {
   const { auth = true, body, retryOnAuthFailure = true, headers, ...rest } = options;
   const session = getStoredSession();
@@ -163,4 +178,49 @@ const apiPaginatedRequest = async <T>(path: string, options: ApiRequestOptions =
   return parsed as ApiPaginatedEnvelope<T>;
 };
 
-export { API_BASE_URL, ApiClientError, apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError };
+const apiDownload = async (path: string, fallbackFileName: string, options: ApiRequestOptions = {}): Promise<string> => {
+  const { auth = true, retryOnAuthFailure = true, headers, body: _body, ...rest } = options;
+  const session = getStoredSession();
+  const finalHeaders = new Headers(headers ?? {});
+
+  if (auth && session?.accessToken) {
+    finalHeaders.set("Authorization", `Bearer ${session.accessToken}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...rest,
+    headers: finalHeaders
+  });
+
+  if (response.status === 401 && auth && retryOnAuthFailure && session?.refreshToken && path !== "/auth/refresh") {
+    await ensureFreshToken();
+    return apiDownload(path, fallbackFileName, { ...options, retryOnAuthFailure: false });
+  }
+
+  if (!response.ok) {
+    const parsed = await readJson(response);
+    const errorBody = parsed && "success" in parsed && !parsed.success ? parsed : null;
+    throw new ApiClientError(
+      response.status,
+      errorBody?.error.code ?? "REQUEST_FAILED",
+      errorBody?.error.message ?? response.statusText,
+      errorBody?.error.details
+    );
+  }
+
+  const blob = await response.blob();
+  const fileName = parseDownloadFilename(response.headers.get("content-disposition"), fallbackFileName);
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 0);
+
+  return fileName;
+};
+
+export { API_BASE_URL, ApiClientError, apiDownload, apiPaginatedRequest, apiRequest, getApiErrorMessage, isMfaRequiredError };

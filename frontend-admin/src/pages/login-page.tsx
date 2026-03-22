@@ -111,7 +111,12 @@ const LoginPage = () => {
               <span className="text-sm font-semibold text-slate-700">Email</span>
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input className="pl-11" onChange={(event) => setEmail(event.target.value)} value={email} />
+                <Input
+                  className="pl-11"
+                  data-testid="login-email"
+                  onChange={(event) => setEmail(event.target.value)}
+                  value={email}
+                />
               </div>
             </label>
 
@@ -119,7 +124,13 @@ const LoginPage = () => {
               <span className="text-sm font-semibold text-slate-700">Password</span>
               <div className="relative">
                 <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input className="pl-11" onChange={(event) => setPassword(event.target.value)} type="password" value={password} />
+                <Input
+                  className="pl-11"
+                  data-testid="login-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  type="password"
+                  value={password}
+                />
               </div>
             </label>
 
@@ -130,7 +141,7 @@ const LoginPage = () => {
               </p>
             </div>
 
-            <Button className="w-full" disabled={isPending} onClick={() => loginMutation.mutate()}>
+            <Button className="w-full" data-testid="login-submit" disabled={isPending} onClick={() => loginMutation.mutate()}>
               {loginMutation.isPending ? "Signing in..." : "Sign in"}
             </Button>
 
@@ -146,7 +157,7 @@ const LoginPage = () => {
 
       {showMfaModal ? (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-950/70 px-4">
-          <Card className="w-full max-w-md rounded-[1.75rem]">
+          <Card className="w-full max-w-md rounded-[1.75rem]" data-testid="login-mfa-modal">
             <CardHeader>
               <CardTitle>Admin MFA step-up</CardTitle>
               <CardDescription>
@@ -172,7 +183,7 @@ const LoginPage = () => {
                 ))}
               </div>
 
-              <Input onChange={(event) => setMfaCode(event.target.value)} placeholder="Enter your code" value={mfaCode} />
+                <Input data-testid="login-mfa-code" onChange={(event) => setMfaCode(event.target.value)} placeholder="Enter your code" value={mfaCode} />
 
               <div className="flex gap-3">
                 {mfaMethod === "sms" ? (
@@ -196,9 +207,9 @@ const LoginPage = () => {
                     Send code
                   </Button>
                 ) : null}
-                <Button className="flex-1" disabled={mfaCode.trim().length < 6} onClick={() => mfaMutation.mutate()}>
-                  Verify now
-                </Button>
+                  <Button className="flex-1" data-testid="login-mfa-verify" disabled={mfaCode.trim().length < 6} onClick={() => mfaMutation.mutate()}>
+                    Verify now
+                  </Button>
               </div>
 
               <div className="flex justify-between text-sm">
@@ -207,6 +218,7 @@ const LoginPage = () => {
                 </Link>
                 <button
                   className="font-semibold text-slate-500"
+                  data-testid="login-mfa-continue"
                   onClick={() => {
                     setShowMfaModal(false);
                     navigate(nextPath, { replace: true });

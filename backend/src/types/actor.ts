@@ -3,6 +3,7 @@ interface ActorContext {
   roles?: string[];
   permissions?: string[];
   mfaVerified?: boolean;
+  mfaVerifiedAt?: Date;
   ipAddress?: string;
   sessionId?: string;
 }

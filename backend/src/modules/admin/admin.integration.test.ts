@@ -10,7 +10,11 @@ import { after, before, test } from "node:test";
 
 import {
   BookingStatus,
+  ConversationType,
   FraudSignalStatus,
+  MediaCategory,
+  MediaStatus,
+  MediaVisibility,
   ModerationCaseStatus,
   ModerationSeverity,
   NotificationChannel,
@@ -62,7 +66,7 @@ const loginUser = async (email: string) => {
   };
 };
 
-const elevateSessionMfa = async (accessToken: string): Promise<void> => {
+const elevateSessionMfa = async (accessToken: string, verifiedAt: Date = new Date()): Promise<void> => {
   const payload = verifyAccessToken(accessToken);
 
   await prisma.userSession.update({
@@ -70,7 +74,8 @@ const elevateSessionMfa = async (accessToken: string): Promise<void> => {
       id: payload.jti
     },
     data: {
-      mfaVerified: true
+      mfaVerified: true,
+      mfaVerifiedAt: verifiedAt
     }
   });
 };
@@ -128,7 +133,7 @@ after(async () => {
   await Promise.allSettled([redis.quit(), redisQueue.quit()]);
 });
 
-test("admin flow covers guarded actions, marketplace views, moderation, support operations, and broadcasts", async () => {
+test("admin flow covers guarded actions, marketplace views, moderation, support operations, and broadcasts", { concurrency: false }, async () => {
   const adminUser = await registerUser("admin", "Admin", "Operator");
   const supportUser = await registerUser("support", "Support", "Agent");
   const subjectUser = await registerUser("subject", "Subject", "User");
@@ -189,13 +194,63 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
   await prisma.userProfile.update({
     where: { userId: customer.userId },
     data: {
-      cityId: city.id
+      cityId: city.id,
+      bio: "Customer account used for admin integration coverage"
     }
   });
+
+  await prisma.userProfile.update({
+    where: { userId: worker.userId },
+    data: {
+      cityId: city.id,
+      bio: "Approved worker profile for admin coverage"
+    }
+  });
+
+  await prisma.userProfile.update({
+    where: { userId: subjectUser.userId },
+    data: {
+      bio: "Subject account for lifecycle control coverage"
+    }
+  });
+
+  const [customerMediaAsset, workerMediaAsset] = await Promise.all([
+    prisma.mediaAsset.create({
+      data: {
+        ownerUserId: customer.userId,
+        category: MediaCategory.verification_doc,
+        visibility: MediaVisibility.PRIVATE,
+        mimeType: "application/pdf",
+        sizeBytes: BigInt(4096),
+        bucket: "itest-admin",
+        storageKey: `itest/admin/${randomUUID()}.pdf`,
+        status: MediaStatus.READY,
+        uploadedAt: new Date(),
+        confirmedAt: new Date(),
+        finalCdnUrl: "https://cdn.example.com/itest/customer-verification.pdf"
+      }
+    }),
+    prisma.mediaAsset.create({
+      data: {
+        ownerUserId: worker.userId,
+        category: MediaCategory.portfolio_image,
+        visibility: MediaVisibility.PUBLIC,
+        mimeType: "image/jpeg",
+        sizeBytes: BigInt(8192),
+        bucket: "itest-admin",
+        storageKey: `itest/admin/${randomUUID()}.jpg`,
+        status: MediaStatus.READY,
+        uploadedAt: new Date(),
+        confirmedAt: new Date(),
+        finalCdnUrl: "https://cdn.example.com/itest/worker-portfolio.jpg"
+      }
+    })
+  ]);
 
   await prisma.workerCertification.create({
     data: {
       workerProfileId: workerProfile.id,
+      mediaAssetId: workerMediaAsset.id,
       title: "Electrical License",
       certificateUrl: "private/certifications/electrical-license.pdf",
       verificationStatus: VerificationStatus.APPROVED
@@ -216,6 +271,16 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
         workerProfileId: pendingWorkerProfile.id,
         status: VerificationStatus.SUBMITTED,
         submittedAt: new Date()
+      }
+    }),
+    prisma.workerPortfolioItem.create({
+      data: {
+        workerProfileId: workerProfile.id,
+        mediaAssetId: workerMediaAsset.id,
+        title: "Commercial rewiring project",
+        caption: "Portfolio evidence for admin detail coverage",
+        mediaUrl: "https://cdn.example.com/itest/worker-portfolio.jpg",
+        sortOrder: 1
       }
     })
   ]);
@@ -247,6 +312,47 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
         postId: postToDelete.id,
         authorUserId: worker.userId,
         body: "Admin comment delete target"
+      }
+    })
+  ]);
+
+  await Promise.all([
+    prisma.postLike.create({
+      data: {
+        postId: post.id,
+        userId: customer.userId
+      }
+    }),
+    prisma.postSave.create({
+      data: {
+        postId: post.id,
+        userId: customer.userId
+      }
+    }),
+    prisma.commentLike.create({
+      data: {
+        commentId: comment.id,
+        userId: customer.userId
+      }
+    }),
+    prisma.userFollow.create({
+      data: {
+        followerUserId: customer.userId,
+        targetType: "WORKER",
+        targetId: workerProfile.id
+      }
+    }),
+    prisma.userFollow.create({
+      data: {
+        followerUserId: subjectUser.userId,
+        targetType: "USER",
+        targetId: customer.userId
+      }
+    }),
+    prisma.customerSavedWorker.create({
+      data: {
+        userId: customer.userId,
+        workerProfileId: workerProfile.id
       }
     })
   ]);
@@ -285,6 +391,22 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(createBookingResponse.status, 201);
   const bookingId = createBookingResponse.body.data.id as string;
+
+  await prisma.conversation.create({
+    data: {
+      conversationType: ConversationType.SERVICE_REQUEST,
+      serviceRequestId,
+      participants: {
+        create: [{ userId: customer.userId }, { userId: worker.userId }]
+      },
+      messages: {
+        create: {
+          senderId: customer.userId,
+          body: "Need an update on the electrician visit."
+        }
+      }
+    }
+  });
 
   await prisma.booking.update({
     where: { id: bookingId },
@@ -376,6 +498,46 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
       score: 92
     }
   });
+  const bulkReport = await prisma.report.create({
+    data: {
+      reporterUserId: customer.userId,
+      entityType: "comment",
+      entityId: comment.id,
+      reason: "Bulk admin report coverage",
+      severity: ModerationSeverity.MEDIUM
+    }
+  });
+  const bulkModerationCase = await prisma.moderationCase.create({
+    data: {
+      reportId: bulkReport.id,
+      assignedAdminUserId: adminUser.userId,
+      status: ModerationCaseStatus.OPEN
+    }
+  });
+  const extraSupportTicket = await prisma.supportTicket.create({
+    data: {
+      openedByUserId: customer.userId,
+      subject: "Second admin coverage ticket",
+      body: "Second support ticket used for bulk admin coverage",
+      priority: "URGENT"
+    }
+  });
+  const [bulkFraudSignalA, bulkFraudSignalB] = await Promise.all([
+    prisma.fraudSignal.create({
+      data: {
+        userId: customer.userId,
+        signalKey: "ITEST_ADMIN_BULK_SIGNAL_A",
+        score: 77
+      }
+    }),
+    prisma.fraudSignal.create({
+      data: {
+        userId: customer.userId,
+        signalKey: "ITEST_ADMIN_BULK_SIGNAL_B",
+        score: 79
+      }
+    })
+  ]);
 
   const listUsersResponse = await api.get("/api/v1/admin/users?page=1&limit=20").set("Authorization", `Bearer ${adminSession.accessToken}`);
   assert.equal(listUsersResponse.status, 200);
@@ -387,6 +549,8 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(getUserResponse.status, 200);
   assert.equal(getUserResponse.body.data.id, subjectUser.userId);
+  assert.equal(Array.isArray(getUserResponse.body.data.activityCollections.posts), true);
+  assert.equal(typeof getUserResponse.body.data.profile.bio, "string");
 
   const suspendResponse = await api
     .post(`/api/v1/admin/users/${subjectUser.userId}/suspend`)
@@ -517,6 +681,10 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(workerDetailResponse.status, 200);
   assert.equal(workerDetailResponse.body.data.id, workerProfile.id);
+  assert.equal(workerDetailResponse.body.data.activityCollections.assignments.length >= 1, true);
+  assert.equal(workerDetailResponse.body.data.activityCollections.searchImpressions.length >= 1, true);
+  assert.equal(workerDetailResponse.body.data.activityCollections.reviewsReceived.length >= 1, true);
+  assert.equal(workerDetailResponse.body.data.recentMediaAssets.length >= 1, true);
 
   const rejectWorkerResponse = await api
     .post(`/api/v1/admin/workers/${pendingWorkerProfile.id}/reject-verification`)
@@ -603,6 +771,27 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(updateTicketResponse.status, 200);
 
+  const bulkSupportTicketsResponse = await api
+    .patch("/api/v1/admin/support-tickets/bulk")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      ticketIds: [ticketId, extraSupportTicket.id],
+      assignedSupportUserId: supportUser.userId,
+      status: "WAITING_USER"
+    });
+
+  assert.equal(bulkSupportTicketsResponse.status, 200);
+  assert.equal(bulkSupportTicketsResponse.body.data.updatedCount, 2);
+
+  const supportTicketsExportResponse = await api
+    .get("/api/v1/admin/support-tickets/export?status=WAITING_USER")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(supportTicketsExportResponse.status, 200);
+  assert.match(String(supportTicketsExportResponse.headers["content-type"]), /text\/csv/);
+  assert.match(supportTicketsExportResponse.text, /id,status,priority,subject/);
+  assert.match(supportTicketsExportResponse.text, new RegExp(ticketId));
+
   const fraudSignalsResponse = await api
     .get("/api/v1/admin/fraud-signals?page=1&limit=20")
     .set("Authorization", `Bearer ${adminSession.accessToken}`);
@@ -618,6 +807,27 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
     });
 
   assert.equal(actionFraudSignalResponse.status, 200);
+
+  const bulkFraudSignalsResponse = await api
+    .patch("/api/v1/admin/fraud-signals/bulk")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      signalIds: [bulkFraudSignalA.id, bulkFraudSignalB.id],
+      action: "DISMISS",
+      notes: "Bulk fraud dismissal from integration coverage"
+    });
+
+  assert.equal(bulkFraudSignalsResponse.status, 200);
+  assert.equal(bulkFraudSignalsResponse.body.data.updatedCount, 2);
+
+  const fraudSignalsExportResponse = await api
+    .get("/api/v1/admin/fraud-signals/export?status=DISMISSED")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(fraudSignalsExportResponse.status, 200);
+  assert.match(String(fraudSignalsExportResponse.headers["content-type"]), /text\/csv/);
+  assert.match(fraudSignalsExportResponse.text, /id,status,signalKey,score/);
+  assert.match(fraudSignalsExportResponse.text, new RegExp(bulkFraudSignalA.id));
 
   const postsResponse = await api
     .get("/api/v1/admin/posts?page=1&limit=20")
@@ -652,6 +862,27 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
   assert.equal(reportDetailResponse.status, 200);
   assert.equal(reportDetailResponse.body.data.id, report.id);
 
+  const bulkUpdateReportsResponse = await api
+    .patch("/api/v1/admin/reports/bulk")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      reportIds: [report.id, bulkReport.id],
+      status: "UNDER_REVIEW",
+      notes: "Bulk report triage from integration coverage"
+    });
+
+  assert.equal(bulkUpdateReportsResponse.status, 200);
+  assert.equal(bulkUpdateReportsResponse.body.data.updatedCount, 2);
+
+  const reportsExportResponse = await api
+    .get("/api/v1/admin/reports/export?status=UNDER_REVIEW")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(reportsExportResponse.status, 200);
+  assert.match(String(reportsExportResponse.headers["content-type"]), /text\/csv/);
+  assert.match(reportsExportResponse.text, /id,status,severity/);
+  assert.match(reportsExportResponse.text, new RegExp(report.id));
+
   const moderationCasesResponse = await api
     .get("/api/v1/admin/moderation-cases?page=1&limit=20")
     .set("Authorization", `Bearer ${adminSession.accessToken}`);
@@ -665,6 +896,27 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(moderationCaseDetailResponse.status, 200);
   assert.equal(moderationCaseDetailResponse.body.data.id, moderationCase.id);
+
+  const bulkModerationActionResponse = await api
+    .post("/api/v1/admin/moderation-cases/bulk-actions")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      caseIds: [moderationCase.id, bulkModerationCase.id],
+      actionType: "ESCALATE_REVIEW",
+      notes: "Bulk moderation from integration coverage"
+    });
+
+  assert.equal(bulkModerationActionResponse.status, 200);
+  assert.equal(bulkModerationActionResponse.body.data.updatedCount, 2);
+
+  const moderationCasesExportResponse = await api
+    .get("/api/v1/admin/moderation-cases/export?status=IN_REVIEW")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(moderationCasesExportResponse.status, 200);
+  assert.match(String(moderationCasesExportResponse.headers["content-type"]), /text\/csv/);
+  assert.match(moderationCasesExportResponse.text, /id,status,reportId/);
+  assert.match(moderationCasesExportResponse.text, new RegExp(moderationCase.id));
 
   const addModerationActionResponse = await api
     .post(`/api/v1/admin/moderation-cases/${moderationCase.id}/actions`)
@@ -711,6 +963,15 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(auditLogsResponse.status, 200);
   assert.equal(auditLogsResponse.body.pagination.total >= 1, true);
+
+  const auditLogsExportResponse = await api
+    .get("/api/v1/admin/audit-logs/export?action=REPORT_BULK_UPDATED")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(auditLogsExportResponse.status, 200);
+  assert.match(String(auditLogsExportResponse.headers["content-type"]), /text\/csv/);
+  assert.match(auditLogsExportResponse.text, /id,action,entityType/);
+  assert.match(auditLogsExportResponse.text, /REPORT_BULK_UPDATED/);
 
   const overviewAnalyticsResponse = await api
     .get("/api/v1/admin/analytics/overview")
@@ -822,10 +1083,76 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
     )
   );
 
+  const customerDetailResponse = await api
+    .get(`/api/v1/admin/users/${customer.userId}`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(customerDetailResponse.status, 200);
+  assert.equal(customerDetailResponse.body.data.activeSessions.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.profile.city.name, "Tema");
+  assert.equal(customerDetailResponse.body.data.activityCollections.posts.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.postLikes.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.postSaves.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.commentLikes.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.savedWorkers.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.messages.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.conversations.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.serviceRequests.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.bookings.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.notifications.length >= 1, true);
+  assert.equal(Array.isArray(customerDetailResponse.body.data.activityCollections.reviewsWritten), true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.reports.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.supportTickets.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.fraudSignals.length >= 1, true);
+  assert.equal(customerDetailResponse.body.data.activityCollections.mediaAssets.length >= 1, true);
+
+  const customerActiveSessionId = customerDetailResponse.body.data.activeSessions[0].id as string;
+
+  const revokeCustomerSessionResponse = await api
+    .post(`/api/v1/admin/users/${customer.userId}/sessions/${customerActiveSessionId}/revoke`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(revokeCustomerSessionResponse.status, 200);
+
+  const customerMeAfterAdminRevokeResponse = await api
+    .get("/api/v1/auth/me")
+    .set("Authorization", `Bearer ${customerSession.accessToken}`);
+
+  assert.equal(customerMeAfterAdminRevokeResponse.status, 401);
+  assert.equal(customerMeAfterAdminRevokeResponse.body.error.code, "AUTH_SESSION_EXPIRED");
+
+  const reloggedCustomerSession = await loginUser(customer.email);
+
+  const revokeAllCustomerSessionsResponse = await api
+    .post(`/api/v1/admin/users/${customer.userId}/sessions/revoke-all`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(revokeAllCustomerSessionsResponse.status, 200);
+  assert.equal(revokeAllCustomerSessionsResponse.body.data.revokedCount >= 1, true);
+
+  const customerMeAfterRevokeAllResponse = await api
+    .get("/api/v1/auth/me")
+    .set("Authorization", `Bearer ${reloggedCustomerSession.accessToken}`);
+
+  assert.equal(customerMeAfterRevokeAllResponse.status, 401);
+  assert.equal(customerMeAfterRevokeAllResponse.body.error.code, "AUTH_SESSION_EXPIRED");
+
   const updatedSignal = await prisma.fraudSignal.findUnique({
     where: { id: fraudSignal.id }
   });
   assert.equal(updatedSignal?.status, FraudSignalStatus.REVIEWED);
+
+  const dismissedBulkSignals = await prisma.fraudSignal.findMany({
+    where: {
+      id: {
+        in: [bulkFraudSignalA.id, bulkFraudSignalB.id]
+      }
+    },
+    select: {
+      status: true
+    }
+  });
+  assert.equal(dismissedBulkSignals.every((signal) => signal.status === FraudSignalStatus.DISMISSED), true);
 
   const deletedPost = await prisma.post.findUnique({
     where: { id: postToDelete.id },
@@ -844,4 +1171,158 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
     select: { id: true }
   });
   assert.equal(deletedReview, null);
+});
+
+test("admin writes require a fresh MFA step-up and role boundaries remain enforced", { concurrency: false }, async () => {
+  const adminUser = await registerUser("rbac-admin", "Admin", "Matrix");
+  const moderatorUser = await registerUser("rbac-moderator", "Moderator", "Matrix");
+  const supportUser = await registerUser("rbac-support", "Support", "Matrix");
+  const customer = await registerUser("rbac-customer", "Customer", "Matrix");
+
+  const featureFlagKey = buildSlug("rbac-flag");
+  const configKey = buildSlug("rbac-config");
+
+  await Promise.all([
+    adminRepository.assignRole(adminUser.userId, "ADMIN", adminUser.userId),
+    adminRepository.assignRole(moderatorUser.userId, "MODERATOR", adminUser.userId),
+    adminRepository.assignRole(supportUser.userId, "SUPPORT", adminUser.userId),
+    prisma.featureFlag.create({
+      data: {
+        flagKey: featureFlagKey,
+        description: "RBAC matrix feature flag",
+        defaultEnabled: false
+      }
+    }),
+    prisma.systemConfig.create({
+      data: {
+        configKey,
+        valueJson: {
+          enabled: false
+        }
+      }
+    }),
+    prisma.supportTicket.create({
+      data: {
+        openedByUserId: customer.userId,
+        subject: "RBAC coverage ticket",
+        body: "Need support assignment"
+      }
+    }),
+    prisma.report.create({
+      data: {
+        reporterUserId: customer.userId,
+        entityType: "post",
+        entityId: randomUUID(),
+        reason: "RBAC moderation report",
+        severity: ModerationSeverity.MEDIUM
+      }
+    })
+  ]);
+
+  const matrixReport = await prisma.report.findFirstOrThrow({
+    where: {
+      reporterUserId: customer.userId,
+      reason: "RBAC moderation report"
+    },
+    select: {
+      id: true
+    }
+  });
+
+  const [adminSession, moderatorSession, supportSession] = await Promise.all([
+    loginUser(adminUser.email),
+    loginUser(moderatorUser.email),
+    loginUser(supportUser.email)
+  ]);
+
+  await elevateSessionMfa(adminSession.accessToken, new Date(Date.now() - 30 * 60 * 1000));
+
+  const staleFeatureFlagResponse = await api
+    .patch(`/api/v1/admin/feature-flags/${featureFlagKey}`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      defaultEnabled: true
+    });
+
+  assert.equal(staleFeatureFlagResponse.status, 403);
+  assert.equal(staleFeatureFlagResponse.body.error.code, "MFA_REQUIRED");
+
+  const staleReportBulkResponse = await api
+    .patch("/api/v1/admin/reports/bulk")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      reportIds: [matrixReport.id],
+      status: "UNDER_REVIEW",
+      notes: "Trying bulk triage with stale MFA"
+    });
+
+  assert.equal(staleReportBulkResponse.status, 403);
+  assert.equal(staleReportBulkResponse.body.error.code, "MFA_REQUIRED");
+
+  await elevateSessionMfa(adminSession.accessToken);
+
+  const freshFeatureFlagResponse = await api
+    .patch(`/api/v1/admin/feature-flags/${featureFlagKey}`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      defaultEnabled: true
+    });
+
+  assert.equal(freshFeatureFlagResponse.status, 200);
+
+  const freshReportBulkResponse = await api
+    .patch("/api/v1/admin/reports/bulk")
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      reportIds: [matrixReport.id],
+      status: "UNDER_REVIEW",
+      notes: "Bulk triage after MFA refresh"
+    });
+
+  assert.equal(freshReportBulkResponse.status, 200);
+
+  const moderatorCanViewReports = await api
+    .get("/api/v1/admin/reports?page=1&limit=20")
+    .set("Authorization", `Bearer ${moderatorSession.accessToken}`);
+
+  assert.equal(moderatorCanViewReports.status, 200);
+
+  const moderatorCannotViewConfigs = await api
+    .get("/api/v1/admin/configs")
+    .set("Authorization", `Bearer ${moderatorSession.accessToken}`);
+
+  assert.equal(moderatorCannotViewConfigs.status, 403);
+  assert.equal(moderatorCannotViewConfigs.body.error.code, "PERMISSION_DENIED");
+
+  const supportCanViewTickets = await api
+    .get("/api/v1/admin/support-tickets?page=1&limit=20")
+    .set("Authorization", `Bearer ${supportSession.accessToken}`);
+
+  assert.equal(supportCanViewTickets.status, 200);
+
+  const supportCannotViewReports = await api
+    .get("/api/v1/admin/reports?page=1&limit=20")
+    .set("Authorization", `Bearer ${supportSession.accessToken}`);
+
+  assert.equal(supportCannotViewReports.status, 403);
+  assert.equal(supportCannotViewReports.body.error.code, "PERMISSION_DENIED");
+
+  const supportCannotUpdateConfig = await api
+    .patch(`/api/v1/admin/configs/${configKey}`)
+    .set("Authorization", `Bearer ${supportSession.accessToken}`)
+    .send({
+      value: {
+        enabled: true
+      }
+    });
+
+  assert.equal(supportCannotUpdateConfig.status, 403);
+  assert.equal(supportCannotUpdateConfig.body.error.code, "PERMISSION_DENIED");
+
+  const supportCannotRevokeSession = await api
+    .post(`/api/v1/admin/users/${customer.userId}/sessions/${randomUUID()}/revoke`)
+    .set("Authorization", `Bearer ${supportSession.accessToken}`);
+
+  assert.equal(supportCannotRevokeSession.status, 403);
+  assert.equal(supportCannotRevokeSession.body.error.code, "PERMISSION_DENIED");
 });

@@ -12,6 +12,7 @@ import {
   VerificationStatus
 } from "@prisma/client";
 
+import { buildCsv } from "../../lib/csv";
 import { buildPagination, getPaginationArgs, type PaginationInput } from "../../lib/pagination";
 import { prisma } from "../../lib/prisma";
 import { publicUserSelect } from "../../lib/public-user-select";
@@ -109,6 +110,20 @@ const resolveNotificationLink = (payload: Record<string, unknown>): string | nul
   return null;
 };
 
+interface AdminActivityCollectionItem {
+  id: string;
+  kind: string;
+  title: string;
+  subtitle?: string | null;
+  status?: string | null;
+  createdAt: Date;
+  linkPath?: string | null;
+  meta?: Array<{
+    label: string;
+    value: string;
+  }>;
+}
+
 class AdminService {
   constructor(
     private readonly repository: AdminRepository = new AdminRepository(),
@@ -131,6 +146,64 @@ class AdminService {
     return Object.keys(where).length > 0 ? where : undefined;
   }
 
+  private buildReportsWhere(query: {
+    status?: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+    entityType?: string;
+    severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  }): Prisma.ReportWhereInput {
+    return {
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.entityType ? { entityType: query.entityType } : {}),
+      ...(query.severity ? { severity: query.severity } : {})
+    };
+  }
+
+  private buildModerationCasesWhere(query: { status?: ModerationCaseStatus }): Prisma.ModerationCaseWhereInput {
+    return {
+      ...(query.status ? { status: query.status } : {})
+    };
+  }
+
+  private buildFraudSignalsWhere(query: {
+    status?: FraudSignalStatus;
+    signalKey?: string;
+    userId?: string;
+    minScore?: number;
+    from?: string;
+    to?: string;
+  }): Prisma.FraudSignalWhereInput {
+    const createdAt = this.buildDateRangeWhere(query.from, query.to);
+
+    return {
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.signalKey ? { signalKey: query.signalKey } : {}),
+      ...(query.userId ? { userId: query.userId } : {}),
+      ...(query.minScore !== undefined ? { score: { gte: new Prisma.Decimal(query.minScore) } } : {}),
+      ...(createdAt ? { createdAt } : {})
+    };
+  }
+
+  private buildAuditLogsWhere(query: {
+    action?: string;
+    entityType?: string;
+    entityId?: string;
+    adminUserId?: string;
+    from?: string;
+    to?: string;
+  }): Prisma.AdminAuditLogWhereInput {
+    return {
+      ...(query.action ? { action: query.action } : {}),
+      ...(query.entityType ? { entityType: query.entityType } : {}),
+      ...(query.entityId ? { entityId: query.entityId } : {}),
+      ...(query.adminUserId ? { adminUserId: query.adminUserId } : {}),
+      ...(query.from || query.to ? { createdAt: this.buildDateRangeWhere(query.from, query.to) } : {})
+    };
+  }
+
+  private buildExportFilename(prefix: string): string {
+    return `${prefix}-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+  }
+
   private async audit(
     actor: ActorContext,
     action: string,
@@ -145,7 +218,11 @@ class AdminService {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        profile: true,
+        profile: {
+          include: {
+            city: true
+          }
+        },
         workerProfile: {
           include: {
             tradeCategories: {
@@ -256,7 +333,17 @@ class AdminService {
       lastName: string;
       displayName: string | null;
       avatarUrl: string | null;
+      bio: string | null;
       cityId: string | null;
+      city: {
+        id: string;
+        slug: string;
+        name: string;
+        countryCode: string;
+        timezone: string;
+      } | null;
+      lat: Prisma.Decimal | null;
+      lng: Prisma.Decimal | null;
     } | null;
     workerProfile: {
       id: string;
@@ -285,7 +372,19 @@ class AdminService {
             firstName: user.profile.firstName,
             lastName: user.profile.lastName,
             avatarUrl: user.profile.avatarUrl,
-            cityId: user.profile.cityId
+            bio: user.profile.bio,
+            cityId: user.profile.cityId,
+            city: user.profile.city
+              ? {
+                  id: user.profile.city.id,
+                  slug: user.profile.city.slug,
+                  name: user.profile.city.name,
+                  countryCode: user.profile.city.countryCode,
+                  timezone: user.profile.city.timezone
+                }
+              : null,
+            lat: user.profile.lat?.toString() ?? null,
+            lng: user.profile.lng?.toString() ?? null
           }
         : null,
       workerProfile: user.workerProfile
@@ -325,15 +424,7 @@ class AdminService {
     };
   }
 
-  private sortActivityTimeline(items: Array<{
-    id: string;
-    kind: string;
-    title: string;
-    subtitle?: string | null;
-    status?: string | null;
-    createdAt: Date;
-    linkPath?: string | null;
-  }>) {
+  private sortActivityTimeline(items: AdminActivityCollectionItem[]) {
     return items
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
       .slice(0, 28);
@@ -364,9 +455,13 @@ class AdminService {
       recentComments,
       recentPostLikes,
       recentCommentLikes,
+      recentPostSaves,
       recentFollows,
+      recentFollowers,
+      recentSavedWorkers,
       recentReports,
       recentMessages,
+      recentConversations,
       recentNotifications,
       recentServiceRequests,
       recentBookings,
@@ -436,10 +531,57 @@ class AdminService {
           }
         }
       }),
+      prisma.postSave.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          post: {
+            select: {
+              id: true,
+              body: true,
+              visibility: true,
+              isDeleted: true
+            }
+          }
+        }
+      }),
       prisma.userFollow.findMany({
         where: { followerUserId: userId },
         orderBy: { createdAt: "desc" },
         take: 5
+      }),
+      prisma.userFollow.findMany({
+        where: {
+          targetType: "USER",
+          targetId: userId
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          followerUser: {
+            select: publicUserSelect
+          }
+        }
+      }),
+      prisma.customerSavedWorker.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          workerProfile: {
+            include: {
+              user: {
+                select: publicUserSelect
+              },
+              tradeCategories: {
+                include: {
+                  tradeCategory: true
+                }
+              }
+            }
+          }
+        }
       }),
       prisma.report.findMany({
         where: { reporterUserId: userId },
@@ -451,11 +593,60 @@ class AdminService {
         orderBy: { createdAt: "desc" },
         take: 5,
         include: {
+          attachments: {
+            select: {
+              id: true
+            }
+          },
           conversation: {
             select: {
               id: true,
               conversationType: true,
               serviceRequestId: true
+            }
+          }
+        }
+      }),
+      prisma.conversation.findMany({
+        where: {
+          participants: {
+            some: {
+              userId
+            }
+          }
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 5,
+        include: {
+          serviceRequest: {
+            select: {
+              id: true,
+              title: true,
+              status: true
+            }
+          },
+          participants: {
+            take: 3,
+            include: {
+              user: {
+                select: publicUserSelect
+              }
+            }
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              body: true,
+              messageType: true,
+              createdAt: true
+            }
+          },
+          _count: {
+            select: {
+              participants: true,
+              messages: true
             }
           }
         }
@@ -517,8 +708,8 @@ class AdminService {
       })
     ]);
 
-    const activityTimeline = this.sortActivityTimeline([
-      ...recentPosts.map((post) => ({
+    const activityCollections = {
+      posts: recentPosts.map<AdminActivityCollectionItem>((post) => ({
         id: `post:${post.id}`,
         kind: "POST",
         title: "Created post",
@@ -527,7 +718,7 @@ class AdminService {
         createdAt: post.createdAt,
         linkPath: `/content/post/${post.id}`
       })),
-      ...recentComments.map((comment) => ({
+      comments: recentComments.map<AdminActivityCollectionItem>((comment) => ({
         id: `comment:${comment.id}`,
         kind: "COMMENT",
         title: "Added comment",
@@ -536,7 +727,7 @@ class AdminService {
         createdAt: comment.createdAt,
         linkPath: `/content/comment/${comment.id}`
       })),
-      ...recentPostLikes.map((item) => ({
+      postLikes: recentPostLikes.map<AdminActivityCollectionItem>((item) => ({
         id: `post-like:${item.id}`,
         kind: "POST_LIKE",
         title: "Liked post",
@@ -544,7 +735,7 @@ class AdminService {
         createdAt: item.createdAt,
         linkPath: `/content/post/${item.post.id}`
       })),
-      ...recentCommentLikes.map((item) => ({
+      commentLikes: recentCommentLikes.map<AdminActivityCollectionItem>((item) => ({
         id: `comment-like:${item.id}`,
         kind: "COMMENT_LIKE",
         title: "Liked comment",
@@ -552,7 +743,16 @@ class AdminService {
         createdAt: item.createdAt,
         linkPath: `/content/comment/${item.comment.id}`
       })),
-      ...recentFollows.map((follow) => ({
+      postSaves: recentPostSaves.map<AdminActivityCollectionItem>((item) => ({
+        id: `post-save:${item.id}`,
+        kind: "POST_SAVE",
+        title: "Saved post",
+        subtitle: clipText(item.post.body),
+        status: item.post.isDeleted ? "DELETED" : item.post.visibility,
+        createdAt: item.createdAt,
+        linkPath: `/content/post/${item.post.id}`
+      })),
+      follows: recentFollows.map<AdminActivityCollectionItem>((follow) => ({
         id: `follow:${follow.id}`,
         kind: "FOLLOW",
         title: `Followed ${follow.targetType.toLowerCase()}`,
@@ -560,7 +760,30 @@ class AdminService {
         createdAt: follow.createdAt,
         linkPath: resolveFollowLink(follow.targetType, follow.targetId)
       })),
-      ...recentReports.map((report) => ({
+      followers: recentFollowers.map<AdminActivityCollectionItem>((follow) => ({
+        id: `follower:${follow.id}`,
+        kind: "FOLLOWER",
+        title: "Gained follower",
+        subtitle: getDisplayName(follow.followerUser.profile) ?? follow.followerUser.email ?? follow.followerUser.id,
+        createdAt: follow.createdAt,
+        linkPath: `/users/${follow.followerUser.id}`,
+        meta: [
+          {
+            label: "Target type",
+            value: follow.targetType
+          }
+        ]
+      })),
+      savedWorkers: recentSavedWorkers.map<AdminActivityCollectionItem>((item) => ({
+        id: `saved-worker:${item.id}`,
+        kind: "SAVED_WORKER",
+        title: getDisplayName(item.workerProfile.user.profile) ?? item.workerProfile.user.email ?? item.workerProfile.id,
+        subtitle: item.workerProfile.headline ?? (item.workerProfile.tradeCategories.map((entry) => entry.tradeCategory.name).join(", ") || "Saved worker profile"),
+        status: item.workerProfile.verificationStatus,
+        createdAt: item.createdAt,
+        linkPath: `/workers/${item.workerProfile.id}`
+      })),
+      reports: recentReports.map<AdminActivityCollectionItem>((report) => ({
         id: `report:${report.id}`,
         kind: "REPORT",
         title: `Filed ${report.severity.toLowerCase()} report`,
@@ -569,15 +792,50 @@ class AdminService {
         createdAt: report.createdAt,
         linkPath: `/reports/${report.id}`
       })),
-      ...recentMessages.map((message) => ({
+      messages: recentMessages.map<AdminActivityCollectionItem>((message) => ({
         id: `message:${message.id}`,
         kind: "MESSAGE",
         title: `Sent ${message.messageType.toLowerCase()} message`,
         subtitle: clipText(message.body) || `Conversation ${message.conversation.conversationType.toLowerCase()}`,
         createdAt: message.createdAt,
-        linkPath: message.conversation.serviceRequestId ? `/service-requests/${message.conversation.serviceRequestId}` : null
+        linkPath: message.conversation.serviceRequestId ? `/service-requests/${message.conversation.serviceRequestId}` : null,
+        meta: [
+          {
+            label: "Conversation",
+            value: message.conversation.conversationType
+          },
+          {
+            label: "Attachments",
+            value: String(message.attachments.length)
+          }
+        ]
       })),
-      ...recentNotifications.map((notification) => ({
+      conversations: recentConversations.map<AdminActivityCollectionItem>((conversation) => ({
+        id: `conversation:${conversation.id}`,
+        kind: "CONVERSATION",
+        title:
+          conversation.serviceRequest?.title ??
+          `${conversation.conversationType.replaceAll("_", " ")} conversation`,
+        subtitle:
+          clipText(conversation.messages[0]?.body) ||
+          conversation.participants
+            .map((entry) => getDisplayName(entry.user.profile) ?? entry.user.email ?? entry.user.id)
+            .join(" · "),
+        status: conversation.serviceRequest?.status ?? conversation.conversationType,
+        createdAt: conversation.updatedAt,
+        linkPath: conversation.serviceRequestId ? `/service-requests/${conversation.serviceRequestId}` : null,
+        meta: [
+          {
+            label: "Participants",
+            value: String(conversation._count.participants)
+          },
+          {
+            label: "Messages",
+            value: String(conversation._count.messages)
+          }
+        ]
+      })),
+      notifications: recentNotifications.map<AdminActivityCollectionItem>((notification) => ({
         id: `notification:${notification.id}`,
         kind: "NOTIFICATION",
         title: notification.notificationType.replaceAll("_", " "),
@@ -591,7 +849,7 @@ class AdminService {
         createdAt: notification.createdAt,
         linkPath: resolveNotificationLink(notification.payloadJson as Record<string, unknown>)
       })),
-      ...recentServiceRequests.map((request) => ({
+      serviceRequests: recentServiceRequests.map<AdminActivityCollectionItem>((request) => ({
         id: `request:${request.id}`,
         kind: "SERVICE_REQUEST",
         title: request.title,
@@ -600,7 +858,7 @@ class AdminService {
         createdAt: request.requestedAt,
         linkPath: `/service-requests/${request.id}`
       })),
-      ...recentBookings.map((booking) => ({
+      bookings: recentBookings.map<AdminActivityCollectionItem>((booking) => ({
         id: `booking:${booking.id}`,
         kind: "BOOKING",
         title: booking.serviceRequest?.title ?? "Booking",
@@ -609,7 +867,7 @@ class AdminService {
         createdAt: booking.createdAt,
         linkPath: `/bookings/${booking.id}`
       })),
-      ...recentReviewsWritten.map((review) => ({
+      reviewsWritten: recentReviewsWritten.map<AdminActivityCollectionItem>((review) => ({
         id: `review-written:${review.id}`,
         kind: "REVIEW_WRITTEN",
         title: `Wrote ${review.rating}/5 review`,
@@ -617,7 +875,7 @@ class AdminService {
         createdAt: review.createdAt,
         linkPath: `/content/review/${review.id}`
       })),
-      ...recentReviewsReceived.map((review) => ({
+      reviewsReceived: recentReviewsReceived.map<AdminActivityCollectionItem>((review) => ({
         id: `review-received:${review.id}`,
         kind: "REVIEW_RECEIVED",
         title: `Received ${review.rating}/5 review`,
@@ -625,7 +883,7 @@ class AdminService {
         createdAt: review.createdAt,
         linkPath: `/content/review/${review.id}`
       })),
-      ...recentSupportTickets.map((ticket) => ({
+      supportTickets: recentSupportTickets.map<AdminActivityCollectionItem>((ticket) => ({
         id: `support:${ticket.id}`,
         kind: "SUPPORT_TICKET",
         title: ticket.subject,
@@ -634,7 +892,7 @@ class AdminService {
         createdAt: ticket.createdAt,
         linkPath: `/support-tickets/${ticket.id}`
       })),
-      ...recentFraudSignals.map((signal) => ({
+      fraudSignals: recentFraudSignals.map<AdminActivityCollectionItem>((signal) => ({
         id: `fraud:${signal.id}`,
         kind: "FRAUD_SIGNAL",
         title: signal.signalKey.replaceAll("_", " "),
@@ -643,15 +901,27 @@ class AdminService {
         createdAt: signal.createdAt,
         linkPath: `/fraud-signals/${signal.id}`
       })),
-      ...recentMediaAssets.map((asset) => ({
+      mediaAssets: recentMediaAssets.map<AdminActivityCollectionItem>((asset) => ({
         id: `media:${asset.id}`,
         kind: "MEDIA",
         title: asset.originalFilename ?? asset.category,
         subtitle: `${asset.category} · ${asset.status.toLowerCase()}`,
         status: asset.status,
-        createdAt: asset.createdAt
+        createdAt: asset.createdAt,
+        meta: [
+          {
+            label: "Visibility",
+            value: asset.visibility
+          },
+          {
+            label: "Mime",
+            value: asset.mimeType
+          }
+        ]
       }))
-    ]);
+    };
+
+    const activityTimeline = this.sortActivityTimeline(Object.values(activityCollections).flat());
 
     return {
       activitySummary: {
@@ -675,6 +945,7 @@ class AdminService {
         fraudSignals: fraudSignalsCount,
         mediaAssets: mediaAssetsCount
       },
+      activityCollections,
       recentMediaAssets: recentMediaAssets.map((asset) => this.mapMediaAssetSummary(asset)),
       activityTimeline
     };
@@ -682,7 +953,7 @@ class AdminService {
 
   private async getWorkerActivitySnapshot(workerId: string, userId: string) {
     const userActivity = await this.getUserActivitySnapshot(userId);
-    const [assignmentCount, bookingCount, savedByCount, searchImpressionsCount, recentAssignments, recentBookings, recentImpressions] = await Promise.all([
+    const [assignmentCount, bookingCount, savedByCount, searchImpressionsCount, recentAssignments, recentBookings, recentSavedByUsers, recentImpressions] = await Promise.all([
       prisma.serviceRequestAssignment.count({ where: { workerProfileId: workerId } }),
       prisma.booking.count({ where: { workerProfileId: workerId } }),
       prisma.customerSavedWorker.count({ where: { workerProfileId: workerId } }),
@@ -714,6 +985,16 @@ class AdminService {
           }
         }
       }),
+      prisma.customerSavedWorker.findMany({
+        where: { workerProfileId: workerId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          user: {
+            select: publicUserSelect
+          }
+        }
+      }),
       prisma.searchImpression.findMany({
         where: { workerProfileId: workerId },
         orderBy: { createdAt: "desc" },
@@ -721,9 +1002,9 @@ class AdminService {
       })
     ]);
 
-    const workerTimeline = this.sortActivityTimeline([
-      ...userActivity.activityTimeline,
-      ...recentAssignments.map((assignment) => ({
+    const workerCollections = {
+      ...userActivity.activityCollections,
+      assignments: recentAssignments.map<AdminActivityCollectionItem>((assignment) => ({
         id: `assignment:${assignment.id}`,
         kind: "ASSIGNMENT",
         title: assignment.serviceRequest.title,
@@ -732,7 +1013,7 @@ class AdminService {
         createdAt: assignment.assignedAt,
         linkPath: `/service-requests/${assignment.serviceRequest.id}`
       })),
-      ...recentBookings.map((booking) => ({
+      bookingsAsWorker: recentBookings.map<AdminActivityCollectionItem>((booking) => ({
         id: `worker-booking:${booking.id}`,
         kind: "WORKER_BOOKING",
         title: booking.serviceRequest.title,
@@ -741,14 +1022,35 @@ class AdminService {
         createdAt: booking.createdAt,
         linkPath: `/bookings/${booking.id}`
       })),
-      ...recentImpressions.map((impression) => ({
+      savedByUsers: recentSavedByUsers.map<AdminActivityCollectionItem>((entry) => ({
+        id: `saved-by:${entry.id}`,
+        kind: "SAVED_BY_USER",
+        title: getDisplayName(entry.user.profile) ?? entry.user.email ?? entry.user.id,
+        subtitle: "Saved this worker profile",
+        status: entry.user.status,
+        createdAt: entry.createdAt,
+        linkPath: `/users/${entry.user.id}`
+      })),
+      searchImpressions: recentImpressions.map<AdminActivityCollectionItem>((impression) => ({
         id: `impression:${impression.id}`,
         kind: "SEARCH_IMPRESSION",
         title: "Appeared in search",
         subtitle: impression.queryText ? `Query: ${impression.queryText}` : "Marketplace search impression",
-        createdAt: impression.createdAt
+        createdAt: impression.createdAt,
+        meta: [
+          {
+            label: "Rank",
+            value: String(impression.rankPosition)
+          },
+          {
+            label: "City",
+            value: impression.cityId ?? "Unknown"
+          }
+        ]
       }))
-    ]);
+    };
+
+    const workerTimeline = this.sortActivityTimeline(Object.values(workerCollections).flat());
 
     return {
       activitySummary: {
@@ -758,6 +1060,7 @@ class AdminService {
         savedByUsers: savedByCount,
         searchImpressions: searchImpressionsCount
       },
+      activityCollections: workerCollections,
       recentMediaAssets: userActivity.recentMediaAssets,
       activityTimeline: workerTimeline
     };
@@ -800,7 +1103,11 @@ class AdminService {
       prisma.user.findMany({
         where,
         include: {
-          profile: true,
+          profile: {
+            include: {
+              city: true
+            }
+          },
           workerProfile: true,
           adminAssignments: {
             include: {
@@ -860,11 +1167,13 @@ class AdminService {
         deviceType: session.deviceType,
         ipAddress: session.ipAddress,
         mfaVerified: session.mfaVerified,
+        mfaVerifiedAt: session.mfaVerifiedAt,
         mfaMethod: session.mfaMethod,
         createdAt: session.createdAt,
         expiresAt: session.expiresAt
       })),
       activitySummary: activitySnapshot.activitySummary,
+      activityCollections: activitySnapshot.activityCollections,
       recentMediaAssets: activitySnapshot.recentMediaAssets,
       activityTimeline: activitySnapshot.activityTimeline
     };
@@ -906,6 +1215,47 @@ class AdminService {
     });
 
     await this.audit(actor, "USER_REACTIVATED", "user", userId, { notes: data.notes ?? null });
+  }
+
+  async revokeUserSession(actor: ActorContext, userId: string, sessionId: string) {
+    await this.requireUser(userId);
+
+    const result = await prisma.userSession.updateMany({
+      where: {
+        id: sessionId,
+        userId,
+        revokedAt: null
+      },
+      data: {
+        revokedAt: new Date()
+      }
+    });
+
+    if (result.count === 0) {
+      throw Errors.USER_SESSION_NOT_FOUND();
+    }
+
+    await this.audit(actor, "USER_SESSION_REVOKED", "user", userId, { sessionId });
+  }
+
+  async revokeAllUserSessions(actor: ActorContext, userId: string) {
+    await this.requireUser(userId);
+
+    const result = await prisma.userSession.updateMany({
+      where: {
+        userId,
+        revokedAt: null
+      },
+      data: {
+        revokedAt: new Date()
+      }
+    });
+
+    await this.audit(actor, "USER_ALL_SESSIONS_REVOKED", "user", userId, { revokedCount: result.count });
+
+    return {
+      revokedCount: result.count
+    };
   }
 
   async listWorkers(
@@ -995,6 +1345,7 @@ class AdminService {
         featuredSubscriptions: worker.featuredSubscriptions.length,
         subscriptionInvoices: worker.subscriptionInvoices.length
       },
+      activityCollections: activitySnapshot.activityCollections,
       recentMediaAssets: activitySnapshot.recentMediaAssets,
       activityTimeline: activitySnapshot.activityTimeline
     };
@@ -1186,11 +1537,7 @@ class AdminService {
     pagination: PaginationInput
   ) {
     const args = getPaginationArgs(pagination);
-    const where: Prisma.ReportWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.entityType ? { entityType: query.entityType } : {}),
-      ...(query.severity ? { severity: query.severity } : {})
-    };
+    const where = this.buildReportsWhere(query);
 
     const [items, total] = await Promise.all([
       prisma.report.findMany({
@@ -1254,11 +1601,99 @@ class AdminService {
     return report;
   }
 
+  async bulkUpdateReports(
+    actor: ActorContext,
+    data: {
+      reportIds: string[];
+      status: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+      notes?: string;
+    }
+  ) {
+    const reportIds = Array.from(new Set(data.reportIds));
+    const result = await prisma.report.updateMany({
+      where: {
+        id: {
+          in: reportIds
+        }
+      },
+      data: {
+        status: data.status
+      }
+    });
+
+    await this.audit(actor, "REPORT_BULK_UPDATED", "report", undefined, {
+      reportIds,
+      status: data.status,
+      notes: data.notes ? stripHtml(data.notes) : null,
+      updatedCount: result.count
+    });
+
+    return {
+      updatedCount: result.count
+    };
+  }
+
+  async exportReports(query: {
+    status?: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+    entityType?: string;
+    severity?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  }) {
+    const items = await prisma.report.findMany({
+      where: this.buildReportsWhere(query),
+      include: {
+        reporterUser: {
+          select: publicUserSelect
+        },
+        moderationCases: {
+          select: {
+            id: true,
+            status: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    const columns = [
+      "id",
+      "status",
+      "severity",
+      "reason",
+      "entityType",
+      "entityId",
+      "reporterUserId",
+      "reporterEmail",
+      "reporterName",
+      "moderationCaseCount",
+      "moderationCaseIds",
+      "createdAt"
+    ];
+    const rows = items.map((item) => ({
+      id: item.id,
+      status: item.status,
+      severity: item.severity,
+      reason: item.reason,
+      entityType: item.entityType,
+      entityId: item.entityId,
+      reporterUserId: item.reporterUserId,
+      reporterEmail: item.reporterUser?.email ?? "",
+      reporterName: getDisplayName(item.reporterUser?.profile) ?? "",
+      moderationCaseCount: item.moderationCases.length,
+      moderationCaseIds: item.moderationCases.map((moderationCase) => moderationCase.id).join(";"),
+      createdAt: item.createdAt
+    }));
+
+    return {
+      filename: this.buildExportFilename("admin-reports"),
+      csv: buildCsv(columns, rows)
+    };
+  }
+
   async listModerationCases(query: { status?: ModerationCaseStatus }, pagination: PaginationInput) {
     const args = getPaginationArgs(pagination);
-    const where: Prisma.ModerationCaseWhereInput = {
-      ...(query.status ? { status: query.status } : {})
-    };
+    const where = this.buildModerationCasesWhere(query);
 
     const [items, total] = await Promise.all([
       prisma.moderationCase.findMany({
@@ -1322,6 +1757,63 @@ class AdminService {
     return moderationCase;
   }
 
+  async exportModerationCases(query: { status?: ModerationCaseStatus }) {
+    const items = await prisma.moderationCase.findMany({
+      where: this.buildModerationCasesWhere(query),
+      include: {
+        report: true,
+        assignedAdminUser: {
+          select: publicUserSelect
+        },
+        actions: {
+          select: {
+            id: true,
+            actionType: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    const columns = [
+      "id",
+      "status",
+      "reportId",
+      "reportReason",
+      "reportEntityType",
+      "reportEntityId",
+      "assignedAdminUserId",
+      "assignedAdminEmail",
+      "assignedAdminName",
+      "actionCount",
+      "actionTypes",
+      "createdAt",
+      "updatedAt"
+    ];
+    const rows = items.map((item) => ({
+      id: item.id,
+      status: item.status,
+      reportId: item.reportId ?? "",
+      reportReason: item.report?.reason ?? "",
+      reportEntityType: item.report?.entityType ?? "",
+      reportEntityId: item.report?.entityId ?? "",
+      assignedAdminUserId: item.assignedAdminUserId ?? "",
+      assignedAdminEmail: item.assignedAdminUser?.email ?? "",
+      assignedAdminName: getDisplayName(item.assignedAdminUser?.profile) ?? "",
+      actionCount: item.actions.length,
+      actionTypes: item.actions.map((action) => action.actionType).join(";"),
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }));
+
+    return {
+      filename: this.buildExportFilename("admin-moderation-cases"),
+      csv: buildCsv(columns, rows)
+    };
+  }
+
   async addModerationAction(
     actor: ActorContext,
     caseId: string,
@@ -1365,6 +1857,47 @@ class AdminService {
     });
   }
 
+  async bulkAddModerationActions(
+    actor: ActorContext,
+    data: {
+      caseIds: string[];
+      actionType: string;
+      notes?: string;
+    }
+  ) {
+    const caseIds = Array.from(new Set(data.caseIds));
+    const moderationCases = await prisma.moderationCase.findMany({
+      where: {
+        id: {
+          in: caseIds
+        }
+      },
+      include: {
+        report: true
+      }
+    });
+
+    for (const moderationCase of moderationCases) {
+      await this.addModerationAction(actor, moderationCase.id, {
+        actionType: data.actionType,
+        entityType: moderationCase.report?.entityType ?? "moderation_case",
+        entityId: moderationCase.report?.entityId ?? moderationCase.id,
+        notes: data.notes
+      });
+    }
+
+    await this.audit(actor, "MODERATION_CASE_BULK_ACTION_ADDED", "moderation_case", undefined, {
+      caseIds: moderationCases.map((moderationCase) => moderationCase.id),
+      actionType: data.actionType,
+      notes: data.notes ? stripHtml(data.notes) : null,
+      updatedCount: moderationCases.length
+    });
+
+    return {
+      updatedCount: moderationCases.length
+    };
+  }
+
   async listSupportTickets(
     query: {
       status?: SupportTicketStatus;
@@ -1375,6 +1908,67 @@ class AdminService {
     return this.supportService.adminListTickets(query, pagination);
   }
 
+  async exportSupportTickets(query: {
+    status?: SupportTicketStatus;
+    priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  }) {
+    const items = await prisma.supportTicket.findMany({
+      where: {
+        ...(query.status ? { status: query.status } : {}),
+        ...(query.priority ? { priority: query.priority } : {})
+      },
+      include: {
+        openedByUser: {
+          select: publicUserSelect
+        },
+        assignedSupportUser: {
+          select: publicUserSelect
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    const columns = [
+      "id",
+      "status",
+      "priority",
+      "subject",
+      "openedByUserId",
+      "openedByEmail",
+      "openedByName",
+      "assignedSupportUserId",
+      "assignedSupportEmail",
+      "assignedSupportName",
+      "relatedEntityType",
+      "relatedEntityId",
+      "createdAt",
+      "updatedAt"
+    ];
+    const rows = items.map((item) => ({
+      id: item.id,
+      status: item.status,
+      priority: item.priority,
+      subject: item.subject,
+      openedByUserId: item.openedByUserId,
+      openedByEmail: item.openedByUser?.email ?? "",
+      openedByName: getDisplayName(item.openedByUser?.profile) ?? "",
+      assignedSupportUserId: item.assignedSupportUserId ?? "",
+      assignedSupportEmail: item.assignedSupportUser?.email ?? "",
+      assignedSupportName: getDisplayName(item.assignedSupportUser?.profile) ?? "",
+      relatedEntityType: item.relatedEntityType ?? "",
+      relatedEntityId: item.relatedEntityId ?? "",
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    }));
+
+    return {
+      filename: this.buildExportFilename("admin-support-tickets"),
+      csv: buildCsv(columns, rows)
+    };
+  }
+
   async assignSupportTicket(actor: ActorContext, ticketId: string, assignedSupportUserId: string) {
     await this.supportService.assignTicket(actor, ticketId, assignedSupportUserId);
     await this.audit(actor, "SUPPORT_TICKET_ASSIGNED", "support_ticket", ticketId, { assignedSupportUserId });
@@ -1383,6 +1977,38 @@ class AdminService {
   async updateSupportTicketStatus(actor: ActorContext, ticketId: string, status: SupportTicketStatus) {
     await this.supportService.updateTicketStatus(actor, ticketId, status);
     await this.audit(actor, "SUPPORT_TICKET_STATUS_UPDATED", "support_ticket", ticketId, { status });
+  }
+
+  async bulkUpdateSupportTickets(
+    actor: ActorContext,
+    data: {
+      ticketIds: string[];
+      assignedSupportUserId?: string;
+      status?: SupportTicketStatus;
+    }
+  ) {
+    const ticketIds = Array.from(new Set(data.ticketIds));
+
+    for (const ticketId of ticketIds) {
+      if (data.assignedSupportUserId) {
+        await this.assignSupportTicket(actor, ticketId, data.assignedSupportUserId);
+      }
+
+      if (data.status) {
+        await this.updateSupportTicketStatus(actor, ticketId, data.status);
+      }
+    }
+
+    await this.audit(actor, "SUPPORT_TICKETS_BULK_UPDATED", "support_ticket", undefined, {
+      ticketIds,
+      assignedSupportUserId: data.assignedSupportUserId ?? null,
+      status: data.status ?? null,
+      updatedCount: ticketIds.length
+    });
+
+    return {
+      updatedCount: ticketIds.length
+    };
   }
 
   async listAuditLogs(
@@ -1397,13 +2023,7 @@ class AdminService {
     pagination: PaginationInput
   ) {
     const args = getPaginationArgs(pagination);
-    const where: Prisma.AdminAuditLogWhereInput = {
-      ...(query.action ? { action: query.action } : {}),
-      ...(query.entityType ? { entityType: query.entityType } : {}),
-      ...(query.entityId ? { entityId: query.entityId } : {}),
-      ...(query.adminUserId ? { adminUserId: query.adminUserId } : {}),
-      ...(query.from || query.to ? { createdAt: this.buildDateRangeWhere(query.from, query.to) } : {})
-    };
+    const where = this.buildAuditLogsWhere(query);
 
     const [items, total] = await Promise.all([
       prisma.adminAuditLog.findMany({
@@ -1425,6 +2045,55 @@ class AdminService {
     return {
       data: items,
       pagination: buildPagination(pagination.page, pagination.limit, total)
+    };
+  }
+
+  async exportAuditLogs(query: {
+    action?: string;
+    entityType?: string;
+    entityId?: string;
+    adminUserId?: string;
+    from?: string;
+    to?: string;
+  }) {
+    const items = await prisma.adminAuditLog.findMany({
+      where: this.buildAuditLogsWhere(query),
+      include: {
+        adminUser: {
+          select: publicUserSelect
+        }
+      },
+      orderBy: {
+        createdAt: "desc"
+      }
+    });
+
+    const columns = [
+      "id",
+      "action",
+      "entityType",
+      "entityId",
+      "adminUserId",
+      "adminEmail",
+      "adminName",
+      "metadataJson",
+      "createdAt"
+    ];
+    const rows = items.map((item) => ({
+      id: item.id,
+      action: item.action,
+      entityType: item.entityType ?? "",
+      entityId: item.entityId ?? "",
+      adminUserId: item.adminUserId ?? "",
+      adminEmail: item.adminUser?.email ?? "",
+      adminName: getDisplayName(item.adminUser?.profile) ?? "",
+      metadataJson: item.metadataJson ?? {},
+      createdAt: item.createdAt
+    }));
+
+    return {
+      filename: this.buildExportFilename("admin-audit-logs"),
+      csv: buildCsv(columns, rows)
     };
   }
 
@@ -2229,14 +2898,7 @@ class AdminService {
     pagination: PaginationInput
   ) {
     const args = getPaginationArgs(pagination);
-    const createdAt = this.buildDateRangeWhere(query.from, query.to);
-    const where: Prisma.FraudSignalWhereInput = {
-      ...(query.status ? { status: query.status } : {}),
-      ...(query.signalKey ? { signalKey: query.signalKey } : {}),
-      ...(query.userId ? { userId: query.userId } : {}),
-      ...(query.minScore !== undefined ? { score: { gte: new Prisma.Decimal(query.minScore) } } : {}),
-      ...(createdAt ? { createdAt } : {})
-    };
+    const where = this.buildFraudSignalsWhere(query);
 
     const [items, total] = await Promise.all([
       prisma.fraudSignal.findMany({
@@ -2256,6 +2918,55 @@ class AdminService {
     return {
       data: items,
       pagination: buildPagination(pagination.page, pagination.limit, total)
+    };
+  }
+
+  async exportFraudSignals(query: {
+    status?: FraudSignalStatus;
+    signalKey?: string;
+    userId?: string;
+    minScore?: number;
+    from?: string;
+    to?: string;
+  }) {
+    const items = await prisma.fraudSignal.findMany({
+      where: this.buildFraudSignalsWhere(query),
+      include: {
+        user: {
+          select: publicUserSelect
+        }
+      },
+      orderBy: [{ score: "desc" }, { createdAt: "desc" }]
+    });
+
+    const columns = [
+      "id",
+      "status",
+      "signalKey",
+      "score",
+      "userId",
+      "userEmail",
+      "userName",
+      "entityType",
+      "entityId",
+      "createdAt"
+    ];
+    const rows = items.map((item) => ({
+      id: item.id,
+      status: item.status,
+      signalKey: item.signalKey,
+      score: item.score,
+      userId: item.userId ?? "",
+      userEmail: item.user?.email ?? "",
+      userName: getDisplayName(item.user?.profile) ?? "",
+      entityType: item.entityType ?? "",
+      entityId: item.entityId ?? "",
+      createdAt: item.createdAt
+    }));
+
+    return {
+      filename: this.buildExportFilename("admin-fraud-signals"),
+      csv: buildCsv(columns, rows)
     };
   }
 
@@ -2326,6 +3037,34 @@ class AdminService {
       notes: data.notes ?? null,
       moderationCaseId: data.moderationCaseId ?? null
     });
+  }
+
+  async bulkActionFraudSignals(
+    actor: ActorContext,
+    data: {
+      signalIds: string[];
+      action: "REVIEW" | "DISMISS" | "ACTION";
+      notes?: string;
+      moderationCaseId?: string;
+    }
+  ) {
+    const signalIds = Array.from(new Set(data.signalIds));
+
+    for (const signalId of signalIds) {
+      await this.actionFraudSignal(actor, signalId, data);
+    }
+
+    await this.audit(actor, "FRAUD_SIGNALS_BULK_UPDATED", "fraud_signal", undefined, {
+      signalIds,
+      action: data.action,
+      notes: data.notes ?? null,
+      moderationCaseId: data.moderationCaseId ?? null,
+      updatedCount: signalIds.length
+    });
+
+    return {
+      updatedCount: signalIds.length
+    };
   }
 
   async getContent(entityType: "post" | "comment" | "review" | "message", entityId: string) {
