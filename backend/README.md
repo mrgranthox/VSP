@@ -255,6 +255,55 @@ Default fixture users:
 
 Override the super admin email with `SEED_ADMIN_EMAIL` and the shared fixture password with `SEED_ADMIN_PASSWORD`.
 
+## MFA Setup
+
+Use this flow after the backend is running and the seed has created the admin users.
+
+### Admin UI flow
+
+1. Sign in to the admin frontend with one of:
+   - `superadmin@vocationalplatform.com`
+   - `admin@vocationalplatform.com`
+   - `moderator@vocationalplatform.com`
+   - `support@vocationalplatform.com`
+2. Use the shared seed password:
+
+   ```text
+   Change-This-Password-123!
+   ```
+
+3. Open `My Profile` or go directly to `/profile/mfa` in the admin frontend.
+4. Under `TOTP setup`, click `Start TOTP setup`.
+5. Scan the QR code with an authenticator app such as Google Authenticator, 1Password, or Authy. If needed, use the displayed secret manually.
+6. Enter the 6-digit code from the authenticator app and click `Verify setup`.
+7. Save the returned backup codes somewhere safe.
+8. For dangerous admin actions, use the `Session step-up` panel on the same page to verify the current session with:
+   - TOTP
+   - SMS
+   - backup code
+
+### SMS MFA prerequisites
+
+For real SMS MFA, set these env vars and restart the backend:
+
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_VERIFY_SERVICE_SID`
+- `TWILIO_VERIFY_MOCK_MODE=false`
+
+If `TWILIO_VERIFY_MOCK_MODE=true`, the SMS path stays in mock mode for local development.
+
+### API endpoints used by the UI
+
+The admin/profile MFA flow calls these backend endpoints:
+
+- `POST /api/v1/auth/mfa/setup`
+- `POST /api/v1/auth/mfa/verify-setup`
+- `POST /api/v1/auth/mfa/challenge/request`
+- `POST /api/v1/auth/mfa/challenge`
+- `GET /api/v1/auth/mfa/backup-codes`
+- `POST /api/v1/auth/mfa/disable`
+
 ## Health Checks
 
 - API liveness: `GET /api/v1/health`

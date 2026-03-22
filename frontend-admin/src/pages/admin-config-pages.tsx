@@ -216,6 +216,7 @@ const ConfigsPage = () => {
   const [search, setSearch] = useState("");
   const [selectedConfigKey, setSelectedConfigKey] = useState(configKey ?? "");
   const [configDraft, setConfigDraft] = useState("");
+  const [confirmConfigUpdate, setConfirmConfigUpdate] = useState(false);
 
   const configsQuery = useQuery({
     queryKey: ["admin", "configs"],
@@ -275,10 +276,12 @@ const ConfigsPage = () => {
   useEffect(() => {
     if (selectedConfig) {
       setConfigDraft(buildJsonDraft(selectedConfig.valueJson));
+      setConfirmConfigUpdate(false);
       return;
     }
 
     setConfigDraft("");
+    setConfirmConfigUpdate(false);
   }, [selectedConfig?.configKey, selectedConfig?.updatedAt]);
 
   return (
@@ -337,7 +340,7 @@ const ConfigsPage = () => {
                   <Textarea className="min-h-[320px] font-mono text-xs" onChange={(event) => setConfigDraft(event.target.value)} value={configDraft} />
                 </label>
                 <Button
-                  disabled={updateMutation.isPending}
+                  disabled={updateMutation.isPending || !confirmConfigUpdate}
                   onClick={() => {
                     const parsed = parseJsonDraft(configDraft, "Config value");
 
@@ -351,8 +354,17 @@ const ConfigsPage = () => {
                     });
                   }}
                 >
-                  Save config JSON
+                  {updateMutation.isPending ? "Saving config..." : "Save config JSON"}
                 </Button>
+                <label className="flex items-start gap-3 rounded-[1.15rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-4 py-3">
+                  <input
+                    checked={confirmConfigUpdate}
+                    className="mt-1 h-4 w-4 rounded border-[rgba(112,104,84,0.24)] text-[color:var(--jo-forest)]"
+                    onChange={(event) => setConfirmConfigUpdate(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span className="text-sm text-[color:var(--jo-muted)]">I confirm this change should update live platform configuration.</span>
+                </label>
               </>
             ) : (
               <p className="text-sm text-[color:var(--jo-muted)]">Select a config key to edit its live JSON payload.</p>
@@ -370,6 +382,7 @@ const FeatureFlagsPage = () => {
   const [selectedFlagKey, setSelectedFlagKey] = useState(flagKey ?? "");
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const [rolloutJsonDraft, setRolloutJsonDraft] = useState("");
+  const [confirmFlagUpdate, setConfirmFlagUpdate] = useState(false);
   const flagsQuery = useQuery({
     queryKey: ["admin", "feature-flags"],
     queryFn: () => apiRequest<FeatureFlagItem[]>("/admin/feature-flags")
@@ -429,11 +442,13 @@ const FeatureFlagsPage = () => {
     if (selectedFlag) {
       setDescriptionDraft(selectedFlag.description ?? "");
       setRolloutJsonDraft(buildJsonDraft(selectedFlag.rolloutJson ?? null));
+      setConfirmFlagUpdate(false);
       return;
     }
 
     setDescriptionDraft("");
     setRolloutJsonDraft("");
+    setConfirmFlagUpdate(false);
   }, [selectedFlag?.flagKey, selectedFlag?.defaultEnabled]);
 
   return (
@@ -504,6 +519,7 @@ const FeatureFlagsPage = () => {
 
               <div className="flex flex-wrap gap-3">
                 <Button
+                  disabled={updateMutation.isPending || !confirmFlagUpdate}
                   onClick={() =>
                     updateMutation.mutate({
                       flagKey: selectedFlag.flagKey,
@@ -514,10 +530,10 @@ const FeatureFlagsPage = () => {
                   }
                   variant={selectedFlag.defaultEnabled ? "ghost" : "success"}
                 >
-                  {selectedFlag.defaultEnabled ? "Disable flag" : "Enable flag"}
+                  {updateMutation.isPending ? "Applying flag..." : selectedFlag.defaultEnabled ? "Disable flag" : "Enable flag"}
                 </Button>
                 <Button
-                  disabled={updateMutation.isPending}
+                  disabled={updateMutation.isPending || !confirmFlagUpdate}
                   onClick={() => {
                     const rolloutJson = parseJsonDraft(rolloutJsonDraft, "Rollout JSON");
 
@@ -535,9 +551,18 @@ const FeatureFlagsPage = () => {
                   }}
                   variant="outline"
                 >
-                  Save flag details
+                  {updateMutation.isPending ? "Saving flag..." : "Save flag details"}
                 </Button>
               </div>
+              <label className="flex items-start gap-3 rounded-[1.15rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-4 py-3">
+                <input
+                  checked={confirmFlagUpdate}
+                  className="mt-1 h-4 w-4 rounded border-[rgba(112,104,84,0.24)] text-[color:var(--jo-forest)]"
+                  onChange={(event) => setConfirmFlagUpdate(event.target.checked)}
+                  type="checkbox"
+                />
+                <span className="text-sm text-[color:var(--jo-muted)]">I confirm this feature-flag change should be applied to live rollout behavior.</span>
+              </label>
             </>
           ) : (
             <p className="text-sm text-[color:var(--jo-muted)]">Select a feature flag to edit rollout settings.</p>

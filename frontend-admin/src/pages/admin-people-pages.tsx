@@ -55,6 +55,7 @@ const UsersPage = () => {
   const [selectedUserId, setSelectedUserId] = useState("");
   const [suspendReason, setSuspendReason] = useState("Manual admin review");
   const [reactivateNotes, setReactivateNotes] = useState("Manual reactivation");
+  const [confirmStatusAction, setConfirmStatusAction] = useState(false);
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -86,6 +87,7 @@ const UsersPage = () => {
       }),
     onSuccess: async (_, variables) => {
       toast.success(variables.action === "suspend" ? "User suspended" : "User reactivated");
+      setConfirmStatusAction(false);
       await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
     },
     onError: (error) => handleActionError(error, "Unable to update user")
@@ -106,6 +108,10 @@ const UsersPage = () => {
       setSelectedUserId(users[0].id);
     }
   }, [selectedUserId, users]);
+
+  useEffect(() => {
+    setConfirmStatusAction(false);
+  }, [selectedUser?.id]);
 
   return (
     <div className="space-y-6">
@@ -267,7 +273,7 @@ const UsersPage = () => {
                       />
                     </label>
                     <Button
-                      disabled={changeStatusMutation.isPending || suspendReason.trim().length < 5}
+                      disabled={changeStatusMutation.isPending || suspendReason.trim().length < 5 || !confirmStatusAction}
                       onClick={() =>
                         changeStatusMutation.mutate({
                           userId: selectedUser.id,
@@ -277,7 +283,7 @@ const UsersPage = () => {
                       }
                       variant="danger"
                     >
-                      Suspend selected user
+                      {changeStatusMutation.isPending ? "Suspending user..." : "Suspend selected user"}
                     </Button>
                   </>
                 ) : null}
@@ -293,7 +299,7 @@ const UsersPage = () => {
                       />
                     </label>
                     <Button
-                      disabled={changeStatusMutation.isPending}
+                      disabled={changeStatusMutation.isPending || !confirmStatusAction}
                       onClick={() =>
                         changeStatusMutation.mutate({
                           userId: selectedUser.id,
@@ -303,9 +309,23 @@ const UsersPage = () => {
                       }
                       variant="success"
                     >
-                      Reactivate selected user
+                      {changeStatusMutation.isPending ? "Reactivating user..." : "Reactivate selected user"}
                     </Button>
                   </>
+                ) : null}
+
+                {selectedUser.status === "ACTIVE" || selectedUser.status === "SUSPENDED" ? (
+                  <label className="flex items-start gap-3 rounded-[1.15rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-4 py-3">
+                    <input
+                      checked={confirmStatusAction}
+                      className="mt-1 h-4 w-4 rounded border-[rgba(112,104,84,0.24)] text-[color:var(--jo-forest)]"
+                      onChange={(event) => setConfirmStatusAction(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span className="text-sm text-[color:var(--jo-muted)]">
+                      I confirm this {selectedUser.status === "ACTIVE" ? "suspension" : "reactivation"} should be written to the live user account.
+                    </span>
+                  </label>
                 ) : null}
 
                 <div className="flex flex-wrap gap-3">
@@ -477,6 +497,7 @@ const VerificationQueuePage = () => {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [approvalNotes, setApprovalNotes] = useState("Verification approved by admin");
   const [reviewNotes, setReviewNotes] = useState("Please upload clearer verification documents.");
+  const [confirmReviewAction, setConfirmReviewAction] = useState(false);
 
   const workersQuery = useQuery({
     queryKey: ["admin", "verification-queue", page],
@@ -499,6 +520,7 @@ const VerificationQueuePage = () => {
       }),
     onSuccess: async (_, variables) => {
       toast.success(variables.action === "verify" ? "Worker approved" : "Worker rejected");
+      setConfirmReviewAction(false);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["admin", "workers"] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "verification-queue"] })
@@ -522,6 +544,10 @@ const VerificationQueuePage = () => {
       setSelectedWorkerId(workers[0].id);
     }
   }, [selectedWorkerId, workers]);
+
+  useEffect(() => {
+    setConfirmReviewAction(false);
+  }, [selectedWorker?.id]);
 
   return (
     <div className="space-y-6">
@@ -590,7 +616,7 @@ const VerificationQueuePage = () => {
                 </label>
 
                 <Button
-                  disabled={reviewMutation.isPending}
+                  disabled={reviewMutation.isPending || !confirmReviewAction}
                   onClick={() =>
                     reviewMutation.mutate({
                       workerId: selectedWorker.id,
@@ -601,7 +627,7 @@ const VerificationQueuePage = () => {
                   variant="success"
                 >
                   <BadgeCheck className="h-4 w-4" />
-                  Approve selected worker
+                  {reviewMutation.isPending ? "Applying review..." : "Approve selected worker"}
                 </Button>
 
                 <label className="block space-y-2">
@@ -610,7 +636,7 @@ const VerificationQueuePage = () => {
                 </label>
 
                 <Button
-                  disabled={reviewMutation.isPending || reviewNotes.trim().length < 10}
+                  disabled={reviewMutation.isPending || reviewNotes.trim().length < 10 || !confirmReviewAction}
                   onClick={() =>
                     reviewMutation.mutate({
                       workerId: selectedWorker.id,
@@ -620,8 +646,18 @@ const VerificationQueuePage = () => {
                   }
                   variant="danger"
                 >
-                  Reject selected worker
+                  {reviewMutation.isPending ? "Applying review..." : "Reject selected worker"}
                 </Button>
+
+                <label className="flex items-start gap-3 rounded-[1.15rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-4 py-3">
+                  <input
+                    checked={confirmReviewAction}
+                    className="mt-1 h-4 w-4 rounded border-[rgba(112,104,84,0.24)] text-[color:var(--jo-forest)]"
+                    onChange={(event) => setConfirmReviewAction(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span className="text-sm text-[color:var(--jo-muted)]">I confirm this verification decision should be written to the live worker record.</span>
+                </label>
 
                 <Link className="inline-flex" to={`/verification/${selectedWorker.id}`}>
                   <Button variant="outline">Open verification detail</Button>
@@ -647,6 +683,7 @@ const FeaturedWorkersPage = () => {
   const [featureNotes, setFeatureNotes] = useState("Feature placement enabled by admin");
   const [extensionNotes, setExtensionNotes] = useState("Extended featured worker placement");
   const [extensionEndsAt, setExtensionEndsAt] = useState(toDateTimeLocalValue(defaultFeaturedExtensionEndsAt()));
+  const [confirmFeaturedAction, setConfirmFeaturedAction] = useState(false);
 
   const searchParams = useMemo(() => {
     const params = new URLSearchParams({
@@ -677,6 +714,7 @@ const FeaturedWorkersPage = () => {
       }),
     onSuccess: async (_, variables) => {
       toast.success(`Featured worker ${variables.action.toLowerCase()}d`);
+      setConfirmFeaturedAction(false);
       await queryClient.invalidateQueries({ queryKey: ["admin", "featured-workers"] });
     },
     onError: (error) => handleActionError(error, "Unable to update featured worker")
@@ -697,6 +735,10 @@ const FeaturedWorkersPage = () => {
       setSelectedWorkerId(workers[0].id);
     }
   }, [selectedWorkerId, workers]);
+
+  useEffect(() => {
+    setConfirmFeaturedAction(false);
+  }, [selectedWorker?.id]);
 
   return (
     <div className="space-y-6">
@@ -764,6 +806,7 @@ const FeaturedWorkersPage = () => {
                       setFeatureNotes(worker.isFeatured ? "Feature placement disabled by admin" : "Feature placement enabled by admin");
                       setExtensionNotes("Extended featured worker placement");
                       setExtensionEndsAt(toDateTimeLocalValue(defaultFeaturedExtensionEndsAt()));
+                      setConfirmFeaturedAction(false);
                     }}
                     variant={worker.id === selectedWorker?.id ? "primary" : "outline"}
                   >
@@ -809,7 +852,7 @@ const FeaturedWorkersPage = () => {
                 </label>
 
                 <Button
-                  disabled={actionMutation.isPending || featureNotes.trim().length < 5}
+                  disabled={actionMutation.isPending || featureNotes.trim().length < 5 || !confirmFeaturedAction}
                   onClick={() =>
                     actionMutation.mutate({
                       workerId: selectedWorker.id,
@@ -819,7 +862,7 @@ const FeaturedWorkersPage = () => {
                   }
                   variant={selectedWorker.isFeatured ? "danger" : "primary"}
                 >
-                  {selectedWorker.isFeatured ? "Disable featured placement" : "Enable featured placement"}
+                  {actionMutation.isPending ? "Applying placement..." : selectedWorker.isFeatured ? "Disable featured placement" : "Enable featured placement"}
                 </Button>
 
                 <label className="block space-y-2">
@@ -833,7 +876,7 @@ const FeaturedWorkersPage = () => {
                 </label>
 
                 <Button
-                  disabled={actionMutation.isPending || extensionNotes.trim().length < 5 || !extensionEndsAt}
+                  disabled={actionMutation.isPending || extensionNotes.trim().length < 5 || !extensionEndsAt || !confirmFeaturedAction}
                   onClick={() =>
                     actionMutation.mutate({
                       workerId: selectedWorker.id,
@@ -846,8 +889,18 @@ const FeaturedWorkersPage = () => {
                   }
                   variant="outline"
                 >
-                  Extend placement window
+                  {actionMutation.isPending ? "Applying extension..." : "Extend placement window"}
                 </Button>
+
+                <label className="flex items-start gap-3 rounded-[1.15rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-4 py-3">
+                  <input
+                    checked={confirmFeaturedAction}
+                    className="mt-1 h-4 w-4 rounded border-[rgba(112,104,84,0.24)] text-[color:var(--jo-forest)]"
+                    onChange={(event) => setConfirmFeaturedAction(event.target.checked)}
+                    type="checkbox"
+                  />
+                  <span className="text-sm text-[color:var(--jo-muted)]">I confirm this featured placement change should be applied to the live worker subscription state.</span>
+                </label>
               </>
             ) : (
               <p className="text-sm text-[color:var(--jo-muted)]">Select a worker to manage featured placement.</p>
