@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, HeadphonesIcon, ShieldAlert, Workflow } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { EmptyState, FilterCard, PaginationControls } from "@/components/admin/list-controls";
@@ -72,6 +72,89 @@ const togglePageSelection = (selectedIds: string[], pageIds: string[]) => {
   }
 
   return Array.from(new Set([...selectedIds, ...pageIds]));
+};
+
+const buildReportRecommendations = (report: AdminReportDetail | null | undefined) => {
+  if (!report) {
+    return [];
+  }
+
+  const recommendations: string[] = [];
+
+  if (report.status === "OPEN") {
+    recommendations.push("Move the report into UNDER_REVIEW once an operator has claimed the case and checked the linked content.");
+  }
+
+  if (report.severity === "CRITICAL" || report.severity === "HIGH") {
+    recommendations.push("Escalate severe reports into an active moderation case and preserve the linked content evidence before any destructive action.");
+  }
+
+  if (report.moderationCases.length === 0) {
+    recommendations.push("No moderation case is linked yet. Open the case desk if this report needs a tracked trust-and-safety workflow.");
+  }
+
+  if (report.status === "RESOLVED" || report.status === "DISMISSED") {
+    recommendations.push("Resolved and dismissed states should leave an operator note explaining why the final disposition was chosen.");
+  }
+
+  return recommendations;
+};
+
+const buildModerationRecommendations = (moderationCase: AdminModerationCaseDetail | null | undefined) => {
+  if (!moderationCase) {
+    return [];
+  }
+
+  const recommendations: string[] = [];
+
+  if (moderationCase.status === "OPEN") {
+    recommendations.push("Start with REVIEW_NOTE or ESCALATE so the case is no longer an unowned open item.");
+  }
+
+  if (moderationCase.report?.severity === "CRITICAL") {
+    recommendations.push("Critical severity should usually produce an immediate containment action and a note that explains the evidence threshold used.");
+  }
+
+  if (moderationCase.actions.length === 0) {
+    recommendations.push("This case has no actions yet. Record the first investigative step so audit and support teams can reconstruct the decision trail.");
+  }
+
+  if (moderationCase.status === "ACTIONED") {
+    recommendations.push("Follow ACTIONED cases through to closure only after the linked content, account, or request surface reflects the intended intervention.");
+  }
+
+  return recommendations;
+};
+
+const buildFraudRecommendations = (signal: FraudSignalItem | null | undefined) => {
+  if (!signal) {
+    return [];
+  }
+
+  const recommendations: string[] = [];
+  const score = Number(signal.score ?? 0);
+  const sameFingerprintCount = signal.investigationContext?.sameFingerprintAccounts.length ?? 0;
+  const sameIpCount = signal.investigationContext?.sameIpAccounts.length ?? 0;
+
+  if (score >= 80) {
+    recommendations.push("High-score signals should be reviewed immediately and usually turned into an ACTION outcome with an explicit operator note.");
+  }
+
+  if (sameFingerprintCount > 0) {
+    recommendations.push("Other active accounts share the same session fingerprint. Review those user records together before dismissing the signal.");
+  } else if (sameIpCount > 0) {
+    recommendations.push("Multiple accounts share the same recent IP. Treat this as network overlap evidence, not definitive same-device proof.");
+  }
+
+  if ((signal.investigationContext?.openSupportTicketCount ?? 0) > 0) {
+    recommendations.push("The linked user has open support tickets. Check whether the fraud signal is operational fallout from an unresolved support issue.");
+  }
+
+  if ((signal.investigationContext?.reportCount ?? 0) > 0) {
+    recommendations.push("The linked user already has moderation reports. Review those cases before closing the fraud lane so the trust record stays consistent.");
+  }
+
+  return recommendations;
 };
 
 const ReportsPage = () => {
@@ -156,6 +239,27 @@ const ReportsPage = () => {
       ]);
     },
     onError: (error) => handleActionError(error, "Unable to bulk update reports")
+  });
+
+  const selectedReportStatusMutation = useMutation({
+    mutationFn: (nextStatus: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED") =>
+      apiRequest<{ updatedCount: number }>("/admin/reports/bulk", {
+        method: "PATCH",
+        body: {
+          reportIds: selectedReport ? [selectedReport.id] : [],
+          status: nextStatus,
+          notes: bulkNotes
+        }
+      }),
+    onSuccess: async (_, nextStatus) => {
+      toast.success(`Report moved to ${nextStatus.replaceAll("_", " ").toLowerCase()}`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports", "queue-detail", selectedReport?.id] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "audit-logs"] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to update report status")
   });
 
   const exportMutation = useMutation({
@@ -332,7 +436,7 @@ const ReportsPage = () => {
               <Card className="overflow-hidden border-white/70 bg-white/95">
                 <CardHeader>
                   <CardTitle>Report action desk</CardTitle>
-                  <CardDescription>Review the selected report, inspect linked evidence, and move into the correct moderation workflow.</CardDescription>
+                  <CardDescription>Review the selected report, inspect linked evidence, and move it through a real trust workflow instead of leaving it as a passive queue row.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex flex-wrap gap-2">
@@ -367,6 +471,33 @@ const ReportsPage = () => {
                       </Link>
                     ) : null}
                   </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {(["OPEN", "UNDER_REVIEW", "RESOLVED", "DISMISSED"] as const).map((nextStatus) => (
+                      <Button
+                        disabled={selectedReportStatusMutation.isPending || reportDetailQuery.data.status === nextStatus}
+                        key={nextStatus}
+                        onClick={() => selectedReportStatusMutation.mutate(nextStatus)}
+                        variant={reportDetailQuery.data.status === nextStatus ? "outline" : nextStatus === "DISMISSED" ? "danger" : nextStatus === "RESOLVED" ? "success" : "outline"}
+                      >
+                        {reportDetailQuery.data.status === nextStatus ? `${nextStatus.replaceAll("_", " ")} now` : `Move to ${nextStatus.replaceAll("_", " ").toLowerCase()}`}
+                      </Button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Operator guidance</p>
+                    {buildReportRecommendations(reportDetailQuery.data).length === 0 ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">No additional guidance is needed for this report right now.</div>
+                    ) : (
+                      buildReportRecommendations(reportDetailQuery.data).map((recommendation) => (
+                        <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-600" key={recommendation}>
+                          {recommendation}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
                   <div className="space-y-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Moderation cases</p>
                     {reportDetailQuery.data.moderationCases.length === 0 ? (
@@ -702,6 +833,26 @@ const ModerationCasesPage = () => {
                     <Textarea aria-label="Moderation action note" onChange={(event) => setActionNotes(event.target.value)} value={actionNotes} />
                   </label>
 
+                  <div className="grid gap-2 md:grid-cols-2">
+                    {[
+                      { label: "Start review", actionType: "REVIEW_NOTE", notes: "Case claimed and moved into active review from the moderation queue." },
+                      { label: "Escalate", actionType: "ESCALATE", notes: "Escalated for deeper trust-and-safety investigation." },
+                      { label: "Remove content", actionType: "CONTENT_REMOVE", notes: "Content removal recommended after moderation evidence review." },
+                      { label: "Warn account", actionType: "ACCOUNT_WARNING", notes: "Account warning recommended based on repeated or severe policy violations." }
+                    ].map((preset) => (
+                      <Button
+                        key={preset.label}
+                        onClick={() => {
+                          setActionType(preset.actionType);
+                          setActionNotes(preset.notes);
+                        }}
+                        variant="outline"
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+
                   <div className="flex flex-wrap gap-3">
                     <Button
                       disabled={!caseDetailQuery.data.report || actionMutation.isPending || actionNotes.trim().length < 4}
@@ -719,6 +870,19 @@ const ModerationCasesPage = () => {
                         </Link>
                       </>
                     ) : null}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Case playbook</p>
+                    {buildModerationRecommendations(caseDetailQuery.data).length === 0 ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">This case already has a clear action trail.</div>
+                    ) : (
+                      buildModerationRecommendations(caseDetailQuery.data).map((recommendation) => (
+                        <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-600" key={recommendation}>
+                          {recommendation}
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -752,6 +916,7 @@ const ModerationCasesPage = () => {
 };
 
 const FraudSignalsPage = () => {
+  const { signalId } = useParams();
   const queryClient = useQueryClient();
   const adminQuery = useCurrentAdmin();
   const [page, setPage] = useState(1);
@@ -787,10 +952,15 @@ const FraudSignalsPage = () => {
   const selectedSignal = signals.find((item) => item.id === selectedSignalId) ?? signals[0];
 
   useEffect(() => {
+    if (signalId && signals.some((signal) => signal.id === signalId)) {
+      setSelectedSignalId(signalId);
+      return;
+    }
+
     if ((!selectedSignalId || !signals.some((signal) => signal.id === selectedSignalId)) && signals[0]) {
       setSelectedSignalId(signals[0].id);
     }
-  }, [selectedSignalId, signals]);
+  }, [selectedSignalId, signalId, signals]);
 
   const signalMutation = useMutation({
     mutationFn: ({ signalId, action, notes }: { signalId: string; action: "REVIEW" | "DISMISS" | "ACTION"; notes: string }) =>
@@ -960,9 +1130,11 @@ const FraudSignalsPage = () => {
                     <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(signal.createdAt)}</p>
                   </div>
                   <div className="flex flex-wrap gap-3">
-                    <Button onClick={() => setSelectedSignalId(signal.id)} variant={selectedSignal?.id === signal.id ? "primary" : "outline"}>
-                      Inspect signal
-                    </Button>
+                    <Link className="inline-flex" to={`/fraud-signals/${signal.id}`}>
+                      <Button onClick={() => setSelectedSignalId(signal.id)} variant={selectedSignal?.id === signal.id ? "primary" : "outline"}>
+                        Inspect signal
+                      </Button>
+                    </Link>
                     {canActionSignals ? (
                       <>
                         <Button onClick={() => signalMutation.mutate({ signalId: signal.id, action: "REVIEW", notes: "Risk reviewed in admin console." })} variant="outline">
@@ -982,7 +1154,7 @@ const FraudSignalsPage = () => {
           <Card className="overflow-hidden border-white/70 bg-white/95">
             <CardHeader>
               <CardTitle>Fraud action desk</CardTitle>
-              <CardDescription>Review the selected risk signal, record the operator note, and apply the next trust action.</CardDescription>
+              <CardDescription>Review the selected risk signal, inspect multi-account clues, and apply the next trust action with an explicit investigation trail.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {selectedSignal ? (
@@ -1011,6 +1183,97 @@ const FraudSignalsPage = () => {
                       <Button variant="outline">Open user detail</Button>
                     </Link>
                   ) : null}
+
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Active sessions</p>
+                      <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">
+                        {formatNumber(selectedSignal.investigationContext?.activeSessionCount ?? 0)}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Reports on account</p>
+                      <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">
+                        {formatNumber(selectedSignal.investigationContext?.reportCount ?? 0)}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Open support tickets</p>
+                      <p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-950">
+                        {formatNumber(selectedSignal.investigationContext?.openSupportTicketCount ?? 0)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Latest session fingerprint</p>
+                      {selectedSignal.investigationContext?.latestSession ? (
+                        <>
+                          <p className="mt-3 text-sm font-semibold text-slate-900">
+                            {selectedSignal.investigationContext.latestSession.deviceType ?? "Unknown device"} ·{" "}
+                            {selectedSignal.investigationContext.latestSession.ipAddress ?? "No IP"}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            Created {formatDateTime(selectedSignal.investigationContext.latestSession.createdAt)} · Expires{" "}
+                            {formatDateTime(selectedSignal.investigationContext.latestSession.expiresAt)}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="mt-3 text-sm text-slate-500">No active session data is currently available for this signal.</p>
+                      )}
+                    </div>
+
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Detection note</p>
+                      <p className="mt-3 text-sm text-slate-600">
+                        Shared IP and shared device-type rows are the closest live proxy this admin desk has for multi-account detection. Treat them as investigation leads, not automatic proof.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Same session fingerprint</p>
+                      <div className="mt-3 space-y-2">
+                        {(selectedSignal.investigationContext?.sameFingerprintAccounts ?? []).length === 0 ? (
+                          <p className="text-sm text-slate-500">No other active accounts share the same IP + device-type fingerprint.</p>
+                        ) : (
+                          (selectedSignal.investigationContext?.sameFingerprintAccounts ?? []).map((account) => (
+                            <Link className="block" key={`${selectedSignal.id}-fingerprint-${account.userId}`} to={`/users/${account.userId}`}>
+                              <div className="rounded-2xl bg-white px-4 py-3 transition hover:border-[rgba(65,150,70,0.22)]">
+                                <p className="text-sm font-semibold text-slate-900">{account.displayName ?? account.email ?? account.userId}</p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                  {account.deviceType ?? "Unknown device"} · {account.ipAddress ?? "No IP"}
+                                </p>
+                              </div>
+                            </Link>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Same IP accounts</p>
+                      <div className="mt-3 space-y-2">
+                        {(selectedSignal.investigationContext?.sameIpAccounts ?? []).length === 0 ? (
+                          <p className="text-sm text-slate-500">No additional active accounts share the same recent IP address.</p>
+                        ) : (
+                          (selectedSignal.investigationContext?.sameIpAccounts ?? []).map((account) => (
+                            <Link className="block" key={`${selectedSignal.id}-ip-${account.userId}`} to={`/users/${account.userId}`}>
+                              <div className="rounded-2xl bg-white px-4 py-3 transition hover:border-[rgba(65,150,70,0.22)]">
+                                <p className="text-sm font-semibold text-slate-900">{account.displayName ?? account.email ?? account.userId}</p>
+                                <p className="mt-1 text-sm text-slate-500">
+                                  {account.deviceType ?? "Unknown device"} · {account.ipAddress ?? "No IP"}
+                                </p>
+                              </div>
+                            </Link>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   <label className="space-y-2">
                     <span className="text-sm font-semibold text-slate-700">Action</span>
                     <Select aria-label="Fraud action type" onChange={(event) => setFraudAction(event.target.value as "REVIEW" | "DISMISS" | "ACTION")} value={fraudAction}>
@@ -1023,12 +1286,43 @@ const FraudSignalsPage = () => {
                     <span className="text-sm font-semibold text-slate-700">Action note</span>
                     <Textarea aria-label="Fraud action note" onChange={(event) => setFraudNotes(event.target.value)} value={fraudNotes} />
                   </label>
+                  <div className="grid gap-2 md:grid-cols-3">
+                    {[
+                      { label: "Mark reviewed", action: "REVIEW" as const, notes: "Signal reviewed. Evidence recorded and linked desks checked." },
+                      { label: "Dismiss as benign", action: "DISMISS" as const, notes: "Signal dismissed after manual investigation showed no actionable abuse pattern." },
+                      { label: "Open trust action", action: "ACTION" as const, notes: "Signal actioned. Containment or linked moderation workflow initiated." }
+                    ].map((preset) => (
+                      <Button
+                        key={preset.label}
+                        onClick={() => {
+                          setFraudAction(preset.action);
+                          setFraudNotes(preset.notes);
+                        }}
+                        variant="outline"
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
                   <Button
                     disabled={signalMutation.isPending || (fraudAction === "ACTION" && fraudNotes.trim().length < 4)}
                     onClick={() => signalMutation.mutate({ signalId: selectedSignal.id, action: fraudAction, notes: fraudNotes })}
                   >
                     Apply fraud action
                   </Button>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Operator guidance</p>
+                    {buildFraudRecommendations(selectedSignal).length === 0 ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">No additional investigation guidance is available for this signal.</div>
+                    ) : (
+                      buildFraudRecommendations(selectedSignal).map((recommendation) => (
+                        <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-600" key={recommendation}>
+                          {recommendation}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 </>
               ) : (
                 <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">Select a fraud signal to review and action it.</div>
@@ -1296,10 +1590,12 @@ const SupportTicketsPage = () => {
 };
 
 const AuditLogsPage = () => {
+  const { auditLogId } = useParams();
   const adminQuery = useCurrentAdmin();
   const [page, setPage] = useState(1);
   const [action, setAction] = useState("");
   const [entityType, setEntityType] = useState("");
+  const [selectedAuditId, setSelectedAuditId] = useState(auditLogId ?? "");
   const roles = adminQuery.data?.roles ?? [];
   const canExportAuditLogs = hasPermission(roles, "AUDIT_LOG_VIEW");
 
@@ -1326,6 +1622,19 @@ const AuditLogsPage = () => {
   });
 
   const logs = auditQuery.data?.data ?? [];
+  const selectedLog = logs.find((item) => item.id === selectedAuditId) ?? logs[0];
+
+  useEffect(() => {
+    if (auditLogId && logs.some((item) => item.id === auditLogId)) {
+      setSelectedAuditId(auditLogId);
+      return;
+    }
+
+    if ((!selectedAuditId || !logs.some((item) => item.id === selectedAuditId)) && logs[0]) {
+      setSelectedAuditId(logs[0].id);
+    }
+  }, [auditLogId, logs, selectedAuditId]);
+
   const exportMutation = useMutation({
     mutationFn: () => apiDownload(`/admin/audit-logs/export?${queryString}`, `admin-audit-logs-page-${page}.csv`),
     onSuccess: (fileName) => {
@@ -1386,26 +1695,97 @@ const AuditLogsPage = () => {
       {logs.length === 0 ? (
         <EmptyState description="No audit entries matched the current filters." title="No audit logs found" />
       ) : (
-        <div className="space-y-3">
-          {logs.map((item) => (
-            <Card key={item.id}>
-              <CardContent className="grid gap-4 pt-6 lg:grid-cols-[1.1fr_0.9fr]">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="blue">{item.action}</Badge>
-                    {item.entityType ? <Badge>{item.entityType}</Badge> : null}
+        <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+          <div className="space-y-3">
+            {logs.map((item) => (
+              <Link className="block" key={item.id} to={`/audit-logs/${item.id}`}>
+                <Card className={selectedLog?.id === item.id ? "border-[rgba(65,150,70,0.24)] shadow-[0_18px_36px_rgba(65,150,70,0.12)]" : undefined}>
+                  <CardContent className="space-y-4 pt-6">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="blue">{item.action}</Badge>
+                        {item.entityType ? <Badge>{item.entityType}</Badge> : null}
+                      </div>
+                      <p className="mt-3 text-sm font-semibold text-slate-900">
+                        {formatDisplayName(item.adminUser?.profile, item.adminUser?.email ?? "Unknown admin")}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {item.entityId ?? "No entity id"} · {formatDateTime(item.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(item.metadataHighlights ?? []).slice(0, 3).map((highlight) => (
+                        <span className="rounded-full bg-[rgba(255,251,244,0.92)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:rgba(107,114,102,0.82)]" key={`${item.id}-${highlight.label}`}>
+                          {highlight.label}: {highlight.value}
+                        </span>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+
+          <Card className="overflow-hidden border-white/70 bg-white/95">
+            <CardHeader>
+              <CardTitle>Audit detail desk</CardTitle>
+              <CardDescription>Investigation-grade detail for the selected admin action, including parsed metadata and direct entity links.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {selectedLog ? (
+                <>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="blue">{selectedLog.action}</Badge>
+                    {selectedLog.entityType ? <Badge>{selectedLog.entityType}</Badge> : null}
                   </div>
-                  <p className="mt-3 text-sm font-semibold text-slate-900">
-                    {formatDisplayName(item.adminUser?.profile, item.adminUser?.email ?? "Unknown admin")}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {item.entityId ?? "No entity id"} · {formatDateTime(item.createdAt)}
-                  </p>
-                </div>
-                <pre className="overflow-x-auto rounded-[1.25rem] bg-slate-950 p-4 text-xs text-slate-200">{formatJsonValue(item.metadataJson ?? {})}</pre>
-              </CardContent>
-            </Card>
-          ))}
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Actor</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {formatDisplayName(selectedLog.adminUser?.profile, selectedLog.adminUser?.email ?? "Unknown admin")}
+                      </p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.18em] text-slate-400">{formatDateTime(selectedLog.createdAt)}</p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 p-4">
+                      <p className="text-sm font-medium text-slate-500">Entity</p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {selectedLog.entityType ?? "No entity type"} · {selectedLog.entityId ?? "No entity id"}
+                      </p>
+                      {selectedLog.entityLinkPath ? (
+                        <Link className="mt-3 inline-flex" to={selectedLog.entityLinkPath}>
+                          <Button variant="outline">Open entity desk</Button>
+                        </Link>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Metadata highlights</p>
+                    {(selectedLog.metadataHighlights ?? []).length === 0 ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">This audit event does not expose parsed metadata highlights.</div>
+                    ) : (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {(selectedLog.metadataHighlights ?? []).map((highlight) => (
+                          <div className="rounded-[1.25rem] bg-slate-50 p-4" key={`${selectedLog.id}-${highlight.label}`}>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">{highlight.label}</p>
+                            <p className="mt-2 text-sm font-semibold text-slate-900">{highlight.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Raw metadata</p>
+                    <pre className="overflow-x-auto rounded-[1.25rem] bg-slate-950 p-4 text-xs text-slate-200">{formatJsonValue(selectedLog.metadataJson ?? {})}</pre>
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-[1.25rem] bg-slate-50 p-4 text-sm text-slate-500">Select an audit log entry to inspect its detail.</div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 

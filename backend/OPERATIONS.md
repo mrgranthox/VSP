@@ -191,6 +191,21 @@ make staging-gate
 
 That boots the API, workers, gateway, and admin frontend on alternate ports and then runs the release gate against all three surfaces.
 
+For the final gate before starting user and worker frontend work:
+
+```bash
+make final-hard-gate
+```
+
+That command combines:
+
+- `backend/scripts/run-ci.sh`
+- admin frontend typecheck/build/error-reporting verification
+- isolated admin Playwright coverage
+- staging-like stack boot and seed
+- staging release gate
+- admin Playwright coverage against the staging-like stack
+
 The tracing verifier reuses the release gate and then asserts that a real OTLP receiver observed exported spans, including the `USER_REGISTERED` domain-event span.
 The error-reporting verifier emits a test exception through the runtime integration and asserts that a Sentry-compatible envelope was delivered.
 The API contract generator emits:

@@ -916,6 +916,13 @@ const WorkerDetailPage = () => {
   const workerTradeCategories = worker.tradeCategories ?? [];
   const workerCertifications = worker.certifications ?? [];
   const workerVerificationRequests = worker.verificationRequests ?? [];
+  const latestVerificationRecord =
+    ((docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined)) ?? null;
+  const effectiveVerificationStatus = getVerificationRequestValue(latestVerificationRecord, "status") ?? worker.verificationStatus;
+  const workerIsApproved = effectiveVerificationStatus === "APPROVED";
+  const workerIsRejected = effectiveVerificationStatus === "REJECTED";
+  const workerNeedsReview = effectiveVerificationStatus === "SUBMITTED" || effectiveVerificationStatus === "UNDER_REVIEW";
+  const featuredNow = subscription?.isFeatured ?? worker.isFeatured;
 
   return (
     <div className="space-y-6">
@@ -1042,7 +1049,7 @@ const WorkerDetailPage = () => {
                   <div className="rounded-2xl bg-white px-4 py-3">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Status</p>
                     <p className="mt-2 text-sm font-semibold text-[color:var(--jo-ink)]">
-                      {getVerificationRequestValue((docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined), "status") ?? worker.verificationStatus}
+                      {effectiveVerificationStatus}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-white px-4 py-3">
@@ -1060,11 +1067,11 @@ const WorkerDetailPage = () => {
                     <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[color:rgba(107,114,102,0.72)]">Review notes</p>
                     <p className="mt-2 text-sm text-[color:var(--jo-muted)]">
                       {getVerificationRequestValue(
-                        (docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined),
+                        latestVerificationRecord,
                         "reviewNotes"
                       ) ??
                         getVerificationRequestValue(
-                          (docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (workerVerificationRequests[0] as Record<string, unknown> | undefined),
+                          latestVerificationRecord,
                           "notes"
                         ) ??
                         "No verification notes recorded yet."}
@@ -1105,18 +1112,47 @@ const WorkerDetailPage = () => {
                 </div>
               </div>
 
-              {canVerify ? (
+              <div
+                className={
+                  workerIsApproved
+                    ? "rounded-[1.25rem] border border-emerald-200 bg-emerald-50/80 p-4"
+                    : workerIsRejected
+                      ? "rounded-[1.25rem] border border-red-200 bg-red-50/80 p-4"
+                      : "rounded-[1.25rem] border border-amber-200 bg-amber-50/80 p-4"
+                }
+              >
+                <p className="text-sm font-semibold text-[color:var(--jo-ink)]">
+                  {workerIsApproved
+                    ? "Worker already approved"
+                    : workerIsRejected
+                      ? "Worker verification is currently rejected"
+                      : workerNeedsReview
+                        ? "Worker is waiting for operator review"
+                        : "Worker has not completed a reviewable verification submission yet"}
+                </p>
+                <p className="mt-2 text-sm text-[color:var(--jo-muted)]">
+                  {workerIsApproved
+                    ? "The review action is complete. The console now exposes follow-up operational controls instead of a stale approve button."
+                    : workerIsRejected
+                      ? "Use the rejection notes and document evidence above to decide whether a re-submission or support follow-up is needed."
+                      : workerNeedsReview
+                        ? "Approve or reject only after checking the document desk, city/service footprint, and recent platform activity."
+                        : "This profile can still be inspected in full, but approval actions should wait until a verification request is submitted."}
+                </p>
+              </div>
+
+              {canVerify && !workerIsApproved ? (
                 <div className="space-y-3 rounded-[1.25rem] border border-emerald-100 bg-emerald-50/70 p-4">
                   <p className="text-sm font-semibold text-emerald-900">Approve verification</p>
                   <Textarea onChange={(event) => setApprovalNotes(event.target.value)} value={approvalNotes} />
                   <Button disabled={reviewMutation.isPending || approvalNotes.trim().length < 5} onClick={() => reviewMutation.mutate({ action: "verify", body: { notes: approvalNotes } })} variant="success">
                     <BadgeCheck className="h-4 w-4" />
-                    Approve worker
+                    {workerNeedsReview ? "Approve worker" : "Approve when submission is ready"}
                   </Button>
                 </div>
               ) : null}
 
-              {canReject ? (
+              {canReject && !workerIsRejected ? (
                 <div className="space-y-3 rounded-[1.25rem] border border-red-100 bg-red-50/70 p-4">
                   <p className="text-sm font-semibold text-red-900">Reject verification</p>
                   <Textarea onChange={(event) => setRejectionNotes(event.target.value)} value={rejectionNotes} />
@@ -1138,7 +1174,7 @@ const WorkerDetailPage = () => {
                 <KeyValueGrid
                   columns="two"
                   items={[
-                    { label: "Featured now", value: subscription?.isFeatured ? "Yes" : "No" },
+                    { label: "Featured now", value: featuredNow ? "Yes" : "No" },
                     { label: "Invoices", value: formatNumber(subscription?.invoices.length ?? 0) }
                   ]}
                 />
@@ -1147,14 +1183,14 @@ const WorkerDetailPage = () => {
                 <Input onChange={(event) => setFeatureEndsAt(event.target.value)} type="datetime-local" value={featureEndsAt} />
 
                 <div className="flex flex-wrap gap-3">
-                  <Button disabled={featureMutation.isPending} onClick={() => featureMutation.mutate({ action: "ENABLE", body: { notes: featureNotes } })}>
+                  <Button disabled={featureMutation.isPending || featuredNow} onClick={() => featureMutation.mutate({ action: "ENABLE", body: { notes: featureNotes } })}>
                     Enable
                   </Button>
-                  <Button disabled={featureMutation.isPending} onClick={() => featureMutation.mutate({ action: "DISABLE", body: { notes: featureNotes } })} variant="danger">
+                  <Button disabled={featureMutation.isPending || !featuredNow} onClick={() => featureMutation.mutate({ action: "DISABLE", body: { notes: featureNotes } })} variant="danger">
                     Disable
                   </Button>
                   <Button
-                    disabled={featureMutation.isPending || !featureEndsAt}
+                    disabled={featureMutation.isPending || !featuredNow || !featureEndsAt}
                     onClick={() =>
                       featureMutation.mutate({
                         action: "EXTEND",
@@ -1335,6 +1371,12 @@ const VerificationReviewPage = () => {
 
   const worker = workerQuery.data;
   const docs = docsQuery.data;
+  const effectiveVerificationStatus =
+    getVerificationRequestValue((docs?.latestVerificationRequest as Record<string, unknown> | null | undefined) ?? (worker?.verificationRequests[0] as Record<string, unknown> | undefined), "status") ??
+    worker?.verificationStatus ??
+    "SUBMITTED";
+  const verificationAlreadyApproved = effectiveVerificationStatus === "APPROVED";
+  const verificationAlreadyRejected = effectiveVerificationStatus === "REJECTED";
 
   if (!worker) {
     return (
@@ -1411,12 +1453,37 @@ const VerificationReviewPage = () => {
         </SectionCard>
 
         <div className="space-y-6">
+          <SectionCard description="Current review state after the latest verification action." title="Review Status">
+            <div
+              className={
+                verificationAlreadyApproved
+                  ? "rounded-[1.25rem] border border-emerald-200 bg-emerald-50/80 p-4"
+                  : verificationAlreadyRejected
+                    ? "rounded-[1.25rem] border border-red-200 bg-red-50/80 p-4"
+                    : "rounded-[1.25rem] border border-amber-200 bg-amber-50/80 p-4"
+              }
+            >
+              <p className="text-sm font-semibold text-[color:var(--jo-ink)]">Current status: {effectiveVerificationStatus}</p>
+              <p className="mt-2 text-sm text-[color:var(--jo-muted)]">
+                {verificationAlreadyApproved
+                  ? "This worker is already approved. The desk now stays in a completed state instead of showing stale action labels."
+                  : verificationAlreadyRejected
+                    ? "This worker is already rejected. Only proceed again if a new submission or review reversal is explicitly required."
+                    : "The verification request is still actionable. Review the evidence panel before recording a final outcome."}
+              </p>
+            </div>
+          </SectionCard>
+
           <SectionCard description="Approval path for legitimate submissions." title="Approve Worker">
             <div className="space-y-4">
               <Textarea onChange={(event) => setApprovalNotes(event.target.value)} value={approvalNotes} />
-              <Button disabled={reviewMutation.isPending || approvalNotes.trim().length < 5} onClick={() => reviewMutation.mutate({ action: "verify", body: { notes: approvalNotes } })} variant="success">
+              <Button
+                disabled={verificationAlreadyApproved || reviewMutation.isPending || approvalNotes.trim().length < 5}
+                onClick={() => reviewMutation.mutate({ action: "verify", body: { notes: approvalNotes } })}
+                variant="success"
+              >
                 <BadgeCheck className="h-4 w-4" />
-                Approve verification
+                {verificationAlreadyApproved ? "Already approved" : "Approve verification"}
               </Button>
             </div>
           </SectionCard>
@@ -1425,11 +1492,11 @@ const VerificationReviewPage = () => {
             <div className="space-y-4">
               <Textarea onChange={(event) => setRejectionNotes(event.target.value)} value={rejectionNotes} />
               <Button
-                disabled={reviewMutation.isPending || rejectionNotes.trim().length < 5}
+                disabled={verificationAlreadyRejected || reviewMutation.isPending || rejectionNotes.trim().length < 5}
                 onClick={() => reviewMutation.mutate({ action: "reject-verification", body: { reviewNotes: rejectionNotes } })}
                 variant="danger"
               >
-                Reject verification
+                {verificationAlreadyRejected ? "Already rejected" : "Reject verification"}
               </Button>
             </div>
           </SectionCard>
@@ -1480,6 +1547,7 @@ const WorkerSubscriptionPage = () => {
   const worker = workerQuery.data;
   const subscription = subscriptionQuery.data;
   const totalRevenueMinor = (subscription?.invoices ?? []).reduce((sum, invoice) => sum + invoice.amountMinor, 0);
+  const featuredNow = subscription?.isFeatured ?? worker?.isFeatured ?? false;
 
   if (!worker) {
     return (
@@ -1528,7 +1596,7 @@ const WorkerSubscriptionPage = () => {
             <KeyValueGrid
               columns="two"
               items={[
-                { label: "Featured now", value: subscription?.isFeatured ? "Yes" : "No" },
+                { label: "Featured now", value: featuredNow ? "Yes" : "No" },
                 { label: "Current status", value: subscription?.subscriptions[0]?.status ?? "No active subscription" }
               ]}
             />
@@ -1537,14 +1605,14 @@ const WorkerSubscriptionPage = () => {
             <Input onChange={(event) => setFeatureEndsAt(event.target.value)} type="datetime-local" value={featureEndsAt} />
 
             <div className="flex flex-wrap gap-3">
-              <Button disabled={featureMutation.isPending} onClick={() => featureMutation.mutate({ action: "ENABLE", body: { notes: featureNotes } })}>
+              <Button disabled={featureMutation.isPending || featuredNow} onClick={() => featureMutation.mutate({ action: "ENABLE", body: { notes: featureNotes } })}>
                 Enable featured
               </Button>
-              <Button disabled={featureMutation.isPending} onClick={() => featureMutation.mutate({ action: "DISABLE", body: { notes: featureNotes } })} variant="danger">
+              <Button disabled={featureMutation.isPending || !featuredNow} onClick={() => featureMutation.mutate({ action: "DISABLE", body: { notes: featureNotes } })} variant="danger">
                 Disable featured
               </Button>
               <Button
-                disabled={featureMutation.isPending || !featureEndsAt}
+                disabled={featureMutation.isPending || !featuredNow || !featureEndsAt}
                 onClick={() =>
                   featureMutation.mutate({
                     action: "EXTEND",
@@ -2149,7 +2217,13 @@ const SupportTicketDetailPage = () => {
                   { label: "Status", value: ticket.status }
                 ]}
               />
-              {ticketTimeline.length > 0 ? <TimelineList items={ticketTimeline} /> : <p className="text-sm text-[color:var(--jo-muted)]">No messages or notes were recorded for this ticket yet.</p>}
+              {ticketTimeline.length > 0 ? (
+                <div data-testid="support-ticket-message-timeline">
+                  <TimelineList items={ticketTimeline} />
+                </div>
+              ) : (
+                <p className="text-sm text-[color:var(--jo-muted)]">No messages or notes were recorded for this ticket yet.</p>
+              )}
             </div>
           </SectionCard>
 
@@ -2311,7 +2385,13 @@ const SupportTicketDetailPage = () => {
           </SectionCard>
 
           <SectionCard description="Admin-side actions already taken on this ticket or the linked user account." title="Admin Audit Trail">
-            {auditTimeline.length > 0 ? <TimelineList items={auditTimeline} /> : <p className="text-sm text-[color:var(--jo-muted)]">No admin audit events were recorded for this casefile yet.</p>}
+            {auditTimeline.length > 0 ? (
+              <div data-testid="support-ticket-audit-trail">
+                <TimelineList items={auditTimeline} />
+              </div>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">No admin audit events were recorded for this casefile yet.</p>
+            )}
           </SectionCard>
         </div>
       </div>

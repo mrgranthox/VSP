@@ -32,6 +32,7 @@ make staging-up
 make staging-seed
 make staging-gate
 make staging-down
+make final-hard-gate
 ```
 
 If you prefer not to use `make`, the same backend commands are documented in [`backend/README.md`](/home/edward-nyame/Desktop/VJS/backend/README.md).
@@ -75,6 +76,30 @@ The backend now has three standard verification paths:
 - native local checks through `backend/scripts/run-ci.sh`
 - containerized runtime checks through `compose.yml`
 - GitHub Actions verification through `.github/workflows/backend-ci.yml`
+
+## Final Gate Before User And Worker Frontends
+
+Before starting `frontend-web/` or `frontend-mobile/`, run the unified hard gate from the repo root:
+
+```bash
+make final-hard-gate
+```
+
+That gate combines:
+
+- backend CI and operational verifiers
+- admin frontend typecheck and production build
+- admin error-reporting verification
+- isolated admin Playwright coverage
+- staging-like compose boot and seed
+- staging release gate across API, gateway, and admin-web
+- admin Playwright coverage against the staging-like stack
+
+If you need the staging-like stack to remain up after a failure for inspection:
+
+```bash
+KEEP_STAGING_UP=true make final-hard-gate
+```
 
 ## Next Workspace Targets
 

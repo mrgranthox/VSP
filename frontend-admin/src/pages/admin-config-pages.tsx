@@ -45,6 +45,8 @@ const ActionDesk = ({ title, description, children }: { title: string; descripti
 
 const buildJsonDraft = (value: unknown) => JSON.stringify(value ?? null, null, 2);
 
+const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+
 const parseJsonDraft = (value: string, label: string) => {
   try {
     return JSON.parse(value);
@@ -92,8 +94,11 @@ const SearchAnalyticsPage = () => {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Recorded search impressions in the analytics dataset." icon={Search} label="Impressions" value={formatNumber(search?.impressionCount ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Top query rows currently returned from search analytics." icon={Activity} label="Top queries" value={formatNumber(search?.topQueries.length ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="City buckets represented in search logs." icon={Globe2} label="Top cities" value={formatNumber(search?.topCities.length ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Distinct query phrases seen in search traffic." icon={Activity} label="Unique queries" value={formatNumber(search?.uniqueQueries ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Unique signed-in searchers represented in impression logs." icon={Globe2} label="Unique users" value={formatNumber(search?.uniqueUsers ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Worker profiles surfaced in search impression records." icon={Search} label="Workers surfaced" value={formatNumber(search?.uniqueWorkers ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#173328,#4c6e63)" helper="Average position of tracked search impressions." icon={Activity} label="Avg rank" value={search ? search.averageRankPosition.toFixed(1) : "0.0"} />
+        <InsightMetricCard accent="linear-gradient(135deg,#D9D4CA,#f4efe5)" helper="City buckets represented in search logs." icon={Globe2} label="Top cities" value={formatNumber(search?.topCities.length ?? 0)} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -114,6 +119,15 @@ const SearchAnalyticsPage = () => {
           }))}
           description="Search impression density grouped by city bucket."
           title="City demand spread"
+        />
+
+        <BarMetricCard
+          data={(search?.topWorkers ?? []).slice(0, 8).map((item) => ({
+            name: item.displayName.slice(0, 12),
+            value: item._count._all
+          }))}
+          description="Which worker profiles are getting the most search exposure."
+          title="Top surfaced workers"
         />
       </div>
     </div>
@@ -138,6 +152,13 @@ const EngagementAnalyticsPage = () => {
         <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Chat and system messages." icon={Activity} label="Messages" value={formatNumber(engagement?.messages ?? 0)} />
         <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Marketplace review records." icon={Activity} label="Reviews" value={formatNumber(engagement?.reviews ?? 0)} />
         <InsightMetricCard accent="linear-gradient(135deg,#173328,#4c6e63)" helper="Stored notification rows." icon={Activity} label="Notifications" value={formatNumber(engagement?.notifications ?? 0)} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Conversations carrying those messages." icon={Activity} label="Conversations" value={formatNumber(engagement?.conversations ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Post and comment likes combined into social reaction volume." icon={Activity} label="Reaction volume" value={formatNumber((engagement?.postLikes ?? 0) + (engagement?.commentLikes ?? 0))} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Saved posts and saved workers across the marketplace." icon={Activity} label="Save volume" value={formatNumber((engagement?.postSaves ?? 0) + (engagement?.savedWorkers ?? 0))} />
+        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Average message density per conversation." icon={Activity} label="Msgs / convo" value={engagement ? engagement.avgMessagesPerConversation.toFixed(2) : "0.00"} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -165,6 +186,30 @@ const EngagementAnalyticsPage = () => {
           description="Absolute comparison between the core activity modules."
           title="Activity comparison"
         />
+        <DonutChartCard
+          centerLabel="notification read"
+          centerValue={
+            engagement && engagement.notifications > 0
+              ? formatPercent((engagement.readNotifications / engagement.notifications) * 100)
+              : "0.0%"
+          }
+          data={[
+            { name: "Read", value: engagement?.readNotifications ?? 0 },
+            { name: "Unread", value: engagement?.unreadNotifications ?? 0 }
+          ]}
+          description="Read versus unread notifications, useful for checking if admin/user messages are actually being consumed."
+          title="Notification read mix"
+        />
+        <BarMetricCard
+          data={[
+            { name: "Likes", value: (engagement?.postLikes ?? 0) + (engagement?.commentLikes ?? 0) },
+            { name: "Saves", value: (engagement?.postSaves ?? 0) + (engagement?.savedWorkers ?? 0) },
+            { name: "Follows", value: engagement?.follows ?? 0 },
+            { name: "Tickets", value: engagement?.supportTickets ?? 0 }
+          ]}
+          description="This exposes whether engagement is social, commercial, or operational support load."
+          title="Secondary engagement signals"
+        />
       </div>
     </div>
   );
@@ -185,8 +230,8 @@ const MarketplaceAnalyticsPage = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <InsightMetricCard accent="linear-gradient(135deg,#419646,#8bc08d)" helper="Featured subscriptions currently active." icon={Flag} label="Active featured workers" value={formatNumber(analytics?.activeFeaturedWorkers ?? 0)} />
         <InsightMetricCard accent="linear-gradient(135deg,#F6B313,#FFD25E)" helper="Succeeded payment-intent volume." icon={Settings2} label="Revenue" value={formatCurrency(analytics?.revenueMinor ?? 0, "USD")} />
-        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Service-request status buckets." icon={Activity} label="Request states" value={formatNumber(analytics?.serviceRequests.length ?? 0)} />
-        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Booking status buckets." icon={Activity} label="Booking states" value={formatNumber(analytics?.bookings.length ?? 0)} />
+        <InsightMetricCard accent="linear-gradient(135deg,#E9779B,#F4ACC4)" helper="Conversion from total requests into bookings." icon={Activity} label="Request -> booking" value={analytics ? formatPercent(analytics.requestToBookingRate) : "0.0%"} />
+        <InsightMetricCard accent="linear-gradient(135deg,#FF4B19,#FF8C63)" helper="Conversion from total requests into completed bookings." icon={Activity} label="Request -> complete" value={analytics ? formatPercent(analytics.requestToCompletionRate) : "0.0%"} />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -204,6 +249,23 @@ const MarketplaceAnalyticsPage = () => {
           data={(analytics?.bookings ?? []).map((entry) => ({ name: entry.status, value: entry._count._all }))}
           description="Lifecycle mix for bookings."
           title="Booking status distribution"
+        />
+        <DonutChartCard
+          centerLabel="payments"
+          centerValue={formatNumber((analytics?.paymentIntents ?? []).reduce((sum, item) => sum + item._count._all, 0))}
+          data={(analytics?.paymentIntents ?? []).map((entry) => ({ name: entry.status, value: entry._count._all }))}
+          description="Payment-intent health by provider lifecycle status."
+          title="Payment intent distribution"
+        />
+        <BarMetricCard
+          data={[
+            { name: "Payment", value: analytics?.supportEscalations.payment ?? 0 },
+            { name: "Worker", value: analytics?.supportEscalations.worker ?? 0 },
+            { name: "Request", value: analytics?.supportEscalations.serviceRequest ?? 0 },
+            { name: "Booking", value: analytics?.supportEscalations.booking ?? 0 }
+          ]}
+          description="Support load tied to marketplace entities. This is the first place to check when users report subscription or payment trouble."
+          title="Marketplace support escalations"
         />
       </div>
     </div>

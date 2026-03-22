@@ -7,12 +7,12 @@ STAGING_POSTGRES_PORT ?= 55432
 STAGING_REDIS_PORT ?= 56379
 STAGING_APP_BASE_URL ?= http://localhost:$(STAGING_API_PORT)
 STAGING_ADMIN_API_BASE_URL ?= $(STAGING_APP_BASE_URL)/api/v1
-STAGING_CORS_ALLOWED_ORIGINS ?= $(STAGING_APP_BASE_URL),http://localhost:$(STAGING_ADMIN_PORT),http://localhost:$(STAGING_GATEWAY_PORT)
+STAGING_CORS_ALLOWED_ORIGINS ?= $(STAGING_APP_BASE_URL),http://localhost:$(STAGING_ADMIN_PORT),http://localhost:$(STAGING_GATEWAY_PORT),http://127.0.0.1:$(STAGING_API_PORT),http://127.0.0.1:$(STAGING_ADMIN_PORT),http://127.0.0.1:$(STAGING_GATEWAY_PORT)
 STAGING_BACKEND_ENV_FILE ?= ./backend/.env
 STAGING_BACKEND_COMPOSE_ENV_FILE ?= ./backend/.env.compose.example
 STAGING_COMPOSE_ENV = BACKEND_ENV_FILE=$(STAGING_BACKEND_ENV_FILE) BACKEND_COMPOSE_ENV_FILE=$(STAGING_BACKEND_COMPOSE_ENV_FILE) API_PORT=$(STAGING_API_PORT) ADMIN_PORT=$(STAGING_ADMIN_PORT) WS_GATEWAY_PUBLISHED_PORT=$(STAGING_GATEWAY_PORT) POSTGRES_PORT=$(STAGING_POSTGRES_PORT) REDIS_PORT=$(STAGING_REDIS_PORT) APP_BASE_URL=$(STAGING_APP_BASE_URL) CDN_BASE_URL=$(STAGING_APP_BASE_URL) CORS_ALLOWED_ORIGINS=$(STAGING_CORS_ALLOWED_ORIGINS) ADMIN_VITE_API_BASE_URL=$(STAGING_ADMIN_API_BASE_URL) EVENT_BUS_MODE=queue
 
-.PHONY: help backend-install backend-dev backend-workers backend-gateway backend-typecheck backend-test backend-build backend-ci backend-seed compose-up compose-down compose-seed staging-up staging-seed staging-gate staging-down
+.PHONY: help backend-install backend-dev backend-workers backend-gateway backend-typecheck backend-test backend-build backend-ci backend-seed compose-up compose-down compose-seed staging-up staging-seed staging-gate staging-down final-hard-gate
 
 help:
 	@printf "Available targets:\n"
@@ -32,6 +32,7 @@ help:
 	@printf "  staging-seed      Seed the staging-like Docker Compose database\n"
 	@printf "  staging-gate      Run the release gate against the staging-like stack\n"
 	@printf "  staging-down      Stop the staging-like Docker Compose stack\n"
+	@printf "  final-hard-gate   Run the final gate before starting user/worker frontend work\n"
 
 backend-install:
 	cd backend && npm ci
@@ -80,3 +81,6 @@ staging-gate:
 
 staging-down:
 	$(STAGING_COMPOSE_ENV) docker compose down
+
+final-hard-gate:
+	./scripts/final-hard-gate.sh

@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BellDot, CheckCheck, ChevronRight, Megaphone, MessageCircleMore, ShieldAlert, Wrench } from "lucide-react";
 import { useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { PaginationControls } from "@/components/admin/list-controls";
 import { PageHeader } from "@/components/layout/page-header";
 import { useCurrentAdmin } from "@/features/auth/auth";
 import { hasPermission } from "@/lib/admin-permissions";
@@ -106,7 +107,7 @@ const NotificationsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { notificationId } = useParams();
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [broadcastForm, setBroadcastForm] = useState({
     targetAudience: "ALL_USERS",
     targetId: "",
@@ -116,10 +117,30 @@ const NotificationsPage = () => {
   });
   const queryClient = useQueryClient();
   const adminQuery = useCurrentAdmin();
+  const unreadOnly = searchParams.get("unread") === "true";
+  const currentPage = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const updateSearchState = (updates: { page?: number; unreadOnly?: boolean }) => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+
+    if (updates.page !== undefined) {
+      nextSearchParams.set("page", String(Math.max(1, updates.page)));
+    }
+
+    if (updates.unreadOnly !== undefined) {
+      if (updates.unreadOnly) {
+        nextSearchParams.set("unread", "true");
+      } else {
+        nextSearchParams.delete("unread");
+      }
+    }
+
+    setSearchParams(nextSearchParams, { replace: true });
+  };
 
   const notificationsQuery = useQuery({
-    queryKey: ["notifications", unreadOnly],
-    queryFn: () => apiPaginatedRequest<NotificationItem>(`/notifications?page=1&limit=20${unreadOnly ? "&isRead=false" : ""}`)
+    queryKey: ["notifications", currentPage, unreadOnly],
+    queryFn: () => apiPaginatedRequest<NotificationItem>(`/notifications?page=${currentPage}&limit=20${unreadOnly ? "&isRead=false" : ""}`)
   });
 
   const notificationDetailQuery = useQuery({
@@ -184,6 +205,7 @@ const NotificationsPage = () => {
   const canBroadcast = hasPermission(roles, "NOTIFICATION_BROADCAST");
   const isBroadcastRoute = location.pathname.endsWith("/broadcast");
   const selectedNotification = notificationDetailQuery.data ?? notifications.find((item) => item.id === notificationId) ?? null;
+  const selectedNotificationIndex = notificationId ? notifications.findIndex((item) => item.id === notificationId) : -1;
 
   const groupedTypes = useMemo(() => {
     const counts = new Map<string, number>();
@@ -204,7 +226,10 @@ const NotificationsPage = () => {
       }
     }
 
-    navigate(`/notifications/${notification.id}`);
+    navigate({
+      pathname: `/notifications/${notification.id}`,
+      search: `?${searchParams.toString()}`
+    });
   };
 
   const broadcastCard = canBroadcast ? (
@@ -327,7 +352,12 @@ const NotificationsPage = () => {
                     : "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] text-[color:var(--jo-ink)]"
                 )}
                 data-testid="notifications-unread-filter"
-                onClick={() => setUnreadOnly((value) => !value)}
+                onClick={() =>
+                  updateSearchState({
+                    unreadOnly: !unreadOnly,
+                    page: 1
+                  })
+                }
               >
                 Unread only
                 <span className={`h-3 w-3 rounded-full ${unreadOnly ? "bg-[color:var(--jo-forest)]" : "bg-[color:rgba(107,114,102,0.35)]"}`} />
@@ -352,9 +382,18 @@ const NotificationsPage = () => {
           <Card>
             <CardHeader>
               <CardTitle>Notification feed</CardTitle>
-              <CardDescription>Every row opens a route-backed detail view and preserves a clean audit trail of the payload.</CardDescription>
+              <CardDescription>
+                Every row opens a route-backed detail view, keeps feed state in the URL, and supports real queue pagination instead of a fixed first page.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
+              <div className="rounded-[1.2rem] border border-[rgba(112,104,84,0.12)] bg-[rgba(255,251,244,0.92)] px-4 py-3 text-sm text-[color:var(--jo-muted)]">
+                Showing page <span className="font-semibold text-[color:var(--jo-ink)]">{notificationsQuery.data?.pagination.page ?? currentPage}</span>{" "}
+                of{" "}
+                <span className="font-semibold text-[color:var(--jo-ink)]">
+                  {notificationsQuery.data?.pagination ? Math.max(1, Math.ceil(notificationsQuery.data.pagination.total / notificationsQuery.data.pagination.limit)) : 1}
+                </span>
+              </div>
               {notifications.map((notification) => {
                 const Icon = iconMap[notification.notificationType as keyof typeof iconMap] ?? BellDot;
                 const variant = variantMap[notification.notificationType as keyof typeof variantMap] ?? "blue";
@@ -390,6 +429,7 @@ const NotificationsPage = () => {
                   </button>
                 );
               })}
+              <PaginationControls onPageChange={(page) => updateSearchState({ page })} pagination={notificationsQuery.data?.pagination} />
             </CardContent>
           </Card>
 
@@ -438,9 +478,27 @@ const NotificationsPage = () => {
                           Mark as read
                         </Button>
                       ) : null}
-                      <Link className="inline-flex" to="/notifications">
+                      <Link className="inline-flex" to={`/notifications?${searchParams.toString()}`}>
                         <Button variant="outline">Back to feed</Button>
                       </Link>
+                      {selectedNotificationIndex >= 0 ? (
+                        <>
+                          <Button
+                            disabled={selectedNotificationIndex <= 0}
+                            onClick={() => void handleOpenNotification(notifications[selectedNotificationIndex - 1])}
+                            variant="outline"
+                          >
+                            Previous in page
+                          </Button>
+                          <Button
+                            disabled={selectedNotificationIndex >= notifications.length - 1}
+                            onClick={() => void handleOpenNotification(notifications[selectedNotificationIndex + 1])}
+                            variant="outline"
+                          >
+                            Next in page
+                          </Button>
+                        </>
+                      ) : null}
                       {selectedNotification.notificationType === "ADMIN_BROADCAST" && canBroadcast ? (
                         <Link className="inline-flex" to="/notifications/broadcast">
                           <Button variant="outline">

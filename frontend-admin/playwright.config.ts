@@ -5,6 +5,7 @@ const frontendUrl = process.env.E2E_FRONTEND_BASE_URL ?? "http://127.0.0.1:3101"
 const backendPort = new URL(backendUrl).port || "3100";
 const frontendPort = new URL(frontendUrl).port || "3101";
 const frontendHost = new URL(frontendUrl).hostname || "127.0.0.1";
+const useExistingServer = process.env.E2E_USE_EXISTING_SERVER === "true";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -24,31 +25,33 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure"
   },
-  webServer: [
-    {
-      command: "npm start",
-      cwd: "../backend",
-      env: {
-        ...process.env,
-        PORT: backendPort,
-        APP_BASE_URL: backendUrl,
-        CORS_ALLOWED_ORIGINS: frontendUrl
-      },
-      url: `${backendUrl}/api/v1/health`,
-      reuseExistingServer: false,
-      timeout: 120_000
-    },
-    {
-      command: `npm run dev -- --host ${frontendHost} --port ${frontendPort} --mode e2e`,
-      env: {
-        ...process.env,
-        VITE_API_BASE_URL: `${backendUrl}/api/v1`
-      },
-      url: frontendUrl,
-      reuseExistingServer: false,
-      timeout: 120_000
-    }
-  ],
+  webServer: useExistingServer
+    ? undefined
+    : [
+        {
+          command: "npm start",
+          cwd: "../backend",
+          env: {
+            ...process.env,
+            PORT: backendPort,
+            APP_BASE_URL: backendUrl,
+            CORS_ALLOWED_ORIGINS: frontendUrl
+          },
+          url: `${backendUrl}/api/v1/health`,
+          reuseExistingServer: false,
+          timeout: 120_000
+        },
+        {
+          command: `npm run dev -- --host ${frontendHost} --port ${frontendPort} --mode e2e`,
+          env: {
+            ...process.env,
+            VITE_API_BASE_URL: `${backendUrl}/api/v1`
+          },
+          url: frontendUrl,
+          reuseExistingServer: false,
+          timeout: 120_000
+        }
+      ],
   projects: [
     {
       name: "setup",

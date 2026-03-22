@@ -82,6 +82,8 @@ test.describe.serial("admin critical browser workflows", () => {
   });
 
   test("support tickets and audit logs support operational exports and bulk updates", async ({ page }) => {
+    const supportNote = `Browser coverage internal note for the support casefile ${Date.now()}.`;
+
     await page.goto("/support-tickets");
     await expect(page.getByTestId("support-tickets-page")).toBeVisible();
     await expect(page.getByRole("link", { name: /Open ticket/i }).first()).toBeVisible();
@@ -96,10 +98,10 @@ test.describe.serial("admin critical browser workflows", () => {
 
     await page.getByRole("link", { name: /Open ticket/i }).first().click();
     await expect(page.getByTestId("support-ticket-detail-page")).toBeVisible();
-    await page.getByTestId("support-ticket-reply-body").fill("Browser coverage internal note for the support casefile.");
+    await page.getByTestId("support-ticket-reply-body").fill(supportNote);
     await page.getByTestId("support-ticket-internal-note").check();
     await page.getByTestId("support-ticket-send-update").click();
-    await expect(page.getByText(/internal note added|reply sent/i)).toBeVisible();
+    await expect(page.getByTestId("support-ticket-message-timeline").getByText(supportNote)).toBeVisible();
 
     await page.goto("/audit-logs");
     await expect(page.getByTestId("audit-logs-page")).toBeVisible();

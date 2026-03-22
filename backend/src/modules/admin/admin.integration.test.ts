@@ -831,6 +831,8 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(fraudSignalsResponse.status, 200);
   assert.equal(fraudSignalsResponse.body.pagination.total >= 1, true);
+  assert.equal(typeof fraudSignalsResponse.body.data[0].investigationContext.activeSessionCount, "number");
+  assert.equal(Array.isArray(fraudSignalsResponse.body.data[0].investigationContext.sameIpAccounts), true);
 
   const actionFraudSignalResponse = await api
     .patch(`/api/v1/admin/fraud-signals/${fraudSignal.id}`)
@@ -996,6 +998,7 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(auditLogsResponse.status, 200);
   assert.equal(auditLogsResponse.body.pagination.total >= 1, true);
+  assert.equal(Array.isArray(auditLogsResponse.body.data[0].metadataHighlights), true);
 
   const auditLogsExportResponse = await api
     .get("/api/v1/admin/audit-logs/export?action=REPORT_BULK_UPDATED")
@@ -1017,18 +1020,24 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
     .set("Authorization", `Bearer ${adminSession.accessToken}`);
 
   assert.equal(searchAnalyticsResponse.status, 200);
+  assert.equal(typeof searchAnalyticsResponse.body.data.uniqueQueries, "number");
+  assert.equal(Array.isArray(searchAnalyticsResponse.body.data.topWorkers), true);
 
   const engagementAnalyticsResponse = await api
     .get("/api/v1/admin/analytics/engagement")
     .set("Authorization", `Bearer ${adminSession.accessToken}`);
 
   assert.equal(engagementAnalyticsResponse.status, 200);
+  assert.equal(typeof engagementAnalyticsResponse.body.data.avgMessagesPerConversation, "number");
+  assert.equal(typeof engagementAnalyticsResponse.body.data.unreadNotifications, "number");
 
   const marketplaceAnalyticsResponse = await api
     .get("/api/v1/admin/analytics/marketplace")
     .set("Authorization", `Bearer ${adminSession.accessToken}`);
 
   assert.equal(marketplaceAnalyticsResponse.status, 200);
+  assert.equal(typeof marketplaceAnalyticsResponse.body.data.requestToBookingRate, "number");
+  assert.equal(Array.isArray(marketplaceAnalyticsResponse.body.data.paymentIntents), true);
 
   const rolesResponse = await api
     .get("/api/v1/admin/roles")

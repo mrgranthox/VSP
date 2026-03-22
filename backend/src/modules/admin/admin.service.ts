@@ -200,6 +200,112 @@ class AdminService {
     };
   }
 
+  private resolveAdminEntityLinkPath(entityType?: string | null, entityId?: string | null): string | null {
+    if (!entityType || !entityId) {
+      return null;
+    }
+
+    switch (entityType) {
+      case "post":
+      case "comment":
+      case "review":
+      case "message":
+        return `/content/${entityType}/${entityId}`;
+      case "service_request":
+        return `/service-requests/${entityId}`;
+      case "booking":
+        return `/bookings/${entityId}`;
+      case "user":
+        return `/users/${entityId}`;
+      case "worker":
+      case "worker_profile":
+        return `/workers/${entityId}`;
+      case "report":
+        return `/reports/${entityId}`;
+      case "moderation_case":
+        return `/moderation-cases/${entityId}`;
+      case "support_ticket":
+        return `/support-tickets/${entityId}`;
+      case "fraud_signal":
+        return `/fraud-signals/${entityId}`;
+      default:
+        return null;
+    }
+  }
+
+  private stringifyAuditValue(value: unknown): string {
+    if (value === null || value === undefined) {
+      return "—";
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+      return String(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((entry) => this.stringifyAuditValue(entry)).join(", ");
+    }
+
+    return JSON.stringify(value);
+  }
+
+  private extractMetadataHighlights(metadata: unknown, prefix = ""): Array<{ label: string; value: string }> {
+    if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+      return [];
+    }
+
+    const entries = Object.entries(metadata as Record<string, unknown>);
+    const highlights: Array<{ label: string; value: string }> = [];
+
+    for (const [key, rawValue] of entries) {
+      if (highlights.length >= 8) {
+        break;
+      }
+
+      const label = prefix ? `${prefix}.${key}` : key;
+
+      if (rawValue && typeof rawValue === "object" && !Array.isArray(rawValue)) {
+        highlights.push(...this.extractMetadataHighlights(rawValue, label));
+        continue;
+      }
+
+      highlights.push({
+        label,
+        value: this.stringifyAuditValue(rawValue)
+      });
+    }
+
+    return highlights.slice(0, 8);
+  }
+
+  private mapAdminAuditLog(entry: {
+    id: string;
+    adminUserId?: string | null;
+    action: string;
+    entityType?: string | null;
+    entityId?: string | null;
+    metadataJson?: Prisma.JsonValue | null;
+    createdAt: Date;
+    adminUser?: {
+      email?: string | null;
+      profile?: {
+        firstName?: string | null;
+        lastName?: string | null;
+        displayName?: string | null;
+      } | null;
+    } | null;
+  }) {
+    return {
+      ...entry,
+      entityLinkPath: this.resolveAdminEntityLinkPath(entry.entityType, entry.entityId),
+      metadataHighlights: this.extractMetadataHighlights(entry.metadataJson)
+    };
+  }
+
   private buildExportFilename(prefix: string): string {
     return `${prefix}-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
   }
@@ -2321,7 +2427,7 @@ class AdminService {
       openedByUserInvestigation,
       relatedSupportTickets: relatedSupportTickets.map((relatedTicket) => this.mapSupportTicketSummary(relatedTicket)),
       relatedEntitySummary,
-      auditTrail
+      auditTrail: auditTrail.map((entry) => this.mapAdminAuditLog(entry))
     };
   }
 
@@ -2468,7 +2574,7 @@ class AdminService {
     ]);
 
     return {
-      data: items,
+      data: items.map((item) => this.mapAdminAuditLog(item)),
       pagination: buildPagination(pagination.page, pagination.limit, total)
     };
   }
@@ -2574,9 +2680,51 @@ class AdminService {
 
   async getAnalyticsSearch(query: { from?: string; to?: string }) {
     const createdAt = this.buildDateRangeWhere(query.from, query.to);
-    const [impressionCount, topQueries, topCities] = await Promise.all([
+    const [impressionCount, distinctQueryRows, distinctUserRows, distinctWorkerRows, avgRankPosition, topQueries, topCities, topWorkersRaw] = await Promise.all([
       prisma.searchImpression.count({
         where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.searchImpression.findMany({
+        where: {
+          ...(createdAt ? { createdAt } : {}),
+          queryText: {
+            not: null
+          }
+        },
+        distinct: ["queryText"],
+        select: {
+          queryText: true
+        }
+      }),
+      prisma.searchImpression.findMany({
+        where: {
+          ...(createdAt ? { createdAt } : {}),
+          userId: {
+            not: null
+          }
+        },
+        distinct: ["userId"],
+        select: {
+          userId: true
+        }
+      }),
+      prisma.searchImpression.findMany({
+        where: {
+          ...(createdAt ? { createdAt } : {}),
+          workerProfileId: {
+            not: null
+          }
+        },
+        distinct: ["workerProfileId"],
+        select: {
+          workerProfileId: true
+        }
+      }),
+      prisma.searchImpression.aggregate({
+        where: createdAt ? { createdAt } : undefined,
+        _avg: {
+          rankPosition: true
+        }
       }),
       prisma.searchImpression.groupBy({
         by: ["queryText"],
@@ -2613,20 +2761,68 @@ class AdminService {
           }
         },
         take: 10
+      }),
+      prisma.searchImpression.groupBy({
+        by: ["workerProfileId"],
+        where: {
+          ...(createdAt ? { createdAt } : {}),
+          workerProfileId: {
+            not: null
+          }
+        },
+        _count: {
+          _all: true
+        },
+        orderBy: {
+          _count: {
+            workerProfileId: "desc"
+          }
+        },
+        take: 8
       })
     ]);
 
+    const topWorkerIds = topWorkersRaw.map((entry) => entry.workerProfileId).filter((value): value is string => Boolean(value));
+    const topWorkers = topWorkerIds.length
+      ? await prisma.workerProfile.findMany({
+          where: {
+            id: {
+              in: topWorkerIds
+            }
+          },
+          include: {
+            user: {
+              select: publicUserSelect
+            }
+          }
+        })
+      : [];
+    const workerById = new Map(topWorkers.map((worker) => [worker.id, worker]));
+
     return {
       impressionCount,
+      uniqueQueries: distinctQueryRows.length,
+      uniqueUsers: distinctUserRows.length,
+      uniqueWorkers: distinctWorkerRows.length,
+      averageRankPosition: Number(avgRankPosition._avg.rankPosition ?? 0),
       topQueries,
-      topCities
+      topCities,
+      topWorkers: topWorkersRaw.map((entry) => {
+        const worker = entry.workerProfileId ? workerById.get(entry.workerProfileId) : null;
+        return {
+          workerProfileId: entry.workerProfileId ?? "",
+          displayName: worker ? getDisplayName(worker.user.profile) ?? worker.user.email ?? worker.id : entry.workerProfileId ?? "Unknown worker",
+          headline: worker?.headline ?? null,
+          _count: entry._count
+        };
+      })
     };
   }
 
   async getAnalyticsEngagement(query: { from?: string; to?: string }) {
     const createdAt = this.buildDateRangeWhere(query.from, query.to);
 
-    const [posts, comments, messages, reviews, notifications] = await Promise.all([
+    const [posts, comments, messages, reviews, notifications, conversations, postLikes, commentLikes, postSaves, follows, savedWorkers, supportTickets, unreadNotifications] = await Promise.all([
       prisma.post.count({
         where: createdAt ? { createdAt } : undefined
       }),
@@ -2641,6 +2837,33 @@ class AdminService {
       }),
       prisma.notification.count({
         where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.conversation.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.postLike.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.commentLike.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.postSave.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.userFollow.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.customerSavedWorker.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.supportTicket.count({
+        where: createdAt ? { createdAt } : undefined
+      }),
+      prisma.notification.count({
+        where: {
+          ...(createdAt ? { createdAt } : {}),
+          isRead: false
+        }
       })
     ]);
 
@@ -2649,7 +2872,17 @@ class AdminService {
       comments,
       messages,
       reviews,
-      notifications
+      notifications,
+      conversations,
+      postLikes,
+      commentLikes,
+      postSaves,
+      follows,
+      savedWorkers,
+      supportTickets,
+      unreadNotifications,
+      readNotifications: Math.max(notifications - unreadNotifications, 0),
+      avgMessagesPerConversation: conversations > 0 ? Number((messages / conversations).toFixed(2)) : 0
     };
   }
 
@@ -2658,7 +2891,7 @@ class AdminService {
     const bookingWindow = this.buildDateRangeWhere(query.from, query.to);
     const paymentWindow = this.buildDateRangeWhere(query.from, query.to);
 
-    const [requestCounts, bookingCounts, featuredWorkers, revenue] = await Promise.all([
+    const [requestCounts, bookingCounts, featuredWorkers, revenue, paymentCounts, featuredSubscriptionCounts, paymentSupportEscalations, workerSupportEscalations, requestSupportEscalations, bookingSupportEscalations] = await Promise.all([
       prisma.serviceRequest.groupBy({
         by: ["status"],
         where: requestWindow ? { requestedAt: requestWindow } : undefined,
@@ -2689,14 +2922,66 @@ class AdminService {
         _sum: {
           amountMinor: true
         }
+      }),
+      prisma.paymentIntent.groupBy({
+        by: ["status"],
+        where: paymentWindow ? { createdAt: paymentWindow } : undefined,
+        _count: {
+          _all: true
+        }
+      }),
+      prisma.workerFeaturedSubscription.groupBy({
+        by: ["status"],
+        _count: {
+          _all: true
+        }
+      }),
+      prisma.supportTicket.count({
+        where: {
+          relatedEntityType: "payment"
+        }
+      }),
+      prisma.supportTicket.count({
+        where: {
+          relatedEntityType: "worker"
+        }
+      }),
+      prisma.supportTicket.count({
+        where: {
+          relatedEntityType: "service_request"
+        }
+      }),
+      prisma.supportTicket.count({
+        where: {
+          relatedEntityType: "booking"
+        }
       })
     ]);
+
+    const totalRequests = requestCounts.reduce((sum, item) => sum + item._count._all, 0);
+    const totalBookings = bookingCounts.reduce((sum, item) => sum + item._count._all, 0);
+    const completedBookings = bookingCounts
+      .filter((item) => item.status === BookingStatus.COMPLETED)
+      .reduce((sum, item) => sum + item._count._all, 0);
 
     return {
       serviceRequests: requestCounts,
       bookings: bookingCounts,
+      paymentIntents: paymentCounts,
+      featuredSubscriptions: featuredSubscriptionCounts,
       activeFeaturedWorkers: featuredWorkers,
-      revenueMinor: revenue._sum.amountMinor ?? 0
+      revenueMinor: revenue._sum.amountMinor ?? 0,
+      totalRequests,
+      totalBookings,
+      completedBookings,
+      requestToBookingRate: totalRequests > 0 ? Number(((totalBookings / totalRequests) * 100).toFixed(2)) : 0,
+      requestToCompletionRate: totalRequests > 0 ? Number(((completedBookings / totalRequests) * 100).toFixed(2)) : 0,
+      supportEscalations: {
+        payment: paymentSupportEscalations,
+        worker: workerSupportEscalations,
+        serviceRequest: requestSupportEscalations,
+        booking: bookingSupportEscalations
+      }
     };
   }
 
@@ -3340,8 +3625,10 @@ class AdminService {
       prisma.fraudSignal.count({ where })
     ]);
 
+    const enrichedItems = await this.enrichFraudSignalsWithInvestigationContext(items);
+
     return {
-      data: items,
+      data: enrichedItems,
       pagination: buildPagination(pagination.page, pagination.limit, total)
     };
   }
@@ -3393,6 +3680,219 @@ class AdminService {
       filename: this.buildExportFilename("admin-fraud-signals"),
       csv: buildCsv(columns, rows)
     };
+  }
+
+  private async enrichFraudSignalsWithInvestigationContext<
+    T extends {
+      id: string;
+      userId?: string | null;
+      user?: {
+        id: string;
+        email?: string | null;
+        profile?: {
+          firstName?: string | null;
+          lastName?: string | null;
+          displayName?: string | null;
+        } | null;
+      } | null;
+    }
+  >(items: T[]) {
+    const userIds = Array.from(new Set(items.map((item) => item.userId).filter((value): value is string => Boolean(value))));
+
+    if (userIds.length === 0) {
+      return items;
+    }
+
+    const now = new Date();
+    const activeSessions = await prisma.userSession.findMany({
+      where: {
+        userId: { in: userIds },
+        revokedAt: null,
+        expiresAt: { gt: now }
+      },
+      orderBy: [{ createdAt: "desc" }]
+    });
+
+    const activeSessionCountByUser = new Map<string, number>();
+    const latestSessionByUser = new Map<string, (typeof activeSessions)[number]>();
+
+    for (const session of activeSessions) {
+      activeSessionCountByUser.set(session.userId, (activeSessionCountByUser.get(session.userId) ?? 0) + 1);
+
+      if (!latestSessionByUser.has(session.userId)) {
+        latestSessionByUser.set(session.userId, session);
+      }
+    }
+
+    const latestSessionFingerprints = Array.from(latestSessionByUser.values());
+    const ipAddresses = Array.from(new Set(latestSessionFingerprints.map((session) => session.ipAddress).filter((value): value is string => Boolean(value))));
+    const deviceTypes = Array.from(new Set(latestSessionFingerprints.map((session) => session.deviceType).filter((value): value is string => Boolean(value))));
+
+    const relatedSessions =
+      ipAddresses.length > 0 || deviceTypes.length > 0
+        ? await prisma.userSession.findMany({
+            where: {
+              revokedAt: null,
+              expiresAt: { gt: now },
+              OR: [
+                ...(ipAddresses.length > 0 ? [{ ipAddress: { in: ipAddresses } }] : []),
+                ...(deviceTypes.length > 0 ? [{ deviceType: { in: deviceTypes } }] : [])
+              ]
+            },
+            include: {
+              user: {
+                select: publicUserSelect
+              }
+            },
+            orderBy: [{ createdAt: "desc" }]
+          })
+        : [];
+
+    const sameFingerprintAccountsByUser = new Map<
+      string,
+      Array<{
+        userId: string;
+        email?: string | null;
+        displayName?: string | null;
+        deviceType?: string | null;
+        ipAddress?: string | null;
+        lastSeenAt?: Date | null;
+      }>
+    >();
+    const sameIpAccountsByUser = new Map<
+      string,
+      Array<{
+        userId: string;
+        email?: string | null;
+        displayName?: string | null;
+        deviceType?: string | null;
+        ipAddress?: string | null;
+        lastSeenAt?: Date | null;
+      }>
+    >();
+
+    for (const [userId, latestSession] of latestSessionByUser.entries()) {
+      const sameFingerprintAccounts: Array<{
+        userId: string;
+        email?: string | null;
+        displayName?: string | null;
+        deviceType?: string | null;
+        ipAddress?: string | null;
+        lastSeenAt?: Date | null;
+      }> = [];
+      const sameIpAccounts: Array<{
+        userId: string;
+        email?: string | null;
+        displayName?: string | null;
+        deviceType?: string | null;
+        ipAddress?: string | null;
+        lastSeenAt?: Date | null;
+      }> = [];
+      const seenFingerprintUsers = new Set<string>();
+      const seenIpUsers = new Set<string>();
+
+      for (const session of relatedSessions) {
+        if (session.userId === userId) {
+          continue;
+        }
+
+        const sharesFingerprint =
+          Boolean(latestSession.ipAddress) &&
+          Boolean(latestSession.deviceType) &&
+          latestSession.ipAddress === session.ipAddress &&
+          latestSession.deviceType === session.deviceType;
+        const sharesIp = Boolean(latestSession.ipAddress) && latestSession.ipAddress === session.ipAddress;
+
+        if (sharesFingerprint && !seenFingerprintUsers.has(session.userId)) {
+          seenFingerprintUsers.add(session.userId);
+          sameFingerprintAccounts.push({
+            userId: session.userId,
+            email: session.user.email,
+            displayName: getDisplayName(session.user.profile) ?? session.user.email ?? session.userId,
+            deviceType: session.deviceType,
+            ipAddress: session.ipAddress,
+            lastSeenAt: session.createdAt
+          });
+        }
+
+        if (sharesIp && !seenIpUsers.has(session.userId)) {
+          seenIpUsers.add(session.userId);
+          sameIpAccounts.push({
+            userId: session.userId,
+            email: session.user.email,
+            displayName: getDisplayName(session.user.profile) ?? session.user.email ?? session.userId,
+            deviceType: session.deviceType,
+            ipAddress: session.ipAddress,
+            lastSeenAt: session.createdAt
+          });
+        }
+      }
+
+      sameFingerprintAccountsByUser.set(userId, sameFingerprintAccounts);
+      sameIpAccountsByUser.set(userId, sameIpAccounts);
+    }
+
+    const [reportCounts, openSupportTicketCounts] = await Promise.all([
+      prisma.report.groupBy({
+        by: ["reporterUserId"],
+        where: {
+          reporterUserId: {
+            in: userIds
+          }
+        },
+        _count: {
+          _all: true
+        }
+      }),
+      prisma.supportTicket.groupBy({
+        by: ["openedByUserId"],
+        where: {
+          openedByUserId: {
+            in: userIds
+          },
+          status: {
+            in: [SupportTicketStatus.OPEN, SupportTicketStatus.ASSIGNED, SupportTicketStatus.WAITING_USER, SupportTicketStatus.WAITING_INTERNAL]
+          }
+        },
+        _count: {
+          _all: true
+        }
+      })
+    ]);
+
+    const reportCountByUser = new Map(reportCounts.map((entry) => [entry.reporterUserId, entry._count._all]));
+    const openSupportTicketCountByUser = new Map(openSupportTicketCounts.map((entry) => [entry.openedByUserId, entry._count._all]));
+
+    return items.map((item) => {
+      if (!item.userId) {
+        return item;
+      }
+
+      const latestSession = latestSessionByUser.get(item.userId);
+
+      return {
+        ...item,
+        investigationContext: {
+          activeSessionCount: activeSessionCountByUser.get(item.userId) ?? 0,
+          reportCount: reportCountByUser.get(item.userId) ?? 0,
+          openSupportTicketCount: openSupportTicketCountByUser.get(item.userId) ?? 0,
+          latestSession: latestSession
+            ? {
+                id: latestSession.id,
+                deviceType: latestSession.deviceType,
+                ipAddress: latestSession.ipAddress,
+                mfaVerified: latestSession.mfaVerified,
+                mfaVerifiedAt: latestSession.mfaVerifiedAt,
+                mfaMethod: latestSession.mfaMethod,
+                createdAt: latestSession.createdAt,
+                expiresAt: latestSession.expiresAt
+              }
+            : null,
+          sameFingerprintAccounts: sameFingerprintAccountsByUser.get(item.userId) ?? [],
+          sameIpAccounts: sameIpAccountsByUser.get(item.userId) ?? []
+        }
+      };
+    });
   }
 
   async actionFraudSignal(

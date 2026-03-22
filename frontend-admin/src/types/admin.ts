@@ -8,8 +8,18 @@ export interface OverviewAnalytics {
 
 export interface SearchAnalytics {
   impressionCount: number;
+  uniqueQueries: number;
+  uniqueUsers: number;
+  uniqueWorkers: number;
+  averageRankPosition: number;
   topQueries: Array<{ queryText: string | null; _count: { _all: number } }>;
   topCities: Array<{ cityId: string | null; _count: { _all: number } }>;
+  topWorkers: Array<{
+    workerProfileId: string;
+    displayName: string;
+    headline?: string | null;
+    _count: { _all: number };
+  }>;
 }
 
 export interface EngagementAnalytics {
@@ -18,13 +28,36 @@ export interface EngagementAnalytics {
   messages: number;
   reviews: number;
   notifications: number;
+  conversations: number;
+  postLikes: number;
+  commentLikes: number;
+  postSaves: number;
+  follows: number;
+  savedWorkers: number;
+  supportTickets: number;
+  unreadNotifications: number;
+  readNotifications: number;
+  avgMessagesPerConversation: number;
 }
 
 export interface MarketplaceAnalytics {
   serviceRequests: Array<{ status: string; _count: { _all: number } }>;
   bookings: Array<{ status: string; _count: { _all: number } }>;
+  paymentIntents: Array<{ status: string; _count: { _all: number } }>;
+  featuredSubscriptions: Array<{ status: string; _count: { _all: number } }>;
   activeFeaturedWorkers: number;
   revenueMinor: number;
+  totalRequests: number;
+  totalBookings: number;
+  completedBookings: number;
+  requestToBookingRate: number;
+  requestToCompletionRate: number;
+  supportEscalations: {
+    payment: number;
+    worker: number;
+    serviceRequest: number;
+    booking: number;
+  };
 }
 
 export interface SystemHealth {
@@ -206,6 +239,24 @@ export interface AdminUserListItem extends UserSummary {
   roles: string[];
 }
 
+export interface FraudSignalLinkedAccount {
+  userId: string;
+  email?: string | null;
+  displayName?: string | null;
+  deviceType?: string | null;
+  ipAddress?: string | null;
+  lastSeenAt?: string | null;
+}
+
+export interface FraudSignalInvestigationContext {
+  activeSessionCount: number;
+  reportCount: number;
+  openSupportTicketCount: number;
+  latestSession?: AdminUserSessionItem | null;
+  sameFingerprintAccounts: FraudSignalLinkedAccount[];
+  sameIpAccounts: FraudSignalLinkedAccount[];
+}
+
 export interface AdminWorkerListItem {
   id: string;
   userId: string;
@@ -335,6 +386,11 @@ export interface AdminAuditLogItem {
   metadataJson?: Record<string, unknown> | null;
   createdAt: string;
   adminUser?: UserSummary | null;
+  entityLinkPath?: string | null;
+  metadataHighlights?: Array<{
+    label: string;
+    value: string;
+  }>;
 }
 
 export interface TradeSummary {
@@ -458,6 +514,7 @@ export interface FraudSignalItem {
   status: string;
   createdAt: string;
   user?: UserSummary | null;
+  investigationContext?: FraudSignalInvestigationContext;
 }
 
 export interface SystemConfigItem {
