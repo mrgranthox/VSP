@@ -141,6 +141,13 @@ const UpdateTicketStatusBody = z
   })
   .strict();
 
+const AddSupportTicketMessageBody = z
+  .object({
+    body: z.string().min(1).max(10000),
+    isInternalNote: z.boolean().default(false)
+  })
+  .strict();
+
 const BulkUpdateSupportTicketsBody = z
   .object({
     ticketIds: BulkUuidArray,
@@ -373,6 +380,7 @@ const BroadcastNotificationBody = z
 
 export {
   AddModerationActionBody,
+  AddSupportTicketMessageBody,
   AdminAnalyticsQuery,
   AdminAuditLogQuery,
   AdminBookingsQuery,

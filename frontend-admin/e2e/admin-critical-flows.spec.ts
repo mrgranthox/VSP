@@ -94,6 +94,13 @@ test.describe.serial("admin critical browser workflows", () => {
 
     await expect(page.getByText(/support tickets updated/i)).toBeVisible();
 
+    await page.getByRole("link", { name: /Open ticket/i }).first().click();
+    await expect(page.getByTestId("support-ticket-detail-page")).toBeVisible();
+    await page.getByTestId("support-ticket-reply-body").fill("Browser coverage internal note for the support casefile.");
+    await page.getByTestId("support-ticket-internal-note").check();
+    await page.getByTestId("support-ticket-send-update").click();
+    await expect(page.getByText(/internal note added|reply sent/i)).toBeVisible();
+
     await page.goto("/audit-logs");
     await expect(page.getByTestId("audit-logs-page")).toBeVisible();
     await expectCsvDownload(page, "audit-export");

@@ -8,6 +8,7 @@ import { authenticator } from "otplib";
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const authDir = resolve(currentDir, ".auth");
 const superAdminMfaPath = resolve(authDir, "superadmin-mfa.json");
+const backendBaseUrl = process.env.E2E_BACKEND_BASE_URL ?? "http://127.0.0.1:3100";
 
 const seededAccounts = {
   superAdmin: {
@@ -44,19 +45,41 @@ const loadTotpSecret = (): string => {
 };
 
 const generateTotpCode = (secret: string): string => authenticator.generate(secret);
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const waitForFreshTotpCode = async (secret: string, previousCode?: string): Promise<string> => {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < 35_000) {
+    const nextCode = generateTotpCode(secret);
+
+    if (!previousCode || nextCode !== previousCode) {
+      return nextCode;
+    }
+
+    await sleep(1_000);
+  }
+
+  return generateTotpCode(secret);
+};
 
 const hasStoredTotpSecret = (): boolean => existsSync(superAdminMfaPath);
 
 const dismissLoginMfaModalIfPresent = async (page: Page) => {
   const continueButton = page.getByTestId("login-mfa-continue");
 
+  await continueButton.waitFor({ state: "visible", timeout: 5_000 }).catch(() => null);
+
   if (await continueButton.isVisible().catch(() => false)) {
     await continueButton.click();
+    return true;
   }
+
+  return false;
 };
 
 const loginThroughApi = async (page: Page, email: string, password: string, deviceLabel: string) => {
-  const response = await page.request.post("http://127.0.0.1:3000/api/v1/auth/login", {
+  const response = await page.request.post(`${backendBaseUrl}/api/v1/auth/login`, {
     headers: {
       "content-type": "application/json",
       "x-device-type": `web-admin-e2e-${deviceLabel}-${Date.now()}`
@@ -90,20 +113,66 @@ const loginThroughUi = async (page: Page, email: string, password: string) => {
   await page.getByTestId("login-email").fill(email);
   await page.getByTestId("login-password").fill(password);
   await page.getByTestId("login-submit").click();
-  await dismissLoginMfaModalIfPresent(page);
+
+  const navigationPromise = page
+    .waitForURL(/\/(overview|access-denied|session-expired|profile|notifications|reports|support-tickets|fraud-signals|moderation-cases)/, {
+      timeout: 8_000
+    })
+    .then(() => "navigated")
+    .catch(() => null);
+
+  const modalDismissed = await Promise.race([navigationPromise, dismissLoginMfaModalIfPresent(page).then((dismissed) => (dismissed ? "dismissed" : null))]);
+
+  if (modalDismissed === "dismissed") {
+    await page.waitForURL(/\/(overview|access-denied|session-expired|profile|notifications|reports|support-tickets|fraud-signals|moderation-cases)/, {
+      timeout: 8_000
+    });
+  }
 };
 
 const waitForAdminShell = async (page: Page) => {
   await expect(page).toHaveURL(/\/(overview|access-denied|session-expired|profile|notifications|reports|support-tickets|fraud-signals|moderation-cases)/);
 };
 
-const stepUpWithSecret = async (page: Page, secret: string) => {
+const stepUpWithSecret = async (page: Page, secret: string, options?: { avoidCode?: string }) => {
   await page.goto("/profile/mfa");
   await expect(page.getByTestId("mfa-step-up-verify")).toBeVisible();
   await page.getByTestId("mfa-step-up-method-totp").click();
-  await page.getByTestId("mfa-step-up-code").fill(generateTotpCode(secret));
-  await page.getByTestId("mfa-step-up-verify").click();
-  await expect(page.getByText("Session elevated for dangerous actions")).toBeVisible();
+
+  const submitStepUpCode = async (code: string) => {
+    const codeField = page.getByTestId("mfa-step-up-code");
+    await codeField.fill("");
+    await codeField.fill(code);
+    await page.getByTestId("mfa-step-up-verify").click();
+
+    const successToast = page
+      .getByText("Session elevated for dangerous actions")
+      .waitFor({ state: "visible", timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    const verifiedState = page
+      .getByText(/Session MFA:\s*verified/i)
+      .waitFor({ state: "visible", timeout: 5_000 })
+      .then(() => true)
+      .catch(() => false);
+
+    return (await Promise.race([successToast, verifiedState])) === true;
+  };
+
+  let code = await waitForFreshTotpCode(secret, options?.avoidCode);
+
+  if (await submitStepUpCode(code)) {
+    return;
+  }
+
+  code = await waitForFreshTotpCode(secret, code);
+
+  if (await submitStepUpCode(code)) {
+    return;
+  }
+
+  throw new Error("Unable to elevate the admin session with the provided TOTP secret");
 };
 
 const configureTotpAndStepUp = async (page: Page) => {
@@ -117,19 +186,29 @@ const configureTotpAndStepUp = async (page: Page) => {
   }
 
   await page.goto("/profile/mfa");
-  await expect(page.getByTestId("mfa-start-totp-setup")).toBeVisible();
+  const startSetupButton = page.getByTestId("mfa-start-totp-setup");
+  const stepUpButton = page.getByTestId("mfa-step-up-verify");
 
-  await page.getByTestId("mfa-start-totp-setup").click();
+  if (!(await startSetupButton.isVisible().catch(() => false)) && (await stepUpButton.isVisible().catch(() => false)) && hasStoredTotpSecret()) {
+    await stepUpWithSecret(page, loadTotpSecret());
+    return;
+  }
+
+  await expect(startSetupButton).toBeVisible();
+
+  await startSetupButton.click();
   const secretLocator = page.getByTestId("mfa-totp-secret");
   await expect(secretLocator).toBeVisible();
   const secret = (await secretLocator.innerText()).trim();
   saveTotpSecret(secret);
 
-  await page.getByTestId("mfa-totp-setup-code").fill(generateTotpCode(secret));
+  const setupCode = generateTotpCode(secret);
+
+  await page.getByTestId("mfa-totp-setup-code").fill(setupCode);
   await page.getByTestId("mfa-totp-verify-setup").click();
   await expect(page.getByText("MFA setup verified")).toBeVisible();
 
-  await stepUpWithSecret(page, secret);
+  await stepUpWithSecret(page, secret, { avoidCode: setupCode });
 };
 
 const ensureFreshStepUp = async (page: Page) => {

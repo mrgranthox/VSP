@@ -467,7 +467,9 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
     .send({
       subject: "Need admin help",
       body: "I need support with this request.",
-      priority: "HIGH"
+      priority: "HIGH",
+      relatedEntityType: "service_request",
+      relatedEntityId: serviceRequestId
     });
 
   assert.equal(createTicketResponse.status, 201);
@@ -782,6 +784,37 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(bulkSupportTicketsResponse.status, 200);
   assert.equal(bulkSupportTicketsResponse.body.data.updatedCount, 2);
+
+  const ticketReplyResponse = await api
+    .post(`/api/v1/admin/support-tickets/${ticketId}/messages`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`)
+    .send({
+      body: "Internal support follow-up added from admin coverage.",
+      isInternalNote: true
+    });
+
+  assert.equal(ticketReplyResponse.status, 201);
+
+  const supportTicketDetailResponse = await api
+    .get(`/api/v1/admin/support-tickets/${ticketId}`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(supportTicketDetailResponse.status, 200);
+  assert.equal(supportTicketDetailResponse.body.data.id, ticketId);
+  assert.equal(supportTicketDetailResponse.body.data.relatedEntitySummary.entityType, "service_request");
+  assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.id, customer.userId);
+  assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.activityCollections.supportTickets.length >= 1, true);
+  assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.activityCollections.reports.length >= 1, true);
+  assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.activityCollections.fraudSignals.length >= 1, true);
+  assert.equal(supportTicketDetailResponse.body.data.relatedSupportTickets.some((item: { id: string }) => item.id === extraSupportTicket.id), true);
+  assert.equal(
+    supportTicketDetailResponse.body.data.messages.some((message: { isInternalNote: boolean; body: string }) => message.isInternalNote && /Internal support follow-up/.test(message.body)),
+    true
+  );
+  assert.equal(
+    supportTicketDetailResponse.body.data.auditTrail.some((entry: { action: string }) => entry.action === "SUPPORT_TICKET_INTERNAL_NOTE_ADDED"),
+    true
+  );
 
   const supportTicketsExportResponse = await api
     .get("/api/v1/admin/support-tickets/export?status=WAITING_USER")

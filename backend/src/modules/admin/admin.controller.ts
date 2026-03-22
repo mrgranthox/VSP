@@ -162,9 +162,19 @@ class AdminController {
     this.sendCsv(req, res, result);
   };
 
+  getSupportTicket = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.getSupportTicketDetail(req.params.ticketId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
   assignSupportTicket = async (req: Request, res: Response): Promise<void> => {
     await this.adminService.assignSupportTicket(this.requireActor(req), req.params.ticketId, req.body.assignedSupportUserId);
     res.status(200).json(success({ assigned: true }, { requestId: this.getRequestId(req) }));
+  };
+
+  addSupportTicketMessage = async (req: Request, res: Response): Promise<void> => {
+    await this.adminService.addSupportTicketMessage(this.requireActor(req), req.params.ticketId, req.body);
+    res.status(201).json(success({ created: true }, { requestId: this.getRequestId(req) }));
   };
 
   updateSupportTicketStatus = async (req: Request, res: Response): Promise<void> => {

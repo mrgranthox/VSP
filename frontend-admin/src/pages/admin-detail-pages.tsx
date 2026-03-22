@@ -1964,15 +1964,16 @@ const SupportTicketDetailPage = () => {
   const [status, setStatus] = useState("ASSIGNED");
 
   const ticketQuery = useQuery({
-    queryKey: ["support", "ticket", ticketId],
-    queryFn: () => apiRequest<SupportTicketDetail>(`/support/tickets/${ticketId}`),
+    queryKey: ["admin", "support-tickets", "detail", ticketId],
+    queryFn: () => apiRequest<SupportTicketDetail>(`/admin/support-tickets/${ticketId}`),
     enabled: Boolean(ticketId)
   });
 
   const ticket = ticketQuery.data;
-  const relatedEntityPath = resolveAdminEntityLink(ticket?.relatedEntityType ?? undefined, ticket?.relatedEntityId ?? undefined);
+  const relatedEntityPath = ticket?.relatedEntitySummary?.linkPath ?? resolveAdminEntityLink(ticket?.relatedEntityType ?? undefined, ticket?.relatedEntityId ?? undefined);
   const canRespond = hasPermission(roles, "SUPPORT_TICKET_RESPOND");
   const canAssign = hasPermission(roles, "SUPPORT_TICKET_ASSIGN");
+  const canViewUsers = hasPermission(roles, "USER_VIEW");
   const isReplyView = location.pathname.endsWith("/reply");
   const isAssignView = location.pathname.endsWith("/assign");
   const isStatusView = location.pathname.endsWith("/status");
@@ -1985,7 +1986,7 @@ const SupportTicketDetailPage = () => {
 
   const replyMutation = useMutation({
     mutationFn: () =>
-      apiRequest(`/support/tickets/${ticketId}/messages`, {
+      apiRequest(`/admin/support-tickets/${ticketId}/messages`, {
         method: "POST",
         body: {
           body: messageBody,
@@ -1997,7 +1998,7 @@ const SupportTicketDetailPage = () => {
       setMessageBody("");
       setIsInternalNote(false);
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["support", "ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets", "detail", ticketId] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] })
       ]);
     },
@@ -2015,7 +2016,7 @@ const SupportTicketDetailPage = () => {
     onSuccess: async () => {
       toast.success("Ticket assigned");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["support", "ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets", "detail", ticketId] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] })
       ]);
     },
@@ -2033,7 +2034,7 @@ const SupportTicketDetailPage = () => {
     onSuccess: async () => {
       toast.success("Ticket status updated");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["support", "ticket", ticketId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets", "detail", ticketId] }),
         queryClient.invalidateQueries({ queryKey: ["admin", "support-tickets"] })
       ]);
     },
@@ -2050,6 +2051,14 @@ const SupportTicketDetailPage = () => {
     );
   }
 
+  const openedByInvestigation = ticket.openedByUserInvestigation;
+  const openedByActivitySummary = openedByInvestigation.activitySummary ?? emptyUserActivitySummary;
+  const openedByActivityCollections = openedByInvestigation.activityCollections ?? emptyUserActivityCollections;
+  const openedByActiveSessions = openedByInvestigation.activeSessions ?? [];
+  const openedByRecentMediaAssets = openedByInvestigation.recentMediaAssets ?? [];
+  const ticketAuditTrail = ticket.auditTrail ?? [];
+  const relatedSupportTickets = ticket.relatedSupportTickets ?? [];
+
   const ticketTimeline = ticket.messages.map((message: SupportTicketMessageItem) => ({
     id: message.id,
     title: message.isInternalNote ? "Internal note" : "Ticket reply",
@@ -2058,8 +2067,22 @@ const SupportTicketDetailPage = () => {
     badge: { label: message.isInternalNote ? "Internal" : "External", variant: message.isInternalNote ? ("amber" as const) : ("blue" as const) }
   }));
 
+  const auditTimeline = ticketAuditTrail.map((entry) => ({
+    id: entry.id,
+    title: entry.action.replaceAll("_", " "),
+    subtitle: [
+      formatDisplayName(entry.adminUser?.profile, entry.adminUser?.email ?? entry.adminUserId ?? "Unknown admin"),
+      entry.entityType ? `${entry.entityType}${entry.entityId ? ` · ${entry.entityId}` : ""}` : null,
+      entry.metadataJson ? JSON.stringify(entry.metadataJson).slice(0, 180) : null
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    timestamp: formatDateTime(entry.createdAt),
+    badge: { label: "Audit", variant: "purple" as const }
+  }));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="support-ticket-detail-page">
       <PageHeader
         subtitle={
           isReplyView
@@ -2073,6 +2096,14 @@ const SupportTicketDetailPage = () => {
         title={isReplyView ? "Ticket Reply" : isAssignView ? "Ticket Assign" : isStatusView ? "Ticket Status" : "Ticket Detail"}
       >
         <BackButton label="Back to support tickets" to="/support-tickets" />
+        {canViewUsers ? (
+          <Link className="inline-flex" to={`/users/${ticket.openedByUserId}`}>
+            <Button variant="outline">
+              <Users className="h-4 w-4" />
+              Open user record
+            </Button>
+          </Link>
+        ) : null}
         {relatedEntityPath ? (
           <Link className="inline-flex" to={relatedEntityPath}>
             <Button variant="outline">
@@ -2093,13 +2124,15 @@ const SupportTicketDetailPage = () => {
           { label: "Opened by", value: formatDisplayName(ticket.openedByUser?.profile, ticket.openedByUser?.email ?? "Unknown user") },
           { label: "Assigned", value: formatDisplayName(ticket.assignedSupportUser?.profile, ticket.assignedSupportUser?.email ?? "Unassigned") },
           { label: "Messages", value: formatNumber(ticket.messages.length) },
-          { label: "Updated", value: formatDateTime(ticket.updatedAt) }
+          { label: "Updated", value: formatDateTime(ticket.updatedAt) },
+          { label: "Open tickets", value: formatNumber(openedByInvestigation.openTicketCount) },
+          { label: "Sessions", value: formatNumber(openedByInvestigation.sessionCount) }
         ]}
         subtitle={ticket.body}
         title={ticket.subject}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-6">
           <SectionCard description="Ticket metadata, routing context, and audit-friendly status facts." title="Ticket Snapshot">
             <div className="space-y-5">
@@ -2109,11 +2142,42 @@ const SupportTicketDetailPage = () => {
                   { label: "Ticket ID", value: ticket.id, mono: true },
                   { label: "Related type", value: ticket.relatedEntityType ?? "No related entity" },
                   { label: "Related id", value: ticket.relatedEntityId ?? "—", mono: true },
-                  { label: "Created", value: formatDateTime(ticket.createdAt) }
+                  { label: "Created", value: formatDateTime(ticket.createdAt) },
+                  { label: "Opened by user", value: ticket.openedByUserId, mono: true },
+                  { label: "Assigned user", value: ticket.assignedSupportUserId ?? "Unassigned", mono: true },
+                  { label: "Priority", value: ticket.priority },
+                  { label: "Status", value: ticket.status }
                 ]}
               />
-              <TimelineList items={ticketTimeline} />
+              {ticketTimeline.length > 0 ? <TimelineList items={ticketTimeline} /> : <p className="text-sm text-[color:var(--jo-muted)]">No messages or notes were recorded for this ticket yet.</p>}
             </div>
+          </SectionCard>
+
+          <SectionCard description="The account behind this ticket, its current risk posture, and the volume of marketplace activity operators may need to inspect." title="Opened-By User Investigation">
+            <div className="space-y-5">
+              <KeyValueGrid
+                columns="four"
+                items={[
+                  { label: "User ID", value: openedByInvestigation.id, mono: true },
+                  { label: "Status", value: openedByInvestigation.status },
+                  { label: "Last login", value: formatDateTime(openedByInvestigation.lastLoginAt) },
+                  { label: "City", value: openedByInvestigation.profile?.city?.name ?? openedByInvestigation.profile?.cityId ?? "No city" },
+                  { label: "Open tickets", value: formatNumber(openedByInvestigation.openTicketCount) },
+                  { label: "Reports", value: formatNumber(openedByActivitySummary.reports) },
+                  { label: "Fraud signals", value: formatNumber(openedByActivitySummary.fraudSignals) },
+                  { label: "Conversations", value: formatNumber(openedByActivitySummary.conversations) },
+                  { label: "Bookings", value: formatNumber(openedByActivitySummary.bookings) },
+                  { label: "Requests", value: formatNumber(openedByActivitySummary.serviceRequests) },
+                  { label: "Notifications", value: formatNumber(openedByActivitySummary.notifications) },
+                  { label: "Media assets", value: formatNumber(openedByActivitySummary.mediaAssets) }
+                ]}
+              />
+              <ActivityDomainBoard items={openedByInvestigation.activityTimeline ?? []} />
+            </div>
+          </SectionCard>
+
+          <SectionCard description="Structured activity lanes for everything the account has done across content, communication, marketplace, and trust systems." title="User Record Lanes">
+            <ActivityCollectionBoard collections={openedByActivityCollections} groups={userCollectionGroups} />
           </SectionCard>
         </div>
 
@@ -2121,12 +2185,17 @@ const SupportTicketDetailPage = () => {
           {canRespond ? (
             <SectionCard description="Reply to the user or add an internal operator note." title="Reply Composer">
               <div className="space-y-4">
-                <Textarea onChange={(event) => setMessageBody(event.target.value)} value={messageBody} />
+                <Textarea data-testid="support-ticket-reply-body" onChange={(event) => setMessageBody(event.target.value)} value={messageBody} />
                 <label className="flex items-center gap-3 rounded-[1.25rem] border border-slate-100 bg-slate-50/80 px-4 py-3 text-sm font-medium text-slate-700">
-                  <input checked={isInternalNote} onChange={(event) => setIsInternalNote(event.target.checked)} type="checkbox" />
+                  <input
+                    checked={isInternalNote}
+                    data-testid="support-ticket-internal-note"
+                    onChange={(event) => setIsInternalNote(event.target.checked)}
+                    type="checkbox"
+                  />
                   Save as internal note
                 </label>
-                <Button disabled={replyMutation.isPending || messageBody.trim().length < 3} onClick={() => replyMutation.mutate()}>
+                <Button data-testid="support-ticket-send-update" disabled={replyMutation.isPending || messageBody.trim().length < 3} onClick={() => replyMutation.mutate()}>
                   Send update
                 </Button>
               </div>
@@ -2152,6 +2221,98 @@ const SupportTicketDetailPage = () => {
               </div>
             </SectionCard>
           ) : null}
+
+          <SectionCard description="The linked entity that triggered this ticket, with a fast jump into its admin desk." title="Related Entity">
+            {ticket.relatedEntitySummary ? (
+              <div className="space-y-4">
+                <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="blue">{ticket.relatedEntitySummary.entityType.replaceAll("_", " ")}</Badge>
+                    {ticket.relatedEntitySummary.status ? (
+                      <Badge variant={getStatusBadgeVariant(ticket.relatedEntitySummary.status)}>{ticket.relatedEntitySummary.status}</Badge>
+                    ) : null}
+                  </div>
+                  <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{ticket.relatedEntitySummary.title}</p>
+                  {ticket.relatedEntitySummary.subtitle ? <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{ticket.relatedEntitySummary.subtitle}</p> : null}
+                  {ticket.relatedEntitySummary.meta?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {ticket.relatedEntitySummary.meta.map((entry) => (
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:rgba(107,114,102,0.82)]" key={`${entry.label}-${entry.value}`}>
+                          {entry.label}: {entry.value}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+                {ticket.relatedEntitySummary.linkPath ? (
+                  <Link className="inline-flex" to={ticket.relatedEntitySummary.linkPath}>
+                    <Button variant="outline">
+                      Open related desk
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <p className="text-sm text-[color:var(--jo-muted)]">This linked entity does not have a dedicated admin desk path yet.</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">No related entity is attached to this support ticket.</p>
+            )}
+          </SectionCard>
+
+          <SectionCard description="Live sessions for the ticket opener. Use the user desk if you need to revoke sessions or investigate device posture further." title="Active Sessions">
+            {openedByActiveSessions.length > 0 ? (
+              <div className="space-y-3">
+                {openedByActiveSessions.map((session) => (
+                  <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4" key={session.id}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="slate">{session.deviceType}</Badge>
+                      <Badge variant={session.mfaVerified ? "green" : "amber"}>{session.mfaVerified ? "MFA verified" : "No MFA step-up"}</Badge>
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{session.ipAddress ?? "No IP captured"}</p>
+                    <p className="mt-1 text-sm text-[color:var(--jo-muted)]">
+                      Created {formatDateTime(session.createdAt)} · Expires {formatDateTime(session.expiresAt)}
+                    </p>
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">
+                      {session.mfaMethod ? `MFA method: ${session.mfaMethod}` : "MFA method not recorded"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">No active sessions are currently recorded for this user.</p>
+            )}
+          </SectionCard>
+
+          <SectionCard description="Other tickets opened by the same account. Useful for spotting repeat patterns or duplicate issues." title="Related Support Tickets">
+            {relatedSupportTickets.length > 0 ? (
+              <div className="space-y-3">
+                {relatedSupportTickets.map((relatedTicket) => (
+                  <Link className="block" key={relatedTicket.id} to={`/support-tickets/${relatedTicket.id}`}>
+                    <div className="rounded-[1.25rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-4 transition hover:border-[rgba(65,150,70,0.22)]">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={getStatusBadgeVariant(relatedTicket.status)}>{relatedTicket.status}</Badge>
+                        <Badge variant={getStatusBadgeVariant(relatedTicket.priority)}>{relatedTicket.priority}</Badge>
+                      </div>
+                      <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{relatedTicket.subject}</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{relatedTicket.body}</p>
+                      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">{formatDateTime(relatedTicket.updatedAt)}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">This account has no other support tickets on record.</p>
+            )}
+          </SectionCard>
+
+          <SectionCard description="Documents and media uploaded by the ticket opener across the platform. These often provide the fastest investigation evidence." title="Media & Documents">
+            <MediaAssetStrip assets={openedByRecentMediaAssets} emptyLabel="No uploaded media or documents are available for this account." />
+          </SectionCard>
+
+          <SectionCard description="Admin-side actions already taken on this ticket or the linked user account." title="Admin Audit Trail">
+            {auditTimeline.length > 0 ? <TimelineList items={auditTimeline} /> : <p className="text-sm text-[color:var(--jo-muted)]">No admin audit events were recorded for this casefile yet.</p>}
+          </SectionCard>
         </div>
       </div>
     </div>

@@ -2887,6 +2887,75 @@
         ]
       }
     },
+    "/admin/support-tickets/{ticketId}": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /admin/support-tickets/:ticketId",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.getSupportTicket",
+        "operationId": "admin_get_admin_support_tickets_by_ticketId",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "description": "ticketId path parameter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.getSupportTicket",
+        "x-vsp-middlewares": [
+          "requirePermission(\"SUPPORT_TICKET_VIEW\")",
+          "validate(TicketIdParams, \"params\")"
+        ],
+        "x-vsp-validation": {
+          "params": "TicketIdParams"
+        },
+        "x-vsp-required-permission": "SUPPORT_TICKET_VIEW",
+        "x-vsp-params-schema": "TicketIdParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/admin/support-tickets/{ticketId}/assign": {
       "patch": {
         "tags": [
@@ -2962,6 +3031,93 @@
                 ],
                 "title": "AssignTicketBody",
                 "x-vsp-validation-schema": "AssignTicketBody"
+              }
+            }
+          }
+        },
+        "x-vsp-params-schema": "TicketIdParams",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/support-tickets/{ticketId}/messages": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /admin/support-tickets/:ticketId/messages",
+        "description": "Generated from src/modules/admin/admin.routes.ts. Handler: adminController.addSupportTicketMessage",
+        "operationId": "admin_post_admin_support_tickets_by_ticketId_messages",
+        "parameters": [
+          {
+            "name": "ticketId",
+            "in": "path",
+            "required": true,
+            "description": "ticketId path parameter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessEnvelope"
+                }
+              }
+            }
+          },
+          "4XX": {
+            "description": "Client error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "Server error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "x-vsp-source-file": "src/modules/admin/admin.routes.ts",
+        "x-vsp-handler": "adminController.addSupportTicketMessage",
+        "x-vsp-middlewares": [
+          "requirePermission(\"SUPPORT_TICKET_RESPOND\")",
+          "validate(TicketIdParams, \"params\")",
+          "validate(AddSupportTicketMessageBody)"
+        ],
+        "x-vsp-validation": {
+          "params": "TicketIdParams",
+          "body": "AddSupportTicketMessageBody"
+        },
+        "x-vsp-required-permission": "SUPPORT_TICKET_RESPOND",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/GenericObject"
+                  }
+                ],
+                "title": "AddSupportTicketMessageBody",
+                "x-vsp-validation-schema": "AddSupportTicketMessageBody"
               }
             }
           }

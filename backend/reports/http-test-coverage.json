@@ -1,9 +1,9 @@
 {
   "summary": {
-    "routeCount": 213,
-    "staticHttpInvocationCount": 370,
-    "uniqueStaticHttpInvocationCount": 213,
-    "coveredRouteCount": 213,
+    "routeCount": 215,
+    "staticHttpInvocationCount": 372,
+    "uniqueStaticHttpInvocationCount": 215,
+    "coveredRouteCount": 215,
     "uncoveredRouteCount": 0,
     "coverageRate": 1
   },
@@ -405,8 +405,26 @@
       ]
     },
     {
+      "method": "GET",
+      "path": "/api/v1/admin/support-tickets/:ticketId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
       "method": "PATCH",
       "path": "/api/v1/admin/support-tickets/:ticketId/assign",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/support-tickets/:ticketId/messages",
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [

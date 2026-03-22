@@ -305,8 +305,25 @@ export interface SupportTicketMessageItem {
   } | null;
 }
 
+export interface AdminLinkedEntitySummary {
+  entityType: string;
+  entityId: string;
+  title: string;
+  subtitle?: string | null;
+  status?: string | null;
+  linkPath?: string | null;
+  meta?: Array<{
+    label: string;
+    value: string;
+  }>;
+}
+
 export interface SupportTicketDetail extends AdminSupportTicketItem {
   messages: SupportTicketMessageItem[];
+  openedByUserInvestigation: AdminUserDetail;
+  relatedSupportTickets: AdminSupportTicketItem[];
+  relatedEntitySummary?: AdminLinkedEntitySummary | null;
+  auditTrail: AdminAuditLogItem[];
 }
 
 export interface AdminAuditLogItem {

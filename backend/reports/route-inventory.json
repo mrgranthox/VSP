@@ -1,5 +1,5 @@
 {
-  "routeCount": 213,
+  "routeCount": 215,
   "routes": [
     {
       "method": "get",
@@ -847,6 +847,26 @@
       "operationId": "admin_get_admin_support_tickets"
     },
     {
+      "method": "get",
+      "path": "/api/v1/admin/support-tickets/:ticketId",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.getSupportTicket",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_VIEW\")",
+        "validate(TicketIdParams, \"params\")"
+      ],
+      "validation": {
+        "params": "TicketIdParams"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_VIEW",
+      "optionalAuth": false,
+      "operationId": "admin_get_admin_support_tickets_by_ticketId"
+    },
+    {
       "method": "patch",
       "path": "/api/v1/admin/support-tickets/:ticketId/assign",
       "module": "admin",
@@ -867,6 +887,28 @@
       "requiredPermission": "SUPPORT_TICKET_ASSIGN",
       "optionalAuth": false,
       "operationId": "admin_patch_admin_support_tickets_by_ticketId_assign"
+    },
+    {
+      "method": "post",
+      "path": "/api/v1/admin/support-tickets/:ticketId/messages",
+      "module": "admin",
+      "sourceFile": "src/modules/admin/admin.routes.ts",
+      "handler": "adminController.addSupportTicketMessage",
+      "middlewares": [
+        "requirePermission(\"SUPPORT_TICKET_RESPOND\")",
+        "validate(TicketIdParams, \"params\")",
+        "validate(AddSupportTicketMessageBody)"
+      ],
+      "validation": {
+        "params": "TicketIdParams",
+        "body": "AddSupportTicketMessageBody"
+      },
+      "security": [
+        "bearerAuth"
+      ],
+      "requiredPermission": "SUPPORT_TICKET_RESPOND",
+      "optionalAuth": false,
+      "operationId": "admin_post_admin_support_tickets_by_ticketId_messages"
     },
     {
       "method": "patch",

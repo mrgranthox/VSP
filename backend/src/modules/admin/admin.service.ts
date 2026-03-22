@@ -424,6 +424,328 @@ class AdminService {
     };
   }
 
+  private mapSupportTicketSummary(ticket: {
+    id: string;
+    openedByUserId: string;
+    relatedEntityType: string | null;
+    relatedEntityId: string | null;
+    status: SupportTicketStatus;
+    priority: string;
+    subject: string;
+    body: string;
+    assignedSupportUserId: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    openedByUser?: typeof publicUserSelect extends Prisma.UserSelect ? Prisma.UserGetPayload<{ select: typeof publicUserSelect }> | null : never;
+    assignedSupportUser?: typeof publicUserSelect extends Prisma.UserSelect ? Prisma.UserGetPayload<{ select: typeof publicUserSelect }> | null : never;
+  }) {
+    return {
+      id: ticket.id,
+      openedByUserId: ticket.openedByUserId,
+      relatedEntityType: ticket.relatedEntityType,
+      relatedEntityId: ticket.relatedEntityId,
+      status: ticket.status,
+      priority: ticket.priority,
+      subject: ticket.subject,
+      body: ticket.body,
+      assignedSupportUserId: ticket.assignedSupportUserId,
+      createdAt: ticket.createdAt,
+      updatedAt: ticket.updatedAt,
+      openedByUser: ticket.openedByUser ?? null,
+      assignedSupportUser: ticket.assignedSupportUser ?? null
+    };
+  }
+
+  private buildSupportTicketEntityLinkPath(entityType: string, entityId: string): string | null {
+    switch (entityType) {
+      case "booking":
+        return `/bookings/${entityId}`;
+      case "service_request":
+        return `/service-requests/${entityId}`;
+      case "user":
+        return `/users/${entityId}`;
+      case "worker":
+        return `/workers/${entityId}`;
+      case "payment":
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  private async getSupportTicketRelatedEntitySummary(relatedEntityType?: string | null, relatedEntityId?: string | null) {
+    if (!relatedEntityType || !relatedEntityId) {
+      return null;
+    }
+
+    switch (relatedEntityType) {
+      case "booking": {
+        const booking = await prisma.booking.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            customerUser: {
+              select: publicUserSelect
+            },
+            workerProfile: {
+              include: {
+                user: {
+                  select: publicUserSelect
+                }
+              }
+            },
+            serviceRequest: {
+              select: {
+                id: true,
+                title: true,
+                status: true
+              }
+            }
+          }
+        });
+
+        if (!booking) {
+          return {
+            entityType: relatedEntityType,
+            entityId: relatedEntityId,
+            title: `Missing booking ${relatedEntityId}`,
+            subtitle: "The linked booking no longer exists.",
+            status: "MISSING",
+            linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+            meta: []
+          };
+        }
+
+        return {
+          entityType: relatedEntityType,
+          entityId: relatedEntityId,
+          title: booking.serviceRequest.title,
+          subtitle: `${getDisplayName(booking.customerUser.profile) ?? booking.customerUser.email ?? booking.customerUser.id} -> ${
+            getDisplayName(booking.workerProfile.user.profile) ?? booking.workerProfile.user.email ?? booking.workerProfile.id
+          }`,
+          status: booking.status,
+          linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+          meta: [
+            {
+              label: "Request",
+              value: booking.serviceRequest.id
+            },
+            {
+              label: "Scheduled",
+              value: booking.scheduledStart.toISOString()
+            }
+          ]
+        };
+      }
+      case "service_request": {
+        const serviceRequest = await prisma.serviceRequest.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            customerUser: {
+              select: publicUserSelect
+            },
+            tradeCategory: {
+              select: {
+                id: true,
+                name: true
+              }
+            },
+            preferredWorkerProfile: {
+              include: {
+                user: {
+                  select: publicUserSelect
+                }
+              }
+            }
+          }
+        });
+
+        if (!serviceRequest) {
+          return {
+            entityType: relatedEntityType,
+            entityId: relatedEntityId,
+            title: `Missing request ${relatedEntityId}`,
+            subtitle: "The linked service request no longer exists.",
+            status: "MISSING",
+            linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+            meta: []
+          };
+        }
+
+        return {
+          entityType: relatedEntityType,
+          entityId: relatedEntityId,
+          title: serviceRequest.title,
+          subtitle:
+            serviceRequest.tradeCategory?.name ??
+            getDisplayName(serviceRequest.customerUser.profile) ??
+            serviceRequest.customerUser.email ??
+            serviceRequest.customerUser.id,
+          status: serviceRequest.status,
+          linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+          meta: [
+            {
+              label: "Customer",
+              value: getDisplayName(serviceRequest.customerUser.profile) ?? serviceRequest.customerUser.email ?? serviceRequest.customerUser.id
+            },
+            {
+              label: "Preferred worker",
+              value:
+                serviceRequest.preferredWorkerProfile
+                  ? getDisplayName(serviceRequest.preferredWorkerProfile.user.profile) ??
+                    serviceRequest.preferredWorkerProfile.user.email ??
+                    serviceRequest.preferredWorkerProfile.id
+                  : "None"
+            }
+          ]
+        };
+      }
+      case "user": {
+        const user = await prisma.user.findUnique({
+          where: { id: relatedEntityId },
+          select: publicUserSelect
+        });
+
+        if (!user) {
+          return {
+            entityType: relatedEntityType,
+            entityId: relatedEntityId,
+            title: `Missing user ${relatedEntityId}`,
+            subtitle: "The linked user no longer exists.",
+            status: "MISSING",
+            linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+            meta: []
+          };
+        }
+
+        return {
+          entityType: relatedEntityType,
+          entityId: relatedEntityId,
+          title: getDisplayName(user.profile) ?? user.email ?? user.id,
+          subtitle: user.email ?? user.phone ?? "Linked user account",
+          status: user.status,
+          linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+          meta: [
+            {
+              label: "Email verified",
+              value: user.isEmailVerified ? "Yes" : "No"
+            },
+            {
+              label: "Phone verified",
+              value: user.isPhoneVerified ? "Yes" : "No"
+            }
+          ]
+        };
+      }
+      case "worker": {
+        const worker = await prisma.workerProfile.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            user: {
+              select: publicUserSelect
+            },
+            tradeCategories: {
+              include: {
+                tradeCategory: true
+              }
+            }
+          }
+        });
+
+        if (!worker) {
+          return {
+            entityType: relatedEntityType,
+            entityId: relatedEntityId,
+            title: `Missing worker ${relatedEntityId}`,
+            subtitle: "The linked worker profile no longer exists.",
+            status: "MISSING",
+            linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+            meta: []
+          };
+        }
+
+        return {
+          entityType: relatedEntityType,
+          entityId: relatedEntityId,
+          title: getDisplayName(worker.user.profile) ?? worker.user.email ?? worker.id,
+          subtitle: worker.headline ?? (worker.tradeCategories.map((entry) => entry.tradeCategory.name).join(", ") || "Linked worker profile"),
+          status: worker.verificationStatus,
+          linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+          meta: [
+            {
+              label: "Featured",
+              value: worker.isFeatured ? "Yes" : "No"
+            },
+            {
+              label: "Reviews",
+              value: String(worker.totalReviews)
+            }
+          ]
+        };
+      }
+      case "payment": {
+        const paymentIntent = await prisma.paymentIntent.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            user: {
+              select: publicUserSelect
+            },
+            booking: {
+              include: {
+                serviceRequest: {
+                  select: {
+                    id: true,
+                    title: true
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        if (!paymentIntent) {
+          return {
+            entityType: relatedEntityType,
+            entityId: relatedEntityId,
+            title: `Missing payment ${relatedEntityId}`,
+            subtitle: "The linked payment intent no longer exists.",
+            status: "MISSING",
+            linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+            meta: []
+          };
+        }
+
+        return {
+          entityType: relatedEntityType,
+          entityId: relatedEntityId,
+          title: paymentIntent.booking?.serviceRequest?.title ?? `Payment ${paymentIntent.id}`,
+          subtitle: getDisplayName(paymentIntent.user.profile) ?? paymentIntent.user.email ?? paymentIntent.user.id,
+          status: paymentIntent.status,
+          linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+          meta: [
+            {
+              label: "Amount",
+              value: `${paymentIntent.amountMinor} ${paymentIntent.currencyCode} minor`
+            },
+            {
+              label: "Booking",
+              value: paymentIntent.bookingId ?? "None"
+            }
+          ]
+        };
+      }
+      default:
+        return {
+          entityType: relatedEntityType,
+          entityId: relatedEntityId,
+          title: `${relatedEntityType} ${relatedEntityId}`,
+          subtitle: "Linked entity type is not yet expanded in the admin casefile.",
+          status: null,
+          linkPath: this.buildSupportTicketEntityLinkPath(relatedEntityType, relatedEntityId),
+          meta: []
+        };
+    }
+  }
+
   private sortActivityTimeline(items: AdminActivityCollectionItem[]) {
     return items
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
@@ -1908,6 +2230,101 @@ class AdminService {
     return this.supportService.adminListTickets(query, pagination);
   }
 
+  async getSupportTicketDetail(ticketId: string) {
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+      include: {
+        openedByUser: {
+          select: publicUserSelect
+        },
+        assignedSupportUser: {
+          select: publicUserSelect
+        },
+        messages: {
+          include: {
+            authorUser: {
+              select: publicUserSelect
+            }
+          },
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+
+    if (!ticket) {
+      throw Errors.SUPPORT_TICKET_NOT_FOUND();
+    }
+
+    const [openedByUserInvestigation, relatedSupportTickets, relatedEntitySummary, auditTrail] = await Promise.all([
+      this.getUserDetail(ticket.openedByUserId),
+      prisma.supportTicket.findMany({
+        where: {
+          openedByUserId: ticket.openedByUserId,
+          id: {
+            not: ticket.id
+          }
+        },
+        include: {
+          openedByUser: {
+            select: publicUserSelect
+          },
+          assignedSupportUser: {
+            select: publicUserSelect
+          }
+        },
+        orderBy: {
+          updatedAt: "desc"
+        },
+        take: 6
+      }),
+      this.getSupportTicketRelatedEntitySummary(ticket.relatedEntityType, ticket.relatedEntityId),
+      prisma.adminAuditLog.findMany({
+        where: {
+          OR: [
+            {
+              entityType: "support_ticket",
+              entityId: ticket.id
+            },
+            {
+              entityType: "user",
+              entityId: ticket.openedByUserId
+            }
+          ]
+        },
+        include: {
+          adminUser: {
+            select: publicUserSelect
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: 16
+      })
+    ]);
+
+    return {
+      ...this.mapSupportTicketSummary(ticket),
+      messages: ticket.messages.map((message) => ({
+        id: message.id,
+        authorUserId: message.authorUserId,
+        body: message.body,
+        isInternalNote: message.isInternalNote,
+        createdAt: message.createdAt,
+        authorUser: {
+          id: message.authorUser.id,
+          displayName: getDisplayName(message.authorUser.profile) ?? message.authorUser.email ?? message.authorUser.id
+        }
+      })),
+      openedByUserInvestigation,
+      relatedSupportTickets: relatedSupportTickets.map((relatedTicket) => this.mapSupportTicketSummary(relatedTicket)),
+      relatedEntitySummary,
+      auditTrail
+    };
+  }
+
   async exportSupportTickets(query: {
     status?: SupportTicketStatus;
     priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
@@ -1972,6 +2389,14 @@ class AdminService {
   async assignSupportTicket(actor: ActorContext, ticketId: string, assignedSupportUserId: string) {
     await this.supportService.assignTicket(actor, ticketId, assignedSupportUserId);
     await this.audit(actor, "SUPPORT_TICKET_ASSIGNED", "support_ticket", ticketId, { assignedSupportUserId });
+  }
+
+  async addSupportTicketMessage(actor: ActorContext, ticketId: string, data: { body: string; isInternalNote?: boolean }) {
+    await this.supportService.addMessage(actor, ticketId, data);
+    await this.audit(actor, data.isInternalNote ? "SUPPORT_TICKET_INTERNAL_NOTE_ADDED" : "SUPPORT_TICKET_REPLY_SENT", "support_ticket", ticketId, {
+      isInternalNote: Boolean(data.isInternalNote),
+      bodyPreview: clipText(data.body, 120)
+    });
   }
 
   async updateSupportTicketStatus(actor: ActorContext, ticketId: string, status: SupportTicketStatus) {

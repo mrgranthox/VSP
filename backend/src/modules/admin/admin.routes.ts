@@ -6,6 +6,7 @@ import { requireMfa, requirePermission } from "./admin.guard";
 import { adminController } from "./admin.controller";
 import {
   AddModerationActionBody,
+  AddSupportTicketMessageBody,
   AdminAnalyticsQuery,
   AdminAuditLogQuery,
   AdminBookingsQuery,
@@ -203,11 +204,24 @@ adminRoutes.get(
   validate(AdminListSupportTicketsQuery, "query"),
   adminController.exportSupportTickets
 );
+adminRoutes.get(
+  "/admin/support-tickets/:ticketId",
+  requirePermission("SUPPORT_TICKET_VIEW"),
+  validate(TicketIdParams, "params"),
+  adminController.getSupportTicket
+);
 adminRoutes.patch(
   "/admin/support-tickets/bulk",
   requirePermission("SUPPORT_TICKET_ASSIGN"),
   validate(BulkUpdateSupportTicketsBody),
   adminController.bulkUpdateSupportTickets
+);
+adminRoutes.post(
+  "/admin/support-tickets/:ticketId/messages",
+  requirePermission("SUPPORT_TICKET_RESPOND"),
+  validate(TicketIdParams, "params"),
+  validate(AddSupportTicketMessageBody),
+  adminController.addSupportTicketMessage
 );
 adminRoutes.patch(
   "/admin/support-tickets/:ticketId/assign",

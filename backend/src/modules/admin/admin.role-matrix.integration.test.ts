@@ -995,6 +995,47 @@ const createRouteCases = (fixtures: SharedFixtures): RouteCase[] => [
     prepare: () => ({ path: "/api/v1/admin/support-tickets/export?status=OPEN" })
   },
   {
+    label: "get support ticket detail",
+    permission: "SUPPORT_TICKET_VIEW",
+    allowedRole: "SUPPORT",
+    deniedRole: "MODERATOR",
+    method: "get",
+    prepare: () => ({ path: `/api/v1/admin/support-tickets/${fixtures.supportTicketId}` })
+  },
+  {
+    label: "add support ticket message",
+    permission: "SUPPORT_TICKET_RESPOND",
+    allowedRole: "SUPPORT",
+    deniedRole: "MODERATOR",
+    method: "post",
+    prepare: async () => {
+      const ticket = await createSupportTicket(fixtures.customerUserId, "reply");
+
+      return {
+        path: `/api/v1/admin/support-tickets/${ticket.id}/messages`,
+        body: {
+          body: "Role matrix support reply",
+          isInternalNote: true
+        },
+        afterAllowed: async () => {
+          const messages = await prisma.supportTicketMessage.findMany({
+            where: {
+              supportTicketId: ticket.id
+            },
+            orderBy: {
+              createdAt: "asc"
+            },
+            select: {
+              body: true,
+              isInternalNote: true
+            }
+          });
+          assert.equal(messages.some((message) => message.isInternalNote && message.body === "Role matrix support reply"), true);
+        }
+      };
+    }
+  },
+  {
     label: "assign support ticket",
     permission: "SUPPORT_TICKET_ASSIGN",
     allowedRole: "SUPPORT",
