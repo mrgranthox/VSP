@@ -13,7 +13,7 @@ const badgeClasses: Record<BadgeVariant, string> = {
   green: "bg-[rgba(65,150,70,0.16)] text-[#285e2d]",
   amber: "bg-[rgba(246,179,19,0.18)] text-[#9a6a00]",
   red: "bg-[rgba(255,75,25,0.16)] text-[color:var(--jo-coral-deep)]",
-  slate: "bg-[rgba(217,212,202,0.55)] text-[color:var(--jo-muted)]",
+  slate: "border border-[rgba(112,104,84,0.14)] bg-[rgba(217,212,202,0.72)] text-[#445045]",
   purple: "bg-[rgba(233,119,155,0.16)] text-[color:var(--jo-rose)]"
 };
 

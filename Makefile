@@ -77,7 +77,7 @@ staging-seed:
 	$(STAGING_COMPOSE_ENV) docker compose --profile setup run --rm seed
 
 staging-gate:
-	cd backend && RELEASE_GATE_BASE_URL=http://127.0.0.1:$(STAGING_API_PORT) RELEASE_GATE_GATEWAY_URL=http://127.0.0.1:$(STAGING_GATEWAY_PORT) RELEASE_GATE_ADMIN_URL=http://127.0.0.1:$(STAGING_ADMIN_PORT) npm run release:gate
+	export INTERNAL_API_KEY="$${INTERNAL_API_KEY:-$$(for file in backend/.env $(STAGING_BACKEND_COMPOSE_ENV_FILE); do if [ -f "$$file" ]; then value=$$(awk -F= '/^INTERNAL_API_KEY=/{print substr($$0,index($$0,"=")+1); exit}' "$$file"); if [ -n "$$value" ]; then printf '%s' "$$value"; break; fi; fi; done)}" && cd backend && RELEASE_GATE_BASE_URL=http://127.0.0.1:$(STAGING_API_PORT) RELEASE_GATE_GATEWAY_URL=http://127.0.0.1:$(STAGING_GATEWAY_PORT) RELEASE_GATE_ADMIN_URL=http://127.0.0.1:$(STAGING_ADMIN_PORT) npm run release:gate
 
 staging-down:
 	$(STAGING_COMPOSE_ENV) docker compose down

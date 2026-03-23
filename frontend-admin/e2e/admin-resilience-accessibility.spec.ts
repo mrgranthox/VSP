@@ -22,6 +22,11 @@ const expectNoSeriousOrCriticalViolations = async (page: Page, path: string, rea
 
 test.describe.serial("admin resilience and accessibility", () => {
   test("route-level error boundary contains a crashing route in dev", async ({ page }) => {
+    test.skip(
+      process.env.E2E_USE_EXISTING_SERVER === "true",
+      "The dev probe route is intentionally not exposed in the production-built staging stack."
+    );
+
     await page.goto("/__test/error-boundary");
     await expect(page.getByTestId("route-error-boundary")).toBeVisible();
     await expect(page.getByText("Intentional dev probe crash for admin error boundary verification")).toBeVisible();
