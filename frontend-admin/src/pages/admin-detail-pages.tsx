@@ -272,6 +272,34 @@ const getVerificationRequestTimestamp = (record: Record<string, unknown> | null 
   return typeof value === "string" ? value : null;
 };
 
+const supportStatusPresets = [
+  {
+    status: "ASSIGNED",
+    label: "Take ownership",
+    description: "Use when an operator has claimed the case and is actively driving it."
+  },
+  {
+    status: "WAITING_INTERNAL",
+    label: "Need internal fix",
+    description: "Use when billing, marketplace, trust, or platform teams still need to do something."
+  },
+  {
+    status: "WAITING_USER",
+    label: "Need user reply",
+    description: "Use after asking for missing evidence, confirmation, or customer action."
+  },
+  {
+    status: "RESOLVED",
+    label: "Resolved",
+    description: "Use only after the concrete remediation is complete and explained to the user."
+  },
+  {
+    status: "CLOSED",
+    label: "Close case",
+    description: "Use when the resolved outcome is stable and no follow-up remains."
+  }
+] as const;
+
 const ActivityFeed = ({ items, emptyLabel }: { items: AdminActivityItem[]; emptyLabel: string }) => {
   if (items.length === 0) {
     return <p className="text-sm text-[color:var(--jo-muted)]">{emptyLabel}</p>;
@@ -949,14 +977,16 @@ const WorkerDetailPage = () => {
       <EntityHero
         badges={[
           { label: worker.verificationStatus, variant: getStatusBadgeVariant(worker.verificationStatus) },
-          ...(worker.isFeatured ? [{ label: "Featured", variant: "purple" as const }] : [])
+          ...(worker.isFeatured ? [{ label: "Featured", variant: "purple" as const }] : []),
+          ...(worker.sessionCount > 0 ? [{ label: "Online now", variant: "green" as const }] : [{ label: "Offline", variant: "slate" as const }])
         ]}
         eyebrow="Worker operations"
         meta={[
           { label: "Rating", value: `${worker.avgRating} / 5` },
           { label: "Jobs completed", value: formatNumber(worker.jobsCompleted ?? 0) },
           { label: "Response rate", value: `${worker.responseRate ?? "0"}%` },
-          { label: "Radius", value: `${worker.serviceRadiusKm ?? 0} km` }
+          { label: "Radius", value: `${worker.serviceRadiusKm ?? 0} km` },
+          { label: "Active sessions", value: formatNumber(worker.sessionCount ?? 0) }
         ]}
         subtitle={worker.bio || worker.headline || "No worker biography recorded."}
         title={worker.displayName || formatDisplayName(worker.user.profile, worker.user.email ?? "Worker")}
@@ -980,7 +1010,8 @@ const WorkerDetailPage = () => {
                 { label: "Email", value: worker.user.email ?? "No email" },
                 { label: "Phone", value: worker.user.phone ?? "No phone" },
                 { label: "Portfolio", value: formatNumber(workerPortfolioItems.length) },
-                { label: "City", value: worker.user.profile?.city?.name ?? worker.user.profile?.cityId ?? "No city" }
+                { label: "City", value: worker.user.profile?.city?.name ?? worker.user.profile?.cityId ?? "No city" },
+                { label: "Presence", value: worker.sessionCount > 0 ? "Online now" : "Offline" }
               ]}
             />
 
@@ -1329,6 +1360,28 @@ const WorkerDetailPage = () => {
 
       <SectionCard description="Most recent uploads and processed media tied to the worker account." title="Recent Media">
         <MediaAssetStrip assets={workerRecentMediaAssets} emptyLabel="No recent media assets were found for this worker." />
+      </SectionCard>
+
+      <SectionCard description="Live linked-user sessions help operators understand whether this worker is currently active in the system." title="Worker Presence">
+        {(worker.activeSessions ?? []).length > 0 ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {(worker.activeSessions ?? []).map((session) => (
+              <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] p-3" key={session.id}>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="green">Online</Badge>
+                  <Badge variant={session.mfaVerified ? "green" : "amber"}>{session.mfaVerified ? "MFA verified" : "No MFA"}</Badge>
+                  {session.mfaMethod ? <Badge variant="slate">{session.mfaMethod}</Badge> : null}
+                </div>
+                <p className="mt-3 text-sm font-semibold text-[color:var(--jo-ink)]">{session.deviceType ?? "Unknown device"}</p>
+                <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{session.ipAddress ?? "No IP recorded"}</p>
+                <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Created {formatDateTime(session.createdAt)}</p>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">Expires {formatDateTime(session.expiresAt)}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-[color:var(--jo-muted)]">No active sessions are currently recorded for this worker account.</p>
+        )}
       </SectionCard>
     </div>
   );
@@ -2030,6 +2083,7 @@ const SupportTicketDetailPage = () => {
   const [messageBody, setMessageBody] = useState("Thanks. We are reviewing this ticket now.");
   const [isInternalNote, setIsInternalNote] = useState(false);
   const [status, setStatus] = useState("ASSIGNED");
+  const [assignedSupportUserId, setAssignedSupportUserId] = useState("");
 
   const ticketQuery = useQuery({
     queryKey: ["admin", "support-tickets", "detail", ticketId],
@@ -2051,6 +2105,17 @@ const SupportTicketDetailPage = () => {
       setStatus(ticket.status);
     }
   }, [ticket?.status]);
+
+  useEffect(() => {
+    if (ticket?.assignedSupportUserId) {
+      setAssignedSupportUserId(ticket.assignedSupportUserId);
+      return;
+    }
+
+    if (ticket?.availableAssignees?.[0]?.userId) {
+      setAssignedSupportUserId(ticket.availableAssignees[0].userId);
+    }
+  }, [ticket?.assignedSupportUserId, ticket?.availableAssignees]);
 
   const replyMutation = useMutation({
     mutationFn: () =>
@@ -2074,11 +2139,11 @@ const SupportTicketDetailPage = () => {
   });
 
   const assignMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (targetAssignedSupportUserId?: string) =>
       apiRequest(`/admin/support-tickets/${ticketId}/assign`, {
         method: "PATCH",
         body: {
-          assignedSupportUserId: adminQuery.data?.user.id
+          assignedSupportUserId: targetAssignedSupportUserId ?? assignedSupportUserId
         }
       }),
     onSuccess: async () => {
@@ -2126,6 +2191,10 @@ const SupportTicketDetailPage = () => {
   const openedByRecentMediaAssets = openedByInvestigation.recentMediaAssets ?? [];
   const ticketAuditTrail = ticket.auditTrail ?? [];
   const relatedSupportTickets = ticket.relatedSupportTickets ?? [];
+  const relatedEntityHistory = ticket.relatedEntityHistory ?? [];
+  const supportAssignees = ticket.availableAssignees ?? [];
+  const playbook = ticket.remediationPlaybook;
+  const openedByOnlineNow = openedByActiveSessions.length > 0;
 
   const ticketTimeline = ticket.messages.map((message: SupportTicketMessageItem) => ({
     id: message.id,
@@ -2185,7 +2254,8 @@ const SupportTicketDetailPage = () => {
       <EntityHero
         badges={[
           { label: ticket.status, variant: getStatusBadgeVariant(ticket.status) },
-          { label: ticket.priority, variant: getStatusBadgeVariant(ticket.priority) }
+          { label: ticket.priority, variant: getStatusBadgeVariant(ticket.priority) },
+          ...(openedByOnlineNow ? [{ label: "User online", variant: "green" as const }] : [{ label: "User offline", variant: "slate" as const }])
         ]}
         eyebrow="Support operations"
         meta={[
@@ -2194,7 +2264,8 @@ const SupportTicketDetailPage = () => {
           { label: "Messages", value: formatNumber(ticket.messages.length) },
           { label: "Updated", value: formatDateTime(ticket.updatedAt) },
           { label: "Open tickets", value: formatNumber(openedByInvestigation.openTicketCount) },
-          { label: "Sessions", value: formatNumber(openedByInvestigation.sessionCount) }
+          { label: "Sessions", value: formatNumber(openedByInvestigation.sessionCount) },
+          { label: "Recommended state", value: playbook?.recommendedStatus ?? "ASSIGNED" }
         ]}
         subtitle={ticket.body}
         title={ticket.subject}
@@ -2279,8 +2350,30 @@ const SupportTicketDetailPage = () => {
           {canAssign ? (
             <SectionCard description="Support owner and lifecycle controls for the current ticket." title="Ticket Controls">
               <div className="space-y-4">
-                <Button disabled={assignMutation.isPending || !adminQuery.data?.user.id} onClick={() => assignMutation.mutate()} variant="outline">
+                <Button
+                  disabled={assignMutation.isPending || !adminQuery.data?.user.id}
+                  onClick={() => {
+                    if (adminQuery.data?.user.id) {
+                      setAssignedSupportUserId(adminQuery.data.user.id);
+                      assignMutation.mutate(adminQuery.data.user.id);
+                    }
+                  }}
+                  variant="outline"
+                >
                   Assign to me
+                </Button>
+                <label className="space-y-2">
+                  <span className="text-sm font-semibold text-[color:var(--jo-ink)]">Route ticket to</span>
+                  <Select onChange={(event) => setAssignedSupportUserId(event.target.value)} value={assignedSupportUserId}>
+                    {supportAssignees.map((assignee) => (
+                      <option key={assignee.userId} value={assignee.userId}>
+                        {assignee.displayName} · {assignee.roles.join(", ")} · {assignee.openAssignedTicketCount} open
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+                <Button disabled={assignMutation.isPending || !assignedSupportUserId} onClick={() => assignMutation.mutate(assignedSupportUserId)} variant="outline">
+                  Route ticket
                 </Button>
                 <Select onChange={(event) => setStatus(event.target.value)} value={status}>
                   <option value="ASSIGNED">Assigned</option>
@@ -2292,9 +2385,73 @@ const SupportTicketDetailPage = () => {
                 <Button disabled={statusMutation.isPending} onClick={() => statusMutation.mutate()} variant="success">
                   Update status
                 </Button>
+                <div className="grid gap-2">
+                  {supportStatusPresets.map((preset) => (
+                    <button
+                      className={`rounded-[1.1rem] border px-4 py-3 text-left transition ${
+                        status === preset.status
+                          ? "border-[rgba(65,150,70,0.28)] bg-[rgba(65,150,70,0.08)]"
+                          : "border-[rgba(112,104,84,0.12)] bg-[rgba(255,251,244,0.92)] hover:border-[rgba(65,150,70,0.22)]"
+                      }`}
+                      key={preset.status}
+                      onClick={() => setStatus(preset.status)}
+                      type="button"
+                    >
+                      <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{preset.label}</p>
+                      <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{preset.description}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             </SectionCard>
           ) : null}
+
+          <SectionCard description="Operator guidance generated from the linked entity and current ticket context." title="Remediation Playbook">
+            <div className="space-y-4">
+              <div className="rounded-[1.25rem] border border-[rgba(65,150,70,0.16)] bg-[rgba(247,252,246,0.92)] p-4">
+                <p className="text-sm font-semibold text-[color:var(--jo-ink)]">{playbook?.headline ?? "Case remediation guidance"}</p>
+                <p className="mt-2 text-sm text-[color:var(--jo-muted)]">
+                  Recommended lifecycle state: <span className="font-semibold text-[color:var(--jo-ink)]">{playbook?.recommendedStatus ?? "ASSIGNED"}</span>
+                </p>
+              </div>
+              <div className="space-y-2">
+                {(playbook?.steps ?? []).map((step, index) => (
+                  <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3" key={`${index}-${step}`}>
+                    <p className="text-sm font-semibold text-[color:var(--jo-ink)]">Step {index + 1}</p>
+                    <p className="mt-1 text-sm text-[color:var(--jo-muted)]">{step}</p>
+                  </div>
+                ))}
+              </div>
+              {playbook?.quickLinks?.length ? (
+                <div className="flex flex-wrap gap-3">
+                  {playbook.quickLinks.map((link) => (
+                    <Link className="inline-flex" key={`${link.label}-${link.path}`} to={link.path}>
+                      <Button variant="outline">
+                        {link.label}
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </SectionCard>
+
+          <SectionCard description="High-signal status markers that help support decide whether the issue is isolated, repeated, or part of a larger trust or marketplace problem." title="Casefile Signals">
+            <KeyValueGrid
+              columns="four"
+              items={[
+                { label: "Presence", value: openedByOnlineNow ? "Online now" : "Offline" },
+                { label: "Active sessions", value: formatNumber(openedByInvestigation.sessionCount) },
+                { label: "Open tickets", value: formatNumber(openedByInvestigation.openTicketCount) },
+                { label: "Reports filed", value: formatNumber(openedByActivitySummary.reports) },
+                { label: "Fraud signals", value: formatNumber(openedByActivitySummary.fraudSignals) },
+                { label: "Bookings", value: formatNumber(openedByActivitySummary.bookings) },
+                { label: "Requests", value: formatNumber(openedByActivitySummary.serviceRequests) },
+                { label: "Notifications", value: formatNumber(openedByActivitySummary.notifications) }
+              ]}
+            />
+          </SectionCard>
 
           <SectionCard description="The linked entity that triggered this ticket, with a fast jump into its admin desk." title="Related Entity">
             {ticket.relatedEntitySummary ? (
@@ -2331,6 +2488,25 @@ const SupportTicketDetailPage = () => {
               </div>
             ) : (
               <p className="text-sm text-[color:var(--jo-muted)]">No related entity is attached to this support ticket.</p>
+            )}
+          </SectionCard>
+
+          <SectionCard description="Lifecycle events from the linked booking, request, worker subscription, or payment record." title="Related Entity History">
+            {relatedEntityHistory.length > 0 ? (
+              <TimelineList
+                items={relatedEntityHistory.map((entry) => ({
+                  id: entry.id,
+                  title: entry.title,
+                  subtitle: entry.subtitle ?? entry.kind.replaceAll("_", " "),
+                  timestamp: formatDateTime(entry.createdAt),
+                  badge: {
+                    label: entry.status ?? entry.kind.replaceAll("_", " "),
+                    variant: entry.status ? getStatusBadgeVariant(entry.status) : ("blue" as const)
+                  }
+                }))}
+              />
+            ) : (
+              <p className="text-sm text-[color:var(--jo-muted)]">No linked-entity history is available for this ticket yet.</p>
             )}
           </SectionCard>
 

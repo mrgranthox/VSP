@@ -33,6 +33,30 @@ interface AdminPostItem {
 
 const handleActionError = (error: unknown, fallback: string) => toast.error(getApiErrorMessage(error, fallback));
 
+const buildContentOpsRecommendations = (report?: AdminReportDetail | null, contentView?: AdminContentView | null) => {
+  const recommendations: string[] = [];
+  const moderationHistory = contentView?.moderationHistory ?? [];
+  const totalCases = moderationHistory.reduce((sum, item) => sum + item.moderationCases.length, 0);
+
+  if (report?.status === "OPEN") {
+    recommendations.push("Move this report into UNDER_REVIEW once an operator has inspected the linked content and decided who owns the trust action.");
+  }
+
+  if (report?.severity === "CRITICAL" || report?.severity === "HIGH") {
+    recommendations.push("High-severity content should not stay informational only. Capture a moderation action or destructive decision before leaving the desk.");
+  }
+
+  if (moderationHistory.length > 0 && totalCases === 0) {
+    recommendations.push("This content has reports but no moderation case. Escalate to case handling if the investigation requires a tracked trust workflow.");
+  }
+
+  if ((contentView?.entityType === "post" || contentView?.entityType === "comment") && !("isDeleted" in (contentView?.content ?? {}))) {
+    recommendations.push("Review the raw payload and count fields before taking a delete action so the audit trail reflects the exact evidence that was removed.");
+  }
+
+  return recommendations;
+};
+
 const ContentOperationsPage = () => {
   const queryClient = useQueryClient();
   const adminQuery = useCurrentAdmin();
@@ -102,6 +126,27 @@ const ContentOperationsPage = () => {
       ]);
     },
     onError: (error) => handleActionError(error, "Unable to remove content")
+  });
+
+  const reportStatusMutation = useMutation({
+    mutationFn: (nextStatus: "OPEN" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED") =>
+      apiRequest<{ updatedCount: number }>("/admin/reports/bulk", {
+        method: "PATCH",
+        body: {
+          reportIds: selectedReportId ? [selectedReportId] : [],
+          status: nextStatus,
+          notes: `Content operations status move to ${nextStatus}.`
+        }
+      }),
+    onSuccess: async (_, nextStatus) => {
+      toast.success(`Report moved to ${nextStatus.replaceAll("_", " ").toLowerCase()}`);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "reports", "content-ops", selectedReportId] }),
+        queryClient.invalidateQueries({ queryKey: ["admin", "content", "linked-report", selectedReportId] })
+      ]);
+    },
+    onError: (error) => handleActionError(error, "Unable to update report status")
   });
 
   const contentMix = useMemo(
@@ -199,6 +244,46 @@ const ContentOperationsPage = () => {
         <div className="space-y-6">
           <ContentSnapshot contentView={postContentQuery.data} />
 
+          {postContentQuery.data ? (
+            <Card className="overflow-hidden border-white/70 bg-white/95">
+              <CardHeader>
+                <CardTitle>Moderation footprint</CardTitle>
+                <CardDescription>Use this quick read before deleting or escalating content so the evidence trail stays defensible.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[1.2rem] border border-slate-100 bg-slate-50/80 px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Reports</p>
+                    <p className="mt-2 text-2xl font-black text-slate-950">{formatNumber(postContentQuery.data.moderationHistory.length)}</p>
+                  </div>
+                  <div className="rounded-[1.2rem] border border-slate-100 bg-slate-50/80 px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Cases</p>
+                    <p className="mt-2 text-2xl font-black text-slate-950">
+                      {formatNumber(postContentQuery.data.moderationHistory.reduce((sum, item) => sum + item.moderationCases.length, 0))}
+                    </p>
+                  </div>
+                  <div className="rounded-[1.2rem] border border-slate-100 bg-slate-50/80 px-4 py-3">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Entity type</p>
+                    <p className="mt-2 text-lg font-black text-slate-950">{postContentQuery.data.entityType}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {buildContentOpsRecommendations(undefined, postContentQuery.data).length > 0 ? (
+                    buildContentOpsRecommendations(undefined, postContentQuery.data).map((recommendation) => (
+                      <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3 text-sm text-slate-700" key={recommendation}>
+                        {recommendation}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3 text-sm text-slate-700">
+                      No special moderation guidance is needed for this selected content right now.
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+
           {postContentQuery.data && canDeletePosts ? (
             <Card className="overflow-hidden border-red-100 bg-red-50/80">
               <CardHeader>
@@ -275,6 +360,26 @@ const ContentOperationsPage = () => {
                   <Badge variant={getStatusBadgeVariant(reportDetailQuery.data.severity)}>{reportDetailQuery.data.severity}</Badge>
                   <Badge variant="blue">{reportDetailQuery.data.entityType}</Badge>
                 </div>
+                <div className="flex flex-wrap gap-3">
+                  {(["OPEN", "UNDER_REVIEW", "RESOLVED", "DISMISSED"] as const).map((nextStatus) => (
+                    <Button
+                      disabled={reportStatusMutation.isPending || reportDetailQuery.data.status === nextStatus}
+                      key={nextStatus}
+                      onClick={() => reportStatusMutation.mutate(nextStatus)}
+                      variant={
+                        reportDetailQuery.data.status === nextStatus
+                          ? "outline"
+                          : nextStatus === "DISMISSED"
+                            ? "danger"
+                            : nextStatus === "RESOLVED"
+                              ? "success"
+                              : "outline"
+                      }
+                    >
+                      {reportDetailQuery.data.status === nextStatus ? `${nextStatus.replaceAll("_", " ")} now` : `Move to ${nextStatus.replaceAll("_", " ").toLowerCase()}`}
+                    </Button>
+                  ))}
+                </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {reportDetailQuery.data.moderationCases.map((caseItem) => (
                     <div className="rounded-[1.25rem] border border-slate-100 bg-slate-50/80 p-4" key={caseItem.id}>
@@ -306,6 +411,19 @@ const ContentOperationsPage = () => {
                     <Eye className="h-4 w-4" />
                   </Button>
                 </Link>
+                <div className="space-y-2">
+                  {buildContentOpsRecommendations(reportDetailQuery.data, linkedContentQuery.data).length > 0 ? (
+                    buildContentOpsRecommendations(reportDetailQuery.data, linkedContentQuery.data).map((recommendation) => (
+                      <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3 text-sm text-slate-700" key={recommendation}>
+                        {recommendation}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-[1.15rem] border border-[rgba(112,104,84,0.1)] bg-[rgba(255,251,244,0.92)] px-4 py-3 text-sm text-slate-700">
+                      This report already has enough context loaded for a straightforward operator decision.
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : null}

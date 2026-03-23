@@ -98,6 +98,8 @@ test.describe.serial("admin critical browser workflows", () => {
 
     await page.getByRole("link", { name: /Open ticket/i }).first().click();
     await expect(page.getByTestId("support-ticket-detail-page")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Remediation Playbook" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Related Entity History" })).toBeVisible();
     await page.getByTestId("support-ticket-reply-body").fill(supportNote);
     await page.getByTestId("support-ticket-internal-note").check();
     await page.getByTestId("support-ticket-send-update").click();
@@ -106,5 +108,13 @@ test.describe.serial("admin critical browser workflows", () => {
     await page.goto("/audit-logs");
     await expect(page.getByTestId("audit-logs-page")).toBeVisible();
     await expectCsvDownload(page, "audit-export");
+  });
+
+  test("content operations exposes linked evidence and moderation guidance", async ({ page }) => {
+    await page.goto("/content");
+    await expect(page.getByRole("main").getByRole("heading", { name: "Content Operations" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Moderation footprint" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Reports spotlight/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Open full report detail/i })).toBeVisible();
   });
 });

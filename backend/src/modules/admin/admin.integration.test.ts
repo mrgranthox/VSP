@@ -149,6 +149,7 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
   await adminRepository.assignRole(supportUser.userId, "SUPPORT", adminUser.userId);
 
   const [adminSession, customerSession] = await Promise.all([loginUser(adminUser.email), loginUser(customer.email)]);
+  await loginUser(worker.email);
   await elevateSessionMfa(adminSession.accessToken);
 
   const [tradeCategory, city, workerProfile] = await Promise.all([
@@ -683,6 +684,8 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
 
   assert.equal(workerDetailResponse.status, 200);
   assert.equal(workerDetailResponse.body.data.id, workerProfile.id);
+  assert.equal(workerDetailResponse.body.data.sessionCount >= 1, true);
+  assert.equal(workerDetailResponse.body.data.activeSessions.length >= 1, true);
   assert.equal(workerDetailResponse.body.data.activityCollections.assignments.length >= 1, true);
   assert.equal(workerDetailResponse.body.data.activityCollections.searchImpressions.length >= 1, true);
   assert.equal(workerDetailResponse.body.data.activityCollections.reviewsReceived.length >= 1, true);
@@ -806,6 +809,11 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
   assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.activityCollections.supportTickets.length >= 1, true);
   assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.activityCollections.reports.length >= 1, true);
   assert.equal(supportTicketDetailResponse.body.data.openedByUserInvestigation.activityCollections.fraudSignals.length >= 1, true);
+  assert.equal(Array.isArray(supportTicketDetailResponse.body.data.relatedEntityHistory), true);
+  assert.equal(supportTicketDetailResponse.body.data.relatedEntityHistory.length >= 1, true);
+  assert.equal(typeof supportTicketDetailResponse.body.data.remediationPlaybook.headline, "string");
+  assert.equal(Array.isArray(supportTicketDetailResponse.body.data.remediationPlaybook.steps), true);
+  assert.equal(supportTicketDetailResponse.body.data.availableAssignees.some((item: { userId: string }) => item.userId === supportUser.userId), true);
   assert.equal(supportTicketDetailResponse.body.data.relatedSupportTickets.some((item: { id: string }) => item.id === extraSupportTicket.id), true);
   assert.equal(
     supportTicketDetailResponse.body.data.messages.some((message: { isInternalNote: boolean; body: string }) => message.isInternalNote && /Internal support follow-up/.test(message.body)),
@@ -1014,6 +1022,11 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
     .set("Authorization", `Bearer ${adminSession.accessToken}`);
 
   assert.equal(overviewAnalyticsResponse.status, 200);
+  assert.equal(overviewAnalyticsResponse.body.data.onlineUsers >= 2, true);
+  assert.equal(overviewAnalyticsResponse.body.data.onlineWorkers >= 1, true);
+  assert.equal(overviewAnalyticsResponse.body.data.openSupportTickets >= 1, true);
+  assert.equal(overviewAnalyticsResponse.body.data.openFraudSignals >= 1, true);
+  assert.equal(overviewAnalyticsResponse.body.data.openModerationCases >= 1, true);
 
   const searchAnalyticsResponse = await api
     .get("/api/v1/admin/analytics/search")

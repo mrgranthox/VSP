@@ -124,6 +124,24 @@ interface AdminActivityCollectionItem {
   }>;
 }
 
+interface SupportAssigneeOption {
+  userId: string;
+  email?: string | null;
+  displayName: string;
+  roles: AdminRoleKey[];
+  openAssignedTicketCount: number;
+}
+
+interface SupportRemediationPlaybook {
+  headline: string;
+  recommendedStatus: SupportTicketStatus;
+  steps: string[];
+  quickLinks: Array<{
+    label: string;
+    path: string;
+  }>;
+}
+
 class AdminService {
   constructor(
     private readonly repository: AdminRepository = new AdminRepository(),
@@ -850,6 +868,506 @@ class AdminService {
           meta: []
         };
     }
+  }
+
+  private async getSupportTicketEntityHistory(relatedEntityType?: string | null, relatedEntityId?: string | null): Promise<AdminActivityCollectionItem[]> {
+    if (!relatedEntityType || !relatedEntityId) {
+      return [];
+    }
+
+    switch (relatedEntityType) {
+      case "booking": {
+        const booking = await prisma.booking.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            serviceRequest: {
+              select: {
+                id: true,
+                title: true,
+                status: true,
+                requestedAt: true
+              }
+            },
+            review: {
+              select: {
+                id: true,
+                rating: true,
+                body: true,
+                createdAt: true
+              }
+            },
+            reschedules: {
+              orderBy: {
+                createdAt: "desc"
+              },
+              take: 4
+            },
+            cancellations: {
+              orderBy: {
+                createdAt: "desc"
+              },
+              take: 4
+            }
+          }
+        });
+
+        if (!booking) {
+          return [];
+        }
+
+        return this.sortActivityTimeline([
+          {
+            id: `booking:${booking.id}`,
+            kind: "BOOKING",
+            title: booking.serviceRequest?.title ?? `Booking ${booking.id}`,
+            subtitle: `Booking ${booking.status.toLowerCase()}`,
+            status: booking.status,
+            createdAt: booking.createdAt,
+            linkPath: `/bookings/${booking.id}`
+          },
+          ...(booking.serviceRequest
+            ? [
+                {
+                  id: `service-request:${booking.serviceRequest.id}`,
+                  kind: "SERVICE_REQUEST",
+                  title: booking.serviceRequest.title,
+                  subtitle: `Service request ${booking.serviceRequest.status.toLowerCase()}`,
+                  status: booking.serviceRequest.status,
+                  createdAt: booking.serviceRequest.requestedAt,
+                  linkPath: `/service-requests/${booking.serviceRequest.id}`
+                }
+              ]
+            : []),
+          ...(booking.review
+            ? [
+                {
+                  id: `review:${booking.review.id}`,
+                  kind: "REVIEW_RECEIVED",
+                  title: `${booking.review.rating}/5 review submitted`,
+                  subtitle: clipText(booking.review.body, 140),
+                  createdAt: booking.review.createdAt,
+                  linkPath: `/content/review/${booking.review.id}`
+                }
+              ]
+            : []),
+          ...booking.reschedules.map<AdminActivityCollectionItem>((entry) => ({
+            id: `booking-reschedule:${entry.id}`,
+            kind: "BOOKING",
+            title: "Booking reschedule requested",
+            subtitle: `Requested ${entry.status?.toLowerCase() ?? "pending"}`,
+            status: entry.status,
+            createdAt: entry.createdAt,
+            linkPath: `/bookings/${booking.id}`
+          })),
+          ...booking.cancellations.map<AdminActivityCollectionItem>((entry) => ({
+            id: `booking-cancel:${entry.id}`,
+            kind: "BOOKING",
+            title: "Booking cancellation recorded",
+            subtitle: entry.reason ?? "No reason recorded",
+            status: "CANCELLED",
+            createdAt: entry.createdAt,
+            linkPath: `/bookings/${booking.id}`
+          }))
+        ]);
+      }
+      case "service_request": {
+        const request = await prisma.serviceRequest.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            booking: {
+              select: {
+                id: true,
+                status: true,
+                createdAt: true
+              }
+            },
+            assignments: {
+              include: {
+                workerProfile: {
+                  include: {
+                    user: {
+                      select: publicUserSelect
+                    }
+                  }
+                }
+              },
+              orderBy: {
+                assignedAt: "desc"
+              },
+              take: 6
+            }
+          }
+        });
+
+        if (!request) {
+          return [];
+        }
+
+        return this.sortActivityTimeline([
+          {
+            id: `service-request:${request.id}`,
+            kind: "SERVICE_REQUEST",
+            title: request.title,
+            subtitle: request.description ? clipText(request.description, 140) : "Service request opened",
+            status: request.status,
+            createdAt: request.requestedAt,
+            linkPath: `/service-requests/${request.id}`
+          },
+          ...(request.booking
+            ? [
+                {
+                  id: `booking:${request.booking.id}`,
+                  kind: "BOOKING",
+                  title: "Booking created from request",
+                  subtitle: `Booking ${request.booking.status.toLowerCase()}`,
+                  status: request.booking.status,
+                  createdAt: request.booking.createdAt,
+                  linkPath: `/bookings/${request.booking.id}`
+                }
+              ]
+            : []),
+          ...request.assignments.map<AdminActivityCollectionItem>((assignment) => ({
+            id: `assignment:${assignment.id}`,
+            kind: "ASSIGNMENT",
+            title:
+              getDisplayName(assignment.workerProfile.user.profile) ??
+              assignment.workerProfile.user.email ??
+              assignment.workerProfile.id,
+            subtitle: `Assignment ${assignment.assignmentStatus.toLowerCase()}`,
+            status: assignment.assignmentStatus,
+            createdAt: assignment.assignedAt ?? new Date(),
+            linkPath: `/workers/${assignment.workerProfile.id}`
+          }))
+        ]);
+      }
+      case "payment": {
+        const paymentIntent = await prisma.paymentIntent.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            booking: {
+              include: {
+                serviceRequest: {
+                  select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    requestedAt: true
+                  }
+                }
+              }
+            },
+            sourceSubscriptions: {
+              include: {
+                workerProfile: {
+                  include: {
+                    user: {
+                      select: publicUserSelect
+                    }
+                  }
+                }
+              },
+              orderBy: {
+                createdAt: "desc"
+              }
+            }
+          }
+        });
+
+        if (!paymentIntent) {
+          return [];
+        }
+
+        const invoiceWorkerIds = Array.from(new Set(paymentIntent.sourceSubscriptions.map((entry) => entry.workerProfileId)));
+        const invoices =
+          invoiceWorkerIds.length > 0
+            ? await prisma.workerSubscriptionInvoice.findMany({
+                where: {
+                  workerProfileId: {
+                    in: invoiceWorkerIds
+                  }
+                },
+                orderBy: {
+                  createdAt: "desc"
+                },
+                take: 6
+              })
+            : [];
+
+        return this.sortActivityTimeline([
+          {
+            id: `payment:${paymentIntent.id}`,
+            kind: "PAYMENT",
+            title: `${paymentIntent.amountMinor} ${paymentIntent.currencyCode} minor`,
+            subtitle: paymentIntent.providerRef ?? "Payment intent created",
+            status: paymentIntent.status,
+            createdAt: paymentIntent.createdAt,
+            linkPath: paymentIntent.bookingId ? `/bookings/${paymentIntent.bookingId}` : null
+          },
+          ...(paymentIntent.booking
+            ? [
+                {
+                  id: `payment-booking:${paymentIntent.booking.id}`,
+                  kind: "BOOKING",
+                  title: paymentIntent.booking.serviceRequest?.title ?? `Booking ${paymentIntent.booking.id}`,
+                  subtitle: `Linked booking ${paymentIntent.booking.status.toLowerCase()}`,
+                  status: paymentIntent.booking.status,
+                  createdAt: paymentIntent.booking.createdAt,
+                  linkPath: `/bookings/${paymentIntent.booking.id}`
+                }
+              ]
+            : []),
+          ...paymentIntent.sourceSubscriptions.map<AdminActivityCollectionItem>((subscription) => ({
+            id: `subscription:${subscription.id}`,
+            kind: "SUBSCRIPTION",
+            title:
+              getDisplayName(subscription.workerProfile.user.profile) ??
+              subscription.workerProfile.user.email ??
+              subscription.workerProfile.id,
+            subtitle: `Featured subscription ${subscription.status.toLowerCase()}`,
+            status: subscription.status,
+            createdAt: subscription.createdAt,
+            linkPath: `/workers/${subscription.workerProfileId}/subscription`
+          })),
+          ...invoices.map<AdminActivityCollectionItem>((invoice) => ({
+            id: `invoice:${invoice.id}`,
+            kind: "INVOICE",
+            title: `${invoice.amountMinor} ${invoice.currencyCode} minor`,
+            subtitle: invoice.providerRef ?? "Subscription invoice",
+            status: invoice.status,
+            createdAt: invoice.createdAt
+          }))
+        ]);
+      }
+      case "worker": {
+        const worker = await prisma.workerProfile.findUnique({
+          where: { id: relatedEntityId },
+          include: {
+            user: {
+              select: publicUserSelect
+            },
+            featuredSubscriptions: {
+              orderBy: {
+                createdAt: "desc"
+              },
+              take: 6
+            },
+            subscriptionInvoices: {
+              orderBy: {
+                createdAt: "desc"
+              },
+              take: 6
+            },
+            verificationRequests: {
+              orderBy: {
+                createdAt: "desc"
+              },
+              take: 4
+            }
+          }
+        });
+
+        if (!worker) {
+          return [];
+        }
+
+        return this.sortActivityTimeline([
+          {
+            id: `worker:${worker.id}`,
+            kind: "WORKER",
+            title: getDisplayName(worker.user.profile) ?? worker.user.email ?? worker.id,
+            subtitle: worker.headline ?? "Worker profile",
+            status: worker.verificationStatus,
+            createdAt: worker.createdAt,
+            linkPath: `/workers/${worker.id}`
+          },
+          ...worker.featuredSubscriptions.map<AdminActivityCollectionItem>((subscription) => ({
+            id: `subscription:${subscription.id}`,
+            kind: "SUBSCRIPTION",
+            title: "Featured subscription",
+            subtitle: `${subscription.startsAt.toISOString()} -> ${subscription.endsAt.toISOString()}`,
+            status: subscription.status,
+            createdAt: subscription.createdAt,
+            linkPath: `/workers/${worker.id}/subscription`
+          })),
+          ...worker.subscriptionInvoices.map<AdminActivityCollectionItem>((invoice) => ({
+            id: `invoice:${invoice.id}`,
+            kind: "INVOICE",
+            title: `${invoice.amountMinor} ${invoice.currencyCode} minor`,
+            subtitle: invoice.providerRef ?? "Subscription invoice",
+            status: invoice.status,
+            createdAt: invoice.createdAt,
+            linkPath: `/workers/${worker.id}/subscription`
+          })),
+          ...worker.verificationRequests.map<AdminActivityCollectionItem>((request) => ({
+            id: `worker-verification:${request.id}`,
+            kind: "WORKER_VERIFICATION",
+            title: "Verification submission",
+            subtitle: request.reviewNotes ?? "Verification request recorded",
+            status: request.status,
+            createdAt: request.createdAt,
+            linkPath: `/workers/${worker.id}/verification`
+          }))
+        ]);
+      }
+      case "user": {
+        const user = await prisma.user.findUnique({
+          where: { id: relatedEntityId },
+          select: publicUserSelect
+        });
+
+        if (!user) {
+          return [];
+        }
+
+        return [
+          {
+            id: `user:${user.id}`,
+            kind: "USER",
+            title: getDisplayName(user.profile) ?? user.email ?? user.id,
+            subtitle: user.email ?? user.phone ?? "User account",
+            status: user.status,
+            createdAt: user.createdAt,
+            linkPath: `/users/${user.id}`
+          }
+        ];
+      }
+      default:
+        return [];
+    }
+  }
+
+  private buildSupportRemediationPlaybook(
+    ticket: {
+      id: string;
+      subject: string;
+      body: string;
+      relatedEntityType?: string | null;
+      relatedEntityId?: string | null;
+    },
+    relatedEntitySummary: Awaited<ReturnType<AdminService["getSupportTicketRelatedEntitySummary"]>>,
+    relatedEntityHistory: AdminActivityCollectionItem[]
+  ): SupportRemediationPlaybook {
+    const normalizedCaseText = `${ticket.subject} ${ticket.body}`.toLowerCase();
+    const quickLinks = Array.from(
+      new Map(
+        [
+          ...(relatedEntitySummary?.linkPath ? [{ label: "Open related desk", path: relatedEntitySummary.linkPath }] : []),
+          ...relatedEntityHistory
+            .filter((item) => Boolean(item.linkPath))
+            .map((item) => ({
+              label: item.kind.replaceAll("_", " "),
+              path: item.linkPath as string
+            }))
+        ].map((item) => [item.path, item])
+      ).values()
+    ).slice(0, 4);
+
+    if (ticket.relatedEntityType === "payment") {
+      return {
+        headline: "Payment and entitlement reconciliation",
+        recommendedStatus: SupportTicketStatus.WAITING_INTERNAL,
+        steps: [
+          "Confirm the payment intent status and provider reference before replying to the customer.",
+          "If money succeeded but the downstream booking or featured entitlement did not update, reconcile those records before resolving the ticket.",
+          "Record the exact commercial outcome in both an external reply and an internal note so audit can reconstruct the remediation."
+        ],
+        quickLinks
+      };
+    }
+
+    if (ticket.relatedEntityType === "worker" && /(subscription|featured|billing|invoice|payment)/.test(normalizedCaseText)) {
+      return {
+        headline: "Worker subscription remediation",
+        recommendedStatus: SupportTicketStatus.WAITING_INTERNAL,
+        steps: [
+          "Review the worker subscription timeline and invoice ledger before deciding whether the complaint is billing, entitlement, or verification related.",
+          "If entitlement dates are wrong, use the worker subscription desk to extend or disable placement before resolving support.",
+          "Add an internal note that names the exact subscription or invoice record touched during remediation."
+        ],
+        quickLinks: Array.from(new Map([...quickLinks, { label: "Open worker subscription", path: `/workers/${ticket.relatedEntityId}/subscription` }].map((item) => [item.path, item])).values()).slice(0, 4)
+      };
+    }
+
+    if (ticket.relatedEntityType === "service_request" || ticket.relatedEntityType === "booking") {
+      return {
+        headline: "Marketplace fulfillment remediation",
+        recommendedStatus: SupportTicketStatus.WAITING_INTERNAL,
+        steps: [
+          "Check the request or booking status before telling the user the issue is resolved.",
+          "Validate the assignment, schedule, and related conversation so support does not close an issue that is still blocked operationally.",
+          "If a marketplace intervention was required, capture that intervention in an internal note before moving the ticket to RESOLVED."
+        ],
+        quickLinks
+      };
+    }
+
+    return {
+      headline: "General account investigation",
+      recommendedStatus: SupportTicketStatus.WAITING_USER,
+      steps: [
+        "Review recent sessions, moderation reports, and fraud signals before replying.",
+        "Move the ticket to WAITING_USER only after you have asked for the missing evidence or clarified the next external dependency.",
+        "Leave a precise internal note so the next operator can see what was checked and what is still outstanding."
+      ],
+      quickLinks
+    };
+  }
+
+  private async listSupportAssigneeOptions(): Promise<SupportAssigneeOption[]> {
+    const supportUsers = await prisma.user.findMany({
+      where: {
+        status: UserStatus.ACTIVE,
+        adminAssignments: {
+          some: {
+            role: {
+              roleKey: {
+                in: [AdminRoleKey.SUPPORT, AdminRoleKey.ADMIN, AdminRoleKey.SUPER_ADMIN]
+              }
+            }
+          }
+        }
+      },
+      include: {
+        profile: true,
+        adminAssignments: {
+          include: {
+            role: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "asc"
+      }
+    });
+
+    const supportUserIds = supportUsers.map((user) => user.id);
+    const activeLoads =
+      supportUserIds.length > 0
+        ? await prisma.supportTicket.groupBy({
+            by: ["assignedSupportUserId"],
+            where: {
+              assignedSupportUserId: {
+                in: supportUserIds
+              },
+              status: {
+                in: [SupportTicketStatus.OPEN, SupportTicketStatus.ASSIGNED, SupportTicketStatus.WAITING_INTERNAL, SupportTicketStatus.WAITING_USER]
+              }
+            },
+            _count: {
+              _all: true
+            }
+          })
+        : [];
+
+    const loadByUserId = new Map(activeLoads.map((entry) => [entry.assignedSupportUserId ?? "", entry._count._all]));
+
+    return supportUsers.map((user) => ({
+      userId: user.id,
+      email: user.email,
+      displayName: getDisplayName(user.profile) ?? user.email ?? user.id,
+      roles: user.adminAssignments.map((assignment) => assignment.role.roleKey),
+      openAssignedTicketCount: loadByUserId.get(user.id) ?? 0
+    }));
   }
 
   private sortActivityTimeline(items: AdminActivityCollectionItem[]) {
@@ -1757,10 +2275,36 @@ class AdminService {
 
   async getWorkerDetail(workerId: string) {
     const worker = await this.requireWorker(workerId);
-    const activitySnapshot = await this.getWorkerActivitySnapshot(worker.id, worker.userId);
+    const [activitySnapshot, activeSessions] = await Promise.all([
+      this.getWorkerActivitySnapshot(worker.id, worker.userId),
+      prisma.userSession.findMany({
+        where: {
+          userId: worker.userId,
+          revokedAt: null,
+          expiresAt: {
+            gt: new Date()
+          }
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        take: 8
+      })
+    ]);
 
     return {
       ...worker,
+      sessionCount: activeSessions.length,
+      activeSessions: activeSessions.map((session) => ({
+        id: session.id,
+        deviceType: session.deviceType,
+        ipAddress: session.ipAddress,
+        mfaVerified: session.mfaVerified,
+        mfaVerifiedAt: session.mfaVerifiedAt,
+        mfaMethod: session.mfaMethod,
+        createdAt: session.createdAt,
+        expiresAt: session.expiresAt
+      })),
       activitySummary: {
         ...activitySnapshot.activitySummary,
         services: worker.services.length,
@@ -2363,7 +2907,7 @@ class AdminService {
       throw Errors.SUPPORT_TICKET_NOT_FOUND();
     }
 
-    const [openedByUserInvestigation, relatedSupportTickets, relatedEntitySummary, auditTrail] = await Promise.all([
+    const [openedByUserInvestigation, relatedSupportTickets, relatedEntitySummary, relatedEntityHistory, auditTrail, availableAssignees] = await Promise.all([
       this.getUserDetail(ticket.openedByUserId),
       prisma.supportTicket.findMany({
         where: {
@@ -2386,6 +2930,7 @@ class AdminService {
         take: 6
       }),
       this.getSupportTicketRelatedEntitySummary(ticket.relatedEntityType, ticket.relatedEntityId),
+      this.getSupportTicketEntityHistory(ticket.relatedEntityType, ticket.relatedEntityId),
       prisma.adminAuditLog.findMany({
         where: {
           OR: [
@@ -2408,7 +2953,8 @@ class AdminService {
           createdAt: "desc"
         },
         take: 16
-      })
+      }),
+      this.listSupportAssigneeOptions()
     ]);
 
     return {
@@ -2427,6 +2973,9 @@ class AdminService {
       openedByUserInvestigation,
       relatedSupportTickets: relatedSupportTickets.map((relatedTicket) => this.mapSupportTicketSummary(relatedTicket)),
       relatedEntitySummary,
+      relatedEntityHistory,
+      remediationPlaybook: this.buildSupportRemediationPlaybook(ticket, relatedEntitySummary, relatedEntityHistory),
+      availableAssignees,
       auditTrail: auditTrail.map((entry) => this.mapAdminAuditLog(entry))
     };
   }
@@ -2634,7 +3183,9 @@ class AdminService {
     const bookingCreatedAt = this.buildDateRangeWhere(query.from, query.to);
     const paymentCreatedAt = this.buildDateRangeWhere(query.from, query.to);
 
-    const [users, workersApproved, requestsOpen, bookingsCompleted, revenue] = await Promise.all([
+    const now = new Date();
+    const [users, workersApproved, requestsOpen, bookingsCompleted, revenue, onlineUserRows, onlineWorkerRows, suspendedUsers, openSupportTickets, openFraudSignals, openModerationCases] =
+      await Promise.all([
       prisma.user.count({
         where: userCreatedAt ? { createdAt: userCreatedAt } : undefined
       }),
@@ -2666,6 +3217,62 @@ class AdminService {
         _sum: {
           amountMinor: true
         }
+      }),
+      prisma.userSession.findMany({
+        where: {
+          revokedAt: null,
+          expiresAt: {
+            gt: now
+          }
+        },
+        distinct: ["userId"],
+        select: {
+          userId: true
+        }
+      }),
+      prisma.workerProfile.findMany({
+        where: {
+          user: {
+            sessions: {
+              some: {
+                revokedAt: null,
+                expiresAt: {
+                  gt: now
+                }
+              }
+            }
+          }
+        },
+        distinct: ["id"],
+        select: {
+          id: true
+        }
+      }),
+      prisma.user.count({
+        where: {
+          status: UserStatus.SUSPENDED
+        }
+      }),
+      prisma.supportTicket.count({
+        where: {
+          status: {
+            in: [SupportTicketStatus.OPEN, SupportTicketStatus.ASSIGNED, SupportTicketStatus.WAITING_INTERNAL, SupportTicketStatus.WAITING_USER]
+          }
+        }
+      }),
+      prisma.fraudSignal.count({
+        where: {
+          status: {
+            in: [FraudSignalStatus.OPEN, FraudSignalStatus.REVIEWED]
+          }
+        }
+      }),
+      prisma.moderationCase.count({
+        where: {
+          status: {
+            in: [ModerationCaseStatus.OPEN, ModerationCaseStatus.IN_REVIEW, ModerationCaseStatus.ACTIONED]
+          }
+        }
       })
     ]);
 
@@ -2674,7 +3281,13 @@ class AdminService {
       workersApproved,
       requestsOpen,
       bookingsCompleted,
-      revenueMinor: revenue._sum.amountMinor ?? 0
+      revenueMinor: revenue._sum.amountMinor ?? 0,
+      onlineUsers: onlineUserRows.length,
+      onlineWorkers: onlineWorkerRows.length,
+      suspendedUsers,
+      openSupportTickets,
+      openFraudSignals,
+      openModerationCases
     };
   }
 

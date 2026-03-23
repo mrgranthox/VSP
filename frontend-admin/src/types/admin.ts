@@ -4,6 +4,12 @@ export interface OverviewAnalytics {
   requestsOpen: number;
   bookingsCompleted: number;
   revenueMinor: number;
+  onlineUsers: number;
+  onlineWorkers: number;
+  suspendedUsers: number;
+  openSupportTickets: number;
+  openFraudSignals: number;
+  openModerationCases: number;
 }
 
 export interface SearchAnalytics {
@@ -374,6 +380,23 @@ export interface SupportTicketDetail extends AdminSupportTicketItem {
   openedByUserInvestigation: AdminUserDetail;
   relatedSupportTickets: AdminSupportTicketItem[];
   relatedEntitySummary?: AdminLinkedEntitySummary | null;
+  relatedEntityHistory: AdminActivityItem[];
+  remediationPlaybook: {
+    headline: string;
+    recommendedStatus: string;
+    steps: string[];
+    quickLinks: Array<{
+      label: string;
+      path: string;
+    }>;
+  };
+  availableAssignees: Array<{
+    userId: string;
+    email?: string | null;
+    displayName: string;
+    roles: string[];
+    openAssignedTicketCount: number;
+  }>;
   auditTrail: AdminAuditLogItem[];
 }
 
@@ -706,6 +729,8 @@ export interface WorkerDetail extends AdminWorkerListItem {
     createdAt: string;
   }>;
   recentMediaAssets: AdminMediaAssetItem[];
+  sessionCount: number;
+  activeSessions: AdminUserSessionItem[];
   activityCollections: WorkerActivityCollections;
   activitySummary: {
     posts: number;
