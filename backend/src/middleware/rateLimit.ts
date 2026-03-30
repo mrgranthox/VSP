@@ -18,12 +18,28 @@ const rateLimit =
     const windowStart = now - windowMs;
     const member = `${now}:${randomUUID()}`;
 
-    await redis.zremrangebyscore(redisKey, 0, windowStart);
-    await redis.zadd(redisKey, now, member);
-    const count = await redis.zcard(redisKey);
-    await redis.pexpire(redisKey, windowMs);
+    const pipeline = redis.multi();
+    pipeline.zremrangebyscore(redisKey, 0, windowStart);
+    pipeline.zadd(redisKey, now, member);
+    pipeline.zcard(redisKey);
+    pipeline.pexpire(redisKey, windowMs);
 
-    if (count > max) {
+    const results = await pipeline.exec();
+
+    if (!results) {
+      throw new Error("Rate limiter backend unavailable");
+    }
+
+    const countRaw = results[2]?.[1];
+    const count = typeof countRaw === "number" ? countRaw : Number.parseInt(String(countRaw ?? "0"), 10);
+    const cappedCount = Number.isFinite(count) ? Math.max(0, count) : 0;
+    const resetAtEpochSeconds = Math.ceil((now + windowMs) / 1000);
+
+    res.setHeader("X-RateLimit-Limit", max);
+    res.setHeader("X-RateLimit-Remaining", Math.max(0, max - cappedCount));
+    res.setHeader("X-RateLimit-Reset", resetAtEpochSeconds);
+
+    if (cappedCount > max) {
       const oldestEntry = await redis.zrange(redisKey, 0, 0, "WITHSCORES");
       const oldestTimestamp = oldestEntry.length >= 2 ? Number.parseInt(oldestEntry[1] ?? "", 10) : now;
       const retryAfterSeconds = Math.max(1, Math.ceil((oldestTimestamp + windowMs - now) / 1000));

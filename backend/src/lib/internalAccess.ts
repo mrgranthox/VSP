@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type { IncomingHttpHeaders } from "node:http";
 
 import { type NextFunction, type Request, type Response } from "express";
@@ -36,12 +37,27 @@ const getBearerToken = (headers: IncomingHttpHeaders): string | undefined => {
   return token;
 };
 
+const tokensMatch = (providedToken: string | undefined, expectedToken: string): boolean => {
+  if (!providedToken) {
+    return false;
+  }
+
+  const providedBuffer = Buffer.from(providedToken);
+  const expectedBuffer = Buffer.from(expectedToken);
+
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(providedBuffer, expectedBuffer);
+};
+
 const hasInternalAccess = (headers: IncomingHttpHeaders): boolean => {
   const expectedToken = env.INTERNAL_API_KEY;
   const providedToken = getInternalAccessToken(headers) ?? getBearerToken(headers);
 
   if (expectedToken) {
-    return providedToken === expectedToken;
+    return tokensMatch(providedToken, expectedToken);
   }
 
   return env.NODE_ENV !== "production";
