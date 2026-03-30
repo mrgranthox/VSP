@@ -18,10 +18,20 @@ const rateLimit =
     const windowStart = now - windowMs;
     const member = `${now}:${randomUUID()}`;
 
-    await redis.zremrangebyscore(redisKey, 0, windowStart);
-    await redis.zadd(redisKey, now, member);
-    const count = await redis.zcard(redisKey);
-    await redis.pexpire(redisKey, windowMs);
+    const pipeline = redis.multi();
+    pipeline.zremrangebyscore(redisKey, 0, windowStart);
+    pipeline.zadd(redisKey, now, member);
+    pipeline.zcard(redisKey);
+    pipeline.pexpire(redisKey, windowMs);
+
+    const results = await pipeline.exec();
+
+    if (!results) {
+      throw new Error("Rate limiter backend unavailable");
+    }
+
+    const countRaw = results[2]?.[1];
+    const count = typeof countRaw === "number" ? countRaw : Number.parseInt(String(countRaw ?? "0"), 10);
 
     if (count > max) {
       const oldestEntry = await redis.zrange(redisKey, 0, 0, "WITHSCORES");

@@ -43,7 +43,10 @@ class AdminController {
   };
 
   getUser = async (req: Request, res: Response): Promise<void> => {
-    const result = await this.adminService.getUserDetail(req.params.userId);
+    const query = req.query as unknown as { includeActivity: boolean };
+    const result = await this.adminService.getUserDetail(req.params.userId, {
+      includeActivity: query.includeActivity
+    });
     res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
   };
 

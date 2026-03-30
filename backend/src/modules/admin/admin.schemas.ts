@@ -20,6 +20,10 @@ const AdminUserIdParams = z.object({
   userId: z.string().uuid()
 });
 
+const AdminGetUserQuery = z.object({
+  includeActivity: z.coerce.boolean().default(true)
+});
+
 const AdminUserSessionParams = z.object({
   userId: z.string().uuid(),
   sessionId: z.string().uuid()
@@ -383,6 +387,7 @@ export {
   AddSupportTicketMessageBody,
   AdminAnalyticsQuery,
   AdminAuditLogQuery,
+  AdminGetUserQuery,
   AdminBookingsQuery,
   AdminCitiesQuery,
   AdminFraudSignalsQuery,

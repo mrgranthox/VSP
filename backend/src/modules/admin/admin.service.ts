@@ -1376,6 +1376,56 @@ class AdminService {
       .slice(0, 28);
   }
 
+
+  private buildEmptyUserActivitySnapshot() {
+    return {
+      activitySummary: {
+        posts: 0,
+        comments: 0,
+        postLikes: 0,
+        commentLikes: 0,
+        postSaves: 0,
+        follows: 0,
+        followers: 0,
+        savedWorkers: 0,
+        reports: 0,
+        messages: 0,
+        conversations: 0,
+        notifications: 0,
+        serviceRequests: 0,
+        bookings: 0,
+        reviewsWritten: 0,
+        reviewsReceived: 0,
+        supportTickets: 0,
+        fraudSignals: 0,
+        mediaAssets: 0
+      },
+      activityCollections: {
+        posts: [],
+        comments: [],
+        postLikes: [],
+        commentLikes: [],
+        postSaves: [],
+        follows: [],
+        followers: [],
+        savedWorkers: [],
+        reports: [],
+        messages: [],
+        conversations: [],
+        notifications: [],
+        serviceRequests: [],
+        bookings: [],
+        reviewsWritten: [],
+        reviewsReceived: [],
+        supportTickets: [],
+        fraudSignals: [],
+        mediaAssets: []
+      },
+      recentMediaAssets: [],
+      activityTimeline: []
+    };
+  }
+
   private async getUserActivitySnapshot(userId: string) {
     const [
       postsCount,
@@ -2076,8 +2126,9 @@ class AdminService {
     };
   }
 
-  async getUserDetail(userId: string) {
+  async getUserDetail(userId: string, options: { includeActivity?: boolean } = {}) {
     const user = await this.requireUser(userId);
+    const includeActivity = options.includeActivity ?? true;
     const [activeSessions, openTicketCount, activitySnapshot] = await Promise.all([
       prisma.userSession.findMany({
         where: {
@@ -2100,7 +2151,7 @@ class AdminService {
           }
         }
       }),
-      this.getUserActivitySnapshot(userId)
+      includeActivity ? this.getUserActivitySnapshot(userId) : Promise.resolve(this.buildEmptyUserActivitySnapshot())
     ]);
 
     return {
@@ -2121,7 +2172,8 @@ class AdminService {
       activitySummary: activitySnapshot.activitySummary,
       activityCollections: activitySnapshot.activityCollections,
       recentMediaAssets: activitySnapshot.recentMediaAssets,
-      activityTimeline: activitySnapshot.activityTimeline
+      activityTimeline: activitySnapshot.activityTimeline,
+      activityIncluded: includeActivity
     };
   }
 

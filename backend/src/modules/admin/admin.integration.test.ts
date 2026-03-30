@@ -554,6 +554,19 @@ test("admin flow covers guarded actions, marketplace views, moderation, support 
   assert.equal(getUserResponse.body.data.id, subjectUser.userId);
   assert.equal(Array.isArray(getUserResponse.body.data.activityCollections.posts), true);
   assert.equal(typeof getUserResponse.body.data.profile.bio, "string");
+  assert.equal(getUserResponse.body.data.activityIncluded, true);
+
+  const getUserWithoutActivityResponse = await api
+    .get(`/api/v1/admin/users/${subjectUser.userId}?includeActivity=false`)
+    .set("Authorization", `Bearer ${adminSession.accessToken}`);
+
+  assert.equal(getUserWithoutActivityResponse.status, 200);
+  assert.equal(getUserWithoutActivityResponse.body.data.id, subjectUser.userId);
+  assert.equal(getUserWithoutActivityResponse.body.data.activityIncluded, false);
+  assert.equal(Array.isArray(getUserWithoutActivityResponse.body.data.activityCollections.posts), true);
+  assert.equal(getUserWithoutActivityResponse.body.data.activityCollections.posts.length, 0);
+  assert.equal(getUserWithoutActivityResponse.body.data.activitySummary.posts, 0);
+  assert.equal(Array.isArray(getUserWithoutActivityResponse.body.data.activityTimeline), true);
 
   const suspendResponse = await api
     .post(`/api/v1/admin/users/${subjectUser.userId}/suspend`)
