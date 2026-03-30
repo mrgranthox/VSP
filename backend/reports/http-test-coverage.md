@@ -3,7 +3,7 @@
 Generated from the current TypeScript source tree.
 
 - Routes: 215
-- Static HTTP test invocations: 372
+- Static HTTP test invocations: 373
 - Unique static HTTP invocations: 215
 - Covered routes: 215
 - Uncovered routes: 0

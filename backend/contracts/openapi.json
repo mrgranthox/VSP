@@ -3574,12 +3574,15 @@
         "x-vsp-handler": "adminController.getUser",
         "x-vsp-middlewares": [
           "requirePermission(\"USER_VIEW\")",
-          "validate(AdminUserIdParams, \"params\")"
+          "validate(AdminUserIdParams, \"params\")",
+          "validate(AdminGetUserQuery, \"query\")"
         ],
         "x-vsp-validation": {
-          "params": "AdminUserIdParams"
+          "params": "AdminUserIdParams",
+          "query": "AdminGetUserQuery"
         },
         "x-vsp-required-permission": "USER_VIEW",
+        "x-vsp-query-schema": "AdminGetUserQuery",
         "x-vsp-params-schema": "AdminUserIdParams",
         "security": [
           {
