@@ -30,8 +30,18 @@ const rateLimit =
       throw new Error("Rate limiter backend unavailable");
     }
 
-    const countRaw = results[2]?.[1];
-    const count = typeof countRaw === "number" ? countRaw : Number.parseInt(String(countRaw ?? "0"), 10);
+    const zcardResult = results[2];
+    const [zcardError, countRaw] = Array.isArray(zcardResult) ? zcardResult : [new Error("Rate limiter zcard failed")];
+
+    if (zcardError) {
+      throw zcardError;
+    }
+
+    const count = typeof countRaw === "number" ? countRaw : Number.parseInt(String(countRaw ?? ""), 10);
+
+    if (!Number.isFinite(count)) {
+      throw new Error("Rate limiter zcard returned invalid count");
+    }
 
     if (count > max) {
       const oldestEntry = await redis.zrange(redisKey, 0, 0, "WITHSCORES");
