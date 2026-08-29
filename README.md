@@ -23,7 +23,7 @@
 - [Testing & Verification](#testing--verification)
 - [Deployment & CI/CD](#deployment--cicd)
 - [License](#license)
-- [Open Questions](#open-questions)
+
 
 ---
 
@@ -377,9 +377,3 @@ Continuous Integration is powered by GitHub Actions (`.github/workflows/backend-
 
 This project is licensed under the [MIT License](LICENSE).
 
----
-
-## Open Questions
-
-1. **User Web (`frontend-web/`) & Mobile (`frontend-mobile/`)**: These directories are listed as future workspace targets in internal notes; confirm whether scaffolding templates should be documented once initialized.
-2. **Third-Party Service Credentials**: Production credentials for SMS (Twilio), Sentry DSNs, and Typesense endpoints must be provisioned in deployment target secret stores.
