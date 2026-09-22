@@ -12,6 +12,7 @@ import {
   AdminBookingsQuery,
   AdminCitiesQuery,
   AdminFraudSignalsQuery,
+  AdminGetUserQuery,
   AdminListModerationCasesQuery,
   AdminListReportsQuery,
   AdminListSupportTicketsQuery,
@@ -64,7 +65,13 @@ const adminRoutes = Router();
 adminRoutes.use("/admin", authenticate);
 
 adminRoutes.get("/admin/users", requirePermission("USER_VIEW"), validate(AdminListUsersQuery, "query"), adminController.listUsers);
-adminRoutes.get("/admin/users/:userId", requirePermission("USER_VIEW"), validate(AdminUserIdParams, "params"), adminController.getUser);
+adminRoutes.get(
+  "/admin/users/:userId",
+  requirePermission("USER_VIEW"),
+  validate(AdminUserIdParams, "params"),
+  validate(AdminGetUserQuery, "query"),
+  adminController.getUser
+);
 adminRoutes.post(
   "/admin/users/:userId/suspend",
   requirePermission("USER_SUSPEND"),

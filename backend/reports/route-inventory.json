@@ -1034,10 +1034,12 @@
       "handler": "adminController.getUser",
       "middlewares": [
         "requirePermission(\"USER_VIEW\")",
-        "validate(AdminUserIdParams, \"params\")"
+        "validate(AdminUserIdParams, \"params\")",
+        "validate(AdminGetUserQuery, \"query\")"
       ],
       "validation": {
-        "params": "AdminUserIdParams"
+        "params": "AdminUserIdParams",
+        "query": "AdminGetUserQuery"
       },
       "security": [
         "bearerAuth"

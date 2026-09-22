@@ -1,7 +1,7 @@
 {
   "summary": {
     "routeCount": 215,
-    "staticHttpInvocationCount": 372,
+    "staticHttpInvocationCount": 373,
     "uniqueStaticHttpInvocationCount": 215,
     "coveredRouteCount": 215,
     "uncoveredRouteCount": 0,
@@ -491,6 +491,7 @@
       "module": "admin",
       "sourceFile": "src/modules/admin/admin.routes.ts",
       "coveredBy": [
+        "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts",
         "src/modules/admin/admin.integration.test.ts"
       ]
