@@ -17,6 +17,8 @@ frontend-admin/e2e/.auth/
 /.env.local
 backend/.env
 backend/.env.local
+frontend-admin/.env
+frontend-admin/.env.local
 
 # Docker and OS noise
 *.log
