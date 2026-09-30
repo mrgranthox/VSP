@@ -194,7 +194,7 @@ class WorkerDashboardScreen extends StatelessWidget {
                   Expanded(
                     child: _buildMetricCard(
                       title: 'Client Rating',
-                      value: '${workerProfile?.ratingAvg ?? 4.9} ★',
+                      value: '${workerProfile?.ratingAvg ?? 4.9}',
                       icon: Icons.star_outline_rounded,
                       color: AppColors.warning,
                       trend: '${workerProfile?.reviewCount ?? 26} reviews',

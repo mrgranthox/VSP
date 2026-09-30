@@ -162,6 +162,49 @@ class SocialController {
     await this.socialService.reportComment(req.actor, req.params.commentId, req.body);
     res.status(201).json(success({}, { requestId: this.getRequestId(req) }));
   };
+
+  reactToPost = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    const reactionType = req.body?.reactionType ?? "LIKE";
+    await this.socialService.reactToPost(req.actor, req.params.postId, reactionType);
+    res.status(200).json(success({ reactionType }, { requestId: this.getRequestId(req) }));
+  };
+
+  removePostReaction = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    await this.socialService.removePostReaction(req.actor, req.params.postId);
+    res.status(200).json(success({}, { requestId: this.getRequestId(req) }));
+  };
+
+  repost = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    const result = await this.socialService.repost(req.actor, req.params.postId, req.body?.comment);
+    res.status(201).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  votePoll = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    const pollId = req.params.pollId;
+    const optionId = req.body.optionId;
+    const result = await this.socialService.votePoll(req.actor, pollId, optionId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  replyComment = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    const result = await this.socialService.replyComment(req.actor, req.params.commentId, req.body.content);
+    res.status(201).json(success(result, { requestId: this.getRequestId(req) }));
+  };
 }
 
 const socialController = new SocialController();

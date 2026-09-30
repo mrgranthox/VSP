@@ -39,6 +39,17 @@ const CitiesPage = lazyPage(() => import("@/pages/admin-config-pages").then((mod
 
 const AccessControlPage = lazyPage(() => import("@/pages/admin-access-pages").then((module) => ({ default: module.AccessControlPage })));
 
+const SkillsPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.SkillsPage })));
+const ArticlesPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.ArticlesPage })));
+const CompanyPagesPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.CompanyPagesPage })));
+const EventsPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.EventsPage })));
+const GroupsPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.GroupsPage })));
+const HashtagsPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.HashtagsPage })));
+const SubscriptionsPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.SubscriptionsPage })));
+const OnboardingFunnelPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.OnboardingFunnelPage })));
+const ProfileCompletenessPage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.ProfileCompletenessPage })));
+const ContentQueuePage = lazyPage(() => import("@/pages/admin-platform-pages").then((module) => ({ default: module.ContentQueuePage })));
+
 const UserDetailPage = lazyPage(() => import("@/pages/admin-detail-pages").then((module) => ({ default: module.UserDetailPage })));
 const WorkerDetailPage = lazyPage(() => import("@/pages/admin-detail-pages").then((module) => ({ default: module.WorkerDetailPage })));
 const VerificationReviewPage = lazyPage(() => import("@/pages/admin-detail-pages").then((module) => ({ default: module.VerificationReviewPage })));
@@ -140,6 +151,16 @@ const AppRoutes = () => (
           <Route element={protectedElement(<SystemHealthPage />, "SYSTEM_HEALTH_VIEW")} path="/system-health" />
           <Route element={protectedElement(<SystemHealthPage />, "SYSTEM_HEALTH_VIEW")} path="/system-health/jobs/:jobId" />
           <Route element={protectedElement(<SystemHealthPage />, "SYSTEM_HEALTH_VIEW")} path="/system-health/metrics" />
+          <Route element={protectedElement(<SkillsPage />, "CONFIG_VIEW")} path="/skills" />
+          <Route element={protectedElement(<ArticlesPage />, "CONTENT_VIEW")} path="/articles" />
+          <Route element={protectedElement(<CompanyPagesPage />, "WORKER_VIEW")} path="/company-pages" />
+          <Route element={protectedElement(<EventsPage />, "CONTENT_VIEW")} path="/events" />
+          <Route element={protectedElement(<GroupsPage />, "CONTENT_VIEW")} path="/groups" />
+          <Route element={protectedElement(<HashtagsPage />, "CONTENT_VIEW")} path="/hashtags" />
+          <Route element={protectedElement(<SubscriptionsPage />, "ANALYTICS_VIEW_OVERVIEW")} path="/subscriptions" />
+          <Route element={protectedElement(<OnboardingFunnelPage />, "ANALYTICS_VIEW_OVERVIEW")} path="/analytics/onboarding" />
+          <Route element={protectedElement(<ProfileCompletenessPage />, "ANALYTICS_VIEW_OVERVIEW")} path="/analytics/profiles" />
+          <Route element={protectedElement(<ContentQueuePage />, "CONTENT_VIEW")} path="/content-queue" />
         </Route>
       </Route>
 

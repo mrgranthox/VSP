@@ -40,10 +40,10 @@ class _CreateServiceRequestScreenState
   }
 
   final List<Map<String, String>> _urgencyOptions = [
-    {'key': 'LOW', 'label': 'Flexible', 'icon': '🟢'},
-    {'key': 'MEDIUM', 'label': 'Standard (2-3 days)', 'icon': '🟡'},
-    {'key': 'HIGH', 'label': 'Urgent (24h)', 'icon': '🟠'},
-    {'key': 'EMERGENCY', 'label': 'Emergency Now', 'icon': '🔴'},
+    {'key': 'LOW', 'label': 'Flexible'},
+    {'key': 'MEDIUM', 'label': 'Standard (2-3 days)'},
+    {'key': 'HIGH', 'label': 'Urgent (24h)'},
+    {'key': 'EMERGENCY', 'label': 'Emergency Now'},
   ];
 
   @override
@@ -218,9 +218,6 @@ class _CreateServiceRequestScreenState
                           ),
                           child: Row(
                             children: [
-                              Text(opt['icon']!,
-                                  style: const TextStyle(fontSize: 16)),
-                              const SizedBox(width: 10),
                               Text(
                                 opt['label']!,
                                 style: TextStyle(

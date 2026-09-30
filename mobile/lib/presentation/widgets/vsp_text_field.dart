@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
+import 'package:flutter/services.dart';
+import '../../core/theme/app_theme.dart';
 
 class VspTextField extends StatefulWidget {
   final TextEditingController? controller;
@@ -44,19 +45,21 @@ class _VspTextFieldState extends State<VspTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (widget.label != null) ...[
           Text(
             widget.label!,
-            style: const TextStyle(
-              fontSize: 13,
+            style: (theme.textTheme.labelMedium ?? const TextStyle()).copyWith(
               fontWeight: FontWeight.w700,
-              color: AppColors.darkText,
+              color: colorScheme.onSurface,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppTheme.spacingXxs + 2),
         ],
         TextFormField(
           controller: widget.controller,
@@ -68,22 +71,30 @@ class _VspTextFieldState extends State<VspTextField> {
           maxLines: widget.isPassword ? 1 : widget.maxLines,
           readOnly: widget.readOnly,
           onTap: widget.onTap,
-          style: const TextStyle(fontSize: 14, color: AppColors.darkText),
+          style: (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+            color: colorScheme.onSurface,
+          ),
           decoration: InputDecoration(
             hintText: widget.hint ?? widget.hintText,
             prefixIcon: widget.prefixIcon is IconData
-                ? Icon(widget.prefixIcon as IconData, size: 20, color: AppColors.midText)
+                ? Icon(
+                    widget.prefixIcon as IconData,
+                    size: 20,
+                    color: colorScheme.onSurfaceVariant,
+                  )
                 : (widget.prefixIcon is Widget ? widget.prefixIcon as Widget : null),
             suffixIcon: widget.isPassword
                 ? IconButton(
+                    tooltip: _obscureText ? 'Show password' : 'Hide password',
                     icon: Icon(
                       _obscureText
                           ? Icons.visibility_outlined
                           : Icons.visibility_off_outlined,
                       size: 20,
-                      color: AppColors.midText,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     onPressed: () {
+                      HapticFeedback.selectionClick();
                       setState(() {
                         _obscureText = !_obscureText;
                       });

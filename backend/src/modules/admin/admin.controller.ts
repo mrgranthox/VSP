@@ -361,6 +361,102 @@ class AdminController {
     const result = await this.adminService.broadcastNotification(this.requireActor(req), req.body);
     res.status(201).json(success(result, { requestId: this.getRequestId(req) }));
   };
+
+  listSkills = async (req: Request, res: Response): Promise<void> => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+    const result = await this.adminService.listAdminSkills(page, limit);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  listArticles = async (req: Request, res: Response): Promise<void> => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const result = await this.adminService.listAdminArticles(page, limit);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  updateArticleStatus = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.updateAdminArticleStatus(this.requireActor(req), req.params.articleId, req.body.status);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  listCompanyPages = async (req: Request, res: Response): Promise<void> => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const result = await this.adminService.listAdminCompanyPages(page, limit);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  updateCompanyPageStatus = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.updateAdminCompanyPageStatus(this.requireActor(req), req.params.companyId, req.body.verificationStatus);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  listEvents = async (req: Request, res: Response): Promise<void> => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const result = await this.adminService.listAdminEvents(page, limit);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  deleteEvent = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.deleteAdminEvent(this.requireActor(req), req.params.eventId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  listGroups = async (req: Request, res: Response): Promise<void> => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const result = await this.adminService.listAdminGroups(page, limit);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  deleteGroup = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.deleteAdminGroup(this.requireActor(req), req.params.groupId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  listHashtags = async (req: Request, res: Response): Promise<void> => {
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 50;
+    const result = await this.adminService.listAdminHashtags(page, limit);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  deleteHashtag = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.deleteAdminHashtag(this.requireActor(req), req.params.hashtagId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  getSubscriptionsOverview = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.getAdminSubscriptionsOverview();
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  getOnboardingFunnel = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.getOnboardingFunnel();
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  getProfileCompleteness = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.getProfileCompletenessAnalytics();
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  getModerationQueue = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.getModerationQueue(req.query as never);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  takeModerationQueueAction = async (req: Request, res: Response): Promise<void> => {
+    const result = await this.adminService.takeModerationQueueAction(
+      this.requireActor(req),
+      req.params.reportId,
+      req.body
+    );
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
 }
 
 const adminController = new AdminController();

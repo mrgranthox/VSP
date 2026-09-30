@@ -13,6 +13,8 @@ import '../screens/auth/forgot_password_screen.dart';
 import '../screens/customer/customer_shell.dart';
 import '../screens/customer/home_screen.dart';
 import '../screens/customer/feed_screen.dart';
+import '../screens/customer/network_screen.dart';
+import '../screens/customer/jobs_screen.dart';
 import '../screens/customer/search_screen.dart';
 import '../screens/customer/inbox_screen.dart';
 import '../screens/customer/profile_screen.dart';
@@ -28,6 +30,32 @@ import '../screens/customer/notifications_screen.dart';
 import '../screens/customer/post_detail_screen.dart';
 import '../screens/customer/edit_profile_screen.dart';
 import '../screens/customer/settings_screen.dart';
+import '../screens/customer/articles_feed_screen.dart';
+import '../screens/customer/article_detail_screen.dart';
+import '../screens/customer/create_article_screen.dart';
+import '../screens/customer/events_screen.dart';
+import '../screens/customer/event_detail_screen.dart';
+import '../screens/customer/groups_screen.dart';
+import '../screens/customer/group_detail_screen.dart';
+import '../screens/customer/company_profile_screen.dart';
+import '../screens/customer/job_alerts_screen.dart';
+import '../screens/customer/who_viewed_profile_screen.dart';
+import '../screens/customer/connections_screen.dart';
+import '../screens/customer/premium_screen.dart';
+import '../screens/customer/post_composer_screen.dart';
+import '../screens/customer/hashtag_feed_screen.dart';
+import '../screens/customer/skill_endorsements_screen.dart';
+import '../screens/customer/open_to_work_screen.dart';
+import '../screens/customer/application_tracker_screen.dart';
+import '../screens/customer/poll_creator_screen.dart';
+import '../screens/customer/report_content_screen.dart';
+import '../screens/customer/create_event_screen.dart';
+import '../screens/customer/followers_following_screen.dart';
+import '../screens/customer/block_list_screen.dart';
+import '../screens/customer/data_privacy_screen.dart';
+import '../screens/customer/group_messaging_screen.dart';
+import '../screens/customer/skill_assessment_screen.dart';
+import '../screens/customer/video_call_screen.dart';
 
 // Worker screens
 import '../screens/worker/worker_shell.dart';
@@ -159,6 +187,18 @@ class AppRouter {
               builder: (context, state) => const InboxScreen(),
             ),
             GoRoute(
+              path: '/customer/network',
+              builder: (context, state) => const NetworkScreen(),
+            ),
+            GoRoute(
+              path: '/customer/jobs',
+              builder: (context, state) => const JobsScreen(),
+            ),
+            GoRoute(
+              path: '/customer/notifications',
+              builder: (context, state) => const NotificationsScreen(),
+            ),
+            GoRoute(
               path: '/customer/profile',
               builder: (context, state) => const ProfileScreen(),
             ),
@@ -236,6 +276,148 @@ class AppRouter {
         GoRoute(
           path: '/customer/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+
+        // ================= LINKEDIN PARITY ROUTES =================
+        GoRoute(
+          path: '/articles',
+          builder: (context, state) => const ArticlesFeedScreen(),
+        ),
+        GoRoute(
+          path: '/articles/create',
+          builder: (context, state) => const CreateArticleScreen(),
+        ),
+        GoRoute(
+          path: '/articles/:slug',
+          builder: (context, state) {
+            final slug = state.pathParameters['slug'] ?? '';
+            return ArticleDetailScreen(slug: slug);
+          },
+        ),
+        GoRoute(
+          path: '/events',
+          builder: (context, state) => const EventsScreen(),
+        ),
+        GoRoute(
+          path: '/events/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id'] ?? '';
+            return EventDetailScreen(eventId: id);
+          },
+        ),
+        GoRoute(
+          path: '/groups',
+          builder: (context, state) => const GroupsScreen(),
+        ),
+        GoRoute(
+          path: '/groups/:id',
+          builder: (context, state) {
+            final id = state.pathParameters['id'] ?? '';
+            return GroupDetailScreen(groupId: id);
+          },
+        ),
+        GoRoute(
+          path: '/companies/:slug',
+          builder: (context, state) {
+            final slug = state.pathParameters['slug'] ?? '';
+            return CompanyProfileScreen(slug: slug);
+          },
+        ),
+        GoRoute(
+          path: '/job-alerts',
+          builder: (context, state) => const JobAlertsScreen(),
+        ),
+        GoRoute(
+          path: '/who-viewed-profile',
+          builder: (context, state) => const WhoViewedProfileScreen(),
+        ),
+        GoRoute(
+          path: '/connections',
+          builder: (context, state) => const ConnectionsScreen(),
+        ),
+        GoRoute(
+          path: '/premium',
+          builder: (context, state) => const PremiumScreen(),
+        ),
+        GoRoute(
+          path: '/settings',
+          redirect: (context, state) => '/customer/settings',
+        ),
+        GoRoute(
+          path: '/inbox',
+          redirect: (context, state) => '/customer/inbox',
+        ),
+        GoRoute(
+          path: '/customer/post/create',
+          builder: (context, state) => const PostComposerScreen(),
+        ),
+        GoRoute(
+          path: '/hashtags/:tag',
+          builder: (context, state) {
+            final tag = state.pathParameters['tag'] ?? '';
+            return HashtagFeedScreen(tag: tag);
+          },
+        ),
+        GoRoute(
+          path: '/customer/skills',
+          builder: (context, state) => const SkillEndorsementsScreen(),
+        ),
+        GoRoute(
+          path: '/customer/open-to-work',
+          builder: (context, state) => const OpenToWorkScreen(),
+        ),
+        GoRoute(
+          path: '/customer/applications',
+          builder: (context, state) => const ApplicationTrackerScreen(),
+        ),
+        GoRoute(
+          path: '/customer/poll/create',
+          builder: (context, state) => const PollCreatorScreen(),
+        ),
+        GoRoute(
+          path: '/report/:entityType/:entityId',
+          builder: (context, state) {
+            final entityType = state.pathParameters['entityType'] ?? 'content';
+            final entityId = state.pathParameters['entityId'] ?? '';
+            return ReportContentScreen(entityType: entityType, entityId: entityId);
+          },
+        ),
+        GoRoute(
+          path: '/events/create',
+          builder: (context, state) => const CreateEventScreen(),
+        ),
+        GoRoute(
+          path: '/customer/followers',
+          builder: (context, state) => const FollowersFollowingScreen(),
+        ),
+        GoRoute(
+          path: '/customer/blocked',
+          builder: (context, state) => const BlockListScreen(),
+        ),
+        GoRoute(
+          path: '/customer/privacy',
+          builder: (context, state) => const DataPrivacyScreen(),
+        ),
+        GoRoute(
+          path: '/chat/group/:groupId',
+          builder: (context, state) {
+            final groupId = state.pathParameters['groupId'] ?? '';
+            return GroupMessagingScreen(groupId: groupId);
+          },
+        ),
+        GoRoute(
+          path: '/skills/:skillId/assessment',
+          builder: (context, state) {
+            final skillId = state.pathParameters['skillId'] ?? '';
+            return SkillAssessmentScreen(skillId: skillId);
+          },
+        ),
+        GoRoute(
+          path: '/call/:conversationId',
+          builder: (context, state) {
+            final conversationId = state.pathParameters['conversationId'] ?? '';
+            return VideoCallScreen(conversationId: conversationId);
+          },
         ),
 
         // ================= WORKER SHELL ROUTES =================

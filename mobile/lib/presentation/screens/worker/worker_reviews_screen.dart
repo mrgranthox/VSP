@@ -268,7 +268,7 @@ class _WorkerReviewsScreenState extends State<WorkerReviewsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          Text('$stars ★',
+          Text(stars,
               style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
           const SizedBox(width: 8),
           Expanded(

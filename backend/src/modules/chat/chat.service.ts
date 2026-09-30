@@ -386,6 +386,27 @@ class ChatService {
   async assertParticipant(userId: string, conversationId: string): Promise<boolean> {
     return this.repository.isParticipant(userId, conversationId);
   }
+
+  async addMessageReaction(actor: ActorContext, messageId: string, emoji = "👍") {
+    const key = `chat:msg:reactions:${messageId}`;
+    await redis.hset(key, actor.userId, emoji);
+    return {
+      messageId,
+      userId: actor.userId,
+      emoji,
+      success: true
+    };
+  }
+
+  async removeMessageReaction(actor: ActorContext, messageId: string) {
+    const key = `chat:msg:reactions:${messageId}`;
+    await redis.hdel(key, actor.userId);
+    return {
+      messageId,
+      userId: actor.userId,
+      success: true
+    };
+  }
 }
 
 export { ChatService };

@@ -237,7 +237,7 @@ class BookingDetailScreen extends StatelessWidget {
             // Dynamic Action Button based on status
             if (booking.isCompleted) ...[
               VspButton(
-                text: 'Leave a Review ⭐',
+                text: 'Leave a Review',
                 width: double.infinity,
                 variant: VspButtonVariant.accent,
                 onPressed: () => context.push('/submit-review/${booking.id}'),

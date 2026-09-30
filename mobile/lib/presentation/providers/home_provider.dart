@@ -6,8 +6,8 @@ import '../../data/repositories/bookings_repository.dart';
 import '../../data/repositories/discovery_repository.dart';
 
 class HomeProvider extends ChangeNotifier {
-  final DiscoveryRepository _discoveryRepo;
-  final BookingsRepository _bookingsRepo;
+  final DiscoveryRepository discoveryRepo;
+  final BookingsRepository bookingsRepo;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -22,8 +22,8 @@ class HomeProvider extends ChangeNotifier {
   Booking? get activeBooking => _activeBooking;
 
   HomeProvider({
-    required this._discoveryRepo,
-    required this._bookingsRepo,
+    required this.discoveryRepo,
+    required this.bookingsRepo,
   }) {
     loadHomeData();
   }
@@ -34,9 +34,9 @@ class HomeProvider extends ChangeNotifier {
 
     try {
       final results = await Future.wait([
-        _discoveryRepo.getFeaturedWorkers(),
-        _discoveryRepo.getTradeCategories(),
-        _bookingsRepo.getBookings(status: 'CONFIRMED', limit: 1),
+        discoveryRepo.getFeaturedWorkers(),
+        discoveryRepo.getTradeCategories(),
+        bookingsRepo.getBookings(status: 'CONFIRMED', limit: 1),
       ]);
 
       _featuredWorkers = results[0] as List<WorkerProfile>;

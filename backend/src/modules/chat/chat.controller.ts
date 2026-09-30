@@ -102,6 +102,23 @@ class ChatController {
     const result = await this.chatService.getUnreadCount(req.actor);
     res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
   };
+
+  addReaction = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    const emoji = req.body?.emoji ?? "👍";
+    const result = await this.chatService.addMessageReaction(req.actor, req.params.messageId, emoji);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
+
+  removeReaction = async (req: Request, res: Response): Promise<void> => {
+    if (!req.actor) {
+      throw Errors.AUTH_SESSION_EXPIRED();
+    }
+    const result = await this.chatService.removeMessageReaction(req.actor, req.params.messageId);
+    res.status(200).json(success(result, { requestId: this.getRequestId(req) }));
+  };
 }
 
 const chatController = new ChatController();

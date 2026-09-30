@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_theme.dart';
 
@@ -26,27 +27,28 @@ class VspButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     Color bgColor;
     Color fgColor;
     BorderSide? border;
 
     switch (variant) {
       case VspButtonVariant.primary:
-        bgColor = AppColors.brand;
-        fgColor = Colors.white;
+        bgColor = theme.colorScheme.primary;
+        fgColor = theme.colorScheme.onPrimary;
         break;
       case VspButtonVariant.accent:
-        bgColor = AppColors.accent;
-        fgColor = Colors.white;
+        bgColor = theme.colorScheme.secondary;
+        fgColor = theme.colorScheme.onSecondary;
         break;
       case VspButtonVariant.outline:
         bgColor = Colors.transparent;
-        fgColor = AppColors.brand;
-        border = const BorderSide(color: AppColors.brand, width: 1.5);
+        fgColor = theme.colorScheme.primary;
+        border = BorderSide(color: theme.colorScheme.primary, width: 1.5);
         break;
       case VspButtonVariant.ghost:
         bgColor = Colors.transparent;
-        fgColor = AppColors.dark3;
+        fgColor = theme.colorScheme.onSurfaceVariant;
         break;
       case VspButtonVariant.danger:
         bgColor = AppColors.dangerLight;
@@ -59,6 +61,7 @@ class VspButton extends StatelessWidget {
       foregroundColor: fgColor,
       elevation: 0,
       side: border,
+      splashFactory: InkSparkle.splashFactory,
       disabledBackgroundColor: bgColor.withValues(alpha: 0.5),
       disabledForegroundColor: fgColor.withValues(alpha: 0.5),
       shape: RoundedRectangleBorder(
@@ -67,9 +70,16 @@ class VspButton extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
     );
 
+    final labelStyle = (theme.textTheme.labelLarge ?? const TextStyle()).copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w700,
+      color: fgColor,
+    );
+
     Widget content;
     if (isLoading) {
       content = SizedBox(
+        key: const ValueKey('loading'),
         width: 20,
         height: 20,
         child: CircularProgressIndicator(
@@ -79,39 +89,49 @@ class VspButton extends StatelessWidget {
       );
     } else if (icon != null) {
       content = Row(
+        key: const ValueKey('icon_and_text'),
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 18, color: fgColor),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: fgColor,
-            ),
-          ),
+          const SizedBox(width: AppTheme.spacingXs),
+          Text(text, style: labelStyle),
         ],
       );
     } else {
       content = Text(
         text,
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w700,
-          color: fgColor,
-        ),
+        key: const ValueKey('text_only'),
+        style: labelStyle,
       );
     }
 
-    return SizedBox(
-      width: width,
-      height: height,
-      child: ElevatedButton(
-        style: buttonStyle,
-        onPressed: isLoading ? null : onPressed,
-        child: content,
+    VoidCallback? effectiveOnPressed;
+    if (onPressed != null && !isLoading) {
+      effectiveOnPressed = () {
+        HapticFeedback.lightImpact();
+        onPressed!();
+      };
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: 48.0,
+        minWidth: 48.0,
+      ),
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: ElevatedButton(
+          style: buttonStyle,
+          onPressed: effectiveOnPressed,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            switchInCurve: Curves.easeOutBack,
+            switchOutCurve: Curves.easeIn,
+            child: content,
+          ),
+        ),
       ),
     );
   }

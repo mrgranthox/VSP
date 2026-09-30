@@ -1,4 +1,4 @@
-import { UserStatus, type VisibilityScope } from "@prisma/client";
+import { type PostReactionType, UserStatus, type VisibilityScope } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma";
 
@@ -30,10 +30,23 @@ const buildPostInclude = (viewerUserId?: string) =>
         sortOrder: "asc"
       }
     },
+    poll: {
+      include: {
+        options: true,
+        votes: viewerUserId
+          ? {
+              where: {
+                userId: viewerUserId
+              }
+            }
+          : false
+      }
+    },
     _count: {
       select: {
         likes: true,
         saves: true,
+        reposts: true,
         comments: {
           where: {
             isDeleted: false
@@ -48,7 +61,8 @@ const buildPostInclude = (viewerUserId?: string) =>
               userId: viewerUserId
             },
             select: {
-              id: true
+              id: true,
+              reactionType: true
             },
             take: 1
           },
@@ -291,9 +305,110 @@ class SocialRepository {
       },
       create: {
         postId,
-        userId
+        userId,
+        reactionType: "LIKE"
       },
-      update: {}
+      update: {
+        reactionType: "LIKE"
+      }
+    });
+  }
+
+  async reactToPost(postId: string, userId: string, reactionType: PostReactionType = "LIKE"): Promise<void> {
+    await prisma.postLike.upsert({
+      where: {
+        postId_userId: {
+          postId,
+          userId
+        }
+      },
+      create: {
+        postId,
+        userId,
+        reactionType
+      },
+      update: {
+        reactionType
+      }
+    });
+  }
+
+  async removePostReaction(postId: string, userId: string): Promise<void> {
+    await prisma.postLike.deleteMany({
+      where: {
+        postId,
+        userId
+      }
+    });
+  }
+
+  async createRepost(postId: string, userId: string, comment?: string) {
+    return prisma.postRepost.create({
+      data: {
+        postId,
+        authorUserId: userId,
+        comment: comment || null
+      }
+    });
+  }
+
+  async votePoll(pollId: string, optionId: string, userId: string) {
+    return prisma.$transaction(async (tx) => {
+      const existingVote = await tx.pollVote.findUnique({
+        where: {
+          pollId_userId: {
+            pollId,
+            userId
+          }
+        }
+      });
+
+      if (existingVote) {
+        if (existingVote.pollOptionId !== optionId) {
+          await tx.pollOption.update({
+            where: { id: existingVote.pollOptionId },
+            data: { voteCount: { decrement: 1 } }
+          });
+          await tx.pollVote.update({
+            where: { id: existingVote.id },
+            data: { pollOptionId: optionId }
+          });
+          await tx.pollOption.update({
+            where: { id: optionId },
+            data: { voteCount: { increment: 1 } }
+          });
+        }
+      } else {
+        await tx.pollVote.create({
+          data: {
+            pollId,
+            pollOptionId: optionId,
+            userId
+          }
+        });
+        await tx.pollOption.update({
+          where: { id: optionId },
+          data: { voteCount: { increment: 1 } }
+        });
+      }
+
+      const options = await tx.pollOption.findMany({
+        where: { pollId }
+      });
+
+      const totalVotes = options.reduce((sum, o) => sum + o.voteCount, 0);
+
+      return {
+        pollId,
+        selectedOptionId: optionId,
+        totalVotes,
+        options: options.map((o) => ({
+          id: o.id,
+          label: o.label,
+          voteCount: o.voteCount,
+          percentage: totalVotes > 0 ? Math.round((o.voteCount / totalVotes) * 100) : 0
+        }))
+      };
     });
   }
 

@@ -94,4 +94,60 @@ class ApiConstants {
   // Media
   static const String mediaUploadUrl = '/media/upload-url';
   static const String mediaConfirm = '/media/confirm';
+
+  // LinkedIn Parity: Profile Sections
+  static const String profileExperiences = '/profile-sections/experiences';
+  static const String profileEducations = '/profile-sections/educations';
+  static const String profileAccomplishments = '/profile-sections/accomplishments';
+  static const String profileVolunteer = '/profile-sections/volunteer';
+  static const String profileFeatured = '/profile-sections/featured';
+  static const String profileOpenStatus = '/profile-sections/open-status';
+  static const String profileViews = '/profile-sections/views';
+  static const String profileWhoViewed = '/profile-sections/who-viewed';
+  static String profileSummary(String userId) => '/profile-sections/user/$userId';
+
+  // LinkedIn Parity: Skills & Endorsements
+  static const String skillsTaxonomy = '/skills';
+  static const String mySkills = '/skills/my';
+  static String userSkills(String userId) => '/skills/user/$userId';
+  static String endorseSkill(String skillId) => '/skills/$skillId/endorse';
+
+  // LinkedIn Parity: Recommendations
+  static const String recommendations = '/recommendations';
+  static const String myPendingRecommendations = '/recommendations/pending';
+  static String userRecommendations(String userId) => '/recommendations/user/$userId';
+  static String recommendationStatus(String id) => '/recommendations/$id/status';
+
+  // LinkedIn Parity: Articles & Long-form Content
+  static const String articles = '/articles';
+  static String articleDetail(String slug) => '/articles/$slug';
+  static String articleReactions(String id) => '/articles/$id/reactions';
+  static String articleComments(String id) => '/articles/$id/comments';
+
+  // LinkedIn Parity: Events
+  static const String events = '/events';
+  static String eventDetail(String id) => '/events/$id';
+  static String eventRsvp(String id) => '/events/$id/rsvp';
+  static String eventAttendees(String id) => '/events/$id/attendees';
+
+  // LinkedIn Parity: Trade Groups & Communities
+  static const String groups = '/groups';
+  static String groupDetail(String id) => '/groups/$id';
+  static String groupJoin(String id) => '/groups/$id/join';
+  static String groupLeave(String id) => '/groups/$id/leave';
+  static String groupPosts(String id) => '/groups/$id/posts';
+
+  // LinkedIn Parity: Company Pages
+  static const String companies = '/companies';
+  static String companyDetail(String slug) => '/companies/$slug';
+  static String companyFollow(String id) => '/companies/$id/follow';
+
+  // LinkedIn Parity: Hashtags & Topics
+  static const String hashtagsTrending = '/hashtags/trending';
+  static String hashtagFeed(String tag) => '/hashtags/$tag/feed';
+  static String hashtagFollow(String id) => '/hashtags/$id/follow';
+
+  // LinkedIn Parity: Job Alerts & Saved Searches
+  static const String jobAlerts = '/job-alerts';
+  static String jobAlertDetail(String id) => '/job-alerts/$id';
 }

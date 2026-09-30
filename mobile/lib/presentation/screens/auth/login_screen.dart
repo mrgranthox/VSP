@@ -298,7 +298,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {});
                       },
                       child: const Text(
-                        '⚡ Customer (Alice)',
+                        'Customer (Alice)',
                         style: TextStyle(fontSize: 12, color: AppColors.brand, fontWeight: FontWeight.w600),
                       ),
                     ),
@@ -310,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {});
                       },
                       child: const Text(
-                        '⚡ Worker (Bob)',
+                        'Worker (Bob)',
                         style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w600),
                       ),
                     ),

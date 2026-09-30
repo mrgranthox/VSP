@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../providers/chat_provider.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../providers/notifications_provider.dart';
+import '../../widgets/linkedin_post_creator.dart';
+
+/// LinkedIn-style navigation shell:
+/// 5 tabs: Home, My Network, Post (+), Notifications, Jobs
 class CustomerShell extends StatelessWidget {
   final Widget child;
 
@@ -14,58 +19,76 @@ class CustomerShell extends StatelessWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.toString();
-    if (location.startsWith('/customer/home')) return 0;
-    if (location.startsWith('/customer/search')) return 1;
-    if (location.startsWith('/customer/feed')) return 2;
-    if (location.startsWith('/customer/inbox')) return 3;
-    if (location.startsWith('/customer/profile')) return 4;
+    if (location.startsWith('/customer/home') ||
+        location.startsWith('/customer/feed')) {
+      return 0;
+    }
+    if (location.startsWith('/customer/network')) return 1;
+    // index 2 is modal post action
+    if (location.startsWith('/customer/notifications')) return 3;
+    if (location.startsWith('/customer/jobs') ||
+        location.startsWith('/customer/requests') ||
+        location.startsWith('/customer/bookings')) {
+      return 4;
+    }
+    if (location.startsWith('/customer/profile')) return 0;
     return 0;
   }
 
   void _onTap(int index, BuildContext context) {
+    HapticFeedback.lightImpact();
+
     switch (index) {
       case 0:
         context.go('/customer/home');
         break;
       case 1:
-        context.go('/customer/search');
+        context.go('/customer/network');
         break;
       case 2:
-        context.go('/customer/feed');
+        // Center (+) Post action opens the LinkedIn post creator sheet directly
+        LinkedInPostCreatorSheet.show(context);
         break;
       case 3:
-        context.go('/customer/inbox');
+        context.go('/customer/notifications');
         break;
       case 4:
-        context.go('/customer/profile');
+        context.go('/customer/jobs');
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final unreadChatCount = context.watch<ChatProvider>().totalUnreadCount;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final unreadNotifs = context.watch<NotificationsProvider>().unreadCount;
     final currentIndex = _calculateSelectedIndex(context);
 
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: theme.cardTheme.color ?? Colors.white,
           border: Border(
-            top: BorderSide(color: AppColors.borderLight, width: 1),
+            top: BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              width: 1,
+            ),
           ),
         ),
         child: BottomNavigationBar(
           currentIndex: currentIndex,
           onTap: (idx) => _onTap(idx, context),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
+          backgroundColor: theme.cardTheme.color ?? Colors.white,
           elevation: 0,
-          selectedItemColor: AppColors.brand,
-          unselectedItemColor: AppColors.lightText,
+          selectedItemColor: colorScheme.primary,
+          unselectedItemColor: colorScheme.onSurfaceVariant,
           selectedFontSize: 11,
           unselectedFontSize: 11,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
           items: [
             const BottomNavigationBarItem(
               icon: Icon(Icons.home_outlined),
@@ -73,35 +96,40 @@ class CustomerShell extends StatelessWidget {
               label: 'Home',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.search_outlined),
-              activeIcon: Icon(Icons.search_rounded),
-              label: 'Search',
+              icon: Icon(Icons.people_outline_rounded),
+              activeIcon: Icon(Icons.people_rounded),
+              label: 'My Network',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.dynamic_feed_outlined),
-              activeIcon: Icon(Icons.dynamic_feed_rounded),
-              label: 'Feed',
+              icon: Icon(Icons.add_box_outlined, size: 26),
+              activeIcon: Icon(Icons.add_box_rounded, size: 26),
+              label: 'Post',
             ),
             BottomNavigationBarItem(
               icon: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(Icons.chat_bubble_outline),
-                  if (unreadChatCount > 0)
+                  const Icon(Icons.notifications_none_rounded),
+                  if (unreadNotifs > 0)
                     Positioned(
-                      right: -6,
-                      top: -4,
+                      right: -4,
+                      top: -2,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3),
                         decoration: const BoxDecoration(
                           color: AppColors.danger,
                           shape: BoxShape.circle,
                         ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
                         child: Text(
-                          unreadChatCount > 9 ? '9+' : '$unreadChatCount',
+                          unreadNotifs > 9 ? '9+' : '$unreadNotifs',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 9,
+                            fontSize: 8,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -112,22 +140,27 @@ class CustomerShell extends StatelessWidget {
               activeIcon: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(Icons.chat_bubble_rounded),
-                  if (unreadChatCount > 0)
+                  const Icon(Icons.notifications_rounded),
+                  if (unreadNotifs > 0)
                     Positioned(
-                      right: -6,
-                      top: -4,
+                      right: -4,
+                      top: -2,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(3),
                         decoration: const BoxDecoration(
                           color: AppColors.danger,
                           shape: BoxShape.circle,
                         ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
                         child: Text(
-                          unreadChatCount > 9 ? '9+' : '$unreadChatCount',
+                          unreadNotifs > 9 ? '9+' : '$unreadNotifs',
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 9,
+                            fontSize: 8,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -135,12 +168,12 @@ class CustomerShell extends StatelessWidget {
                     ),
                 ],
               ),
-              label: 'Messages',
+              label: 'Notifications',
             ),
             const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
+              icon: Icon(Icons.work_outline_rounded),
+              activeIcon: Icon(Icons.work_rounded),
+              label: 'Jobs',
             ),
           ],
         ),

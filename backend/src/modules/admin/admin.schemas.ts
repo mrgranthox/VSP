@@ -378,7 +378,20 @@ const BroadcastNotificationBody = z
     message: "targetId required for CITY or TRADE audience"
   });
 
+const QueueReportIdParams = z.object({
+  reportId: z.string().min(1).max(100)
+});
+
+const ModerationQueueActionBody = z
+  .object({
+    action: z.string().min(1).max(100),
+    note: z.string().max(2000).optional()
+  })
+  .strict();
+
 export {
+  QueueReportIdParams,
+  ModerationQueueActionBody,
   AddModerationActionBody,
   AddSupportTicketMessageBody,
   AdminAnalyticsQuery,

@@ -19,6 +19,7 @@ import 'data/repositories/search_repository.dart';
 import 'data/repositories/social_repository.dart';
 import 'data/repositories/users_repository.dart';
 import 'data/repositories/worker_repository.dart';
+import 'data/repositories/linkedin_repository.dart';
 
 // Providers
 import 'presentation/providers/auth_provider.dart';
@@ -26,6 +27,7 @@ import 'presentation/providers/booking_provider.dart';
 import 'presentation/providers/chat_provider.dart';
 import 'presentation/providers/feed_provider.dart';
 import 'presentation/providers/home_provider.dart';
+import 'presentation/providers/linkedin_provider.dart';
 import 'presentation/providers/notifications_provider.dart';
 import 'presentation/providers/search_provider.dart';
 import 'presentation/providers/service_request_provider.dart';
@@ -62,6 +64,7 @@ void main() async {
   final workerRepo = WorkerRepository(apiClient: apiClient);
   final notificationsRepo = NotificationsRepository(apiClient: apiClient);
   final usersRepo = UsersRepository(apiClient: apiClient);
+  final linkedinRepo = LinkedInRepository(apiClient: apiClient);
 
   runApp(
     MultiProvider(
@@ -81,6 +84,7 @@ void main() async {
         Provider<WorkerRepository>.value(value: workerRepo),
         Provider<NotificationsRepository>.value(value: notificationsRepo),
         Provider<UsersRepository>.value(value: usersRepo),
+        Provider<LinkedInRepository>.value(value: linkedinRepo),
 
         // ChangeNotifier state providers
         ChangeNotifierProvider<AuthProvider>(
@@ -122,6 +126,9 @@ void main() async {
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => NotificationsProvider(repo: notificationsRepo),
         ),
+        ChangeNotifierProvider<LinkedInProvider>(
+          create: (_) => LinkedInProvider(repo: linkedinRepo),
+        ),
       ],
       child: const VspApp(),
     ),
@@ -155,6 +162,8 @@ class _VspAppState extends State<VspApp> {
       title: 'VSP - Vocational Services Platform',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       routerConfig: _router!,
     );
   }

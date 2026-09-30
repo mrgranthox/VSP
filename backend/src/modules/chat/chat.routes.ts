@@ -14,6 +14,8 @@ import {
   GetConversationsQuery,
   GetMessagesQuery,
   MarkReadBody,
+  MessageIdParams,
+  MessageReactionBody,
   SendMessageBody
 } from "./chat.schemas";
 
@@ -65,5 +67,33 @@ chatRoutes.post(
   chatController.markRead
 );
 chatRoutes.get("/inbox/unread-count", authenticate, chatController.getUnreadCount);
+
+// Chat Message Reactions
+chatRoutes.post(
+  "/chat/messages/:messageId/reactions",
+  authenticate,
+  validate(MessageIdParams, "params"),
+  validate(MessageReactionBody),
+  chatController.addReaction
+);
+chatRoutes.delete(
+  "/chat/messages/:messageId/reactions",
+  authenticate,
+  validate(MessageIdParams, "params"),
+  chatController.removeReaction
+);
+chatRoutes.post(
+  "/conversations/:conversationId/messages/:messageId/reactions",
+  authenticate,
+  validate(ConversationMessageParams, "params"),
+  validate(MessageReactionBody),
+  chatController.addReaction
+);
+chatRoutes.delete(
+  "/conversations/:conversationId/messages/:messageId/reactions",
+  authenticate,
+  validate(ConversationMessageParams, "params"),
+  chatController.removeReaction
+);
 
 export { chatRoutes };

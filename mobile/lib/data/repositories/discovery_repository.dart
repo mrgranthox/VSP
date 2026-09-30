@@ -73,14 +73,14 @@ class DiscoveryRepository {
   }
 
   static final List<TradeCategory> _fallbackTradeCategories = [
-    TradeCategory(id: 'elec', name: 'Electrician', slug: 'electrician', icon: '⚡', workerCount: 142),
-    TradeCategory(id: 'plumb', name: 'Plumber', slug: 'plumber', icon: '🔧', workerCount: 98),
-    TradeCategory(id: 'carp', name: 'Carpenter', slug: 'carpenter', icon: '🪚', workerCount: 76),
-    TradeCategory(id: 'paint', name: 'Painter', slug: 'painter', icon: '🎨', workerCount: 64),
-    TradeCategory(id: 'hvac', name: 'AC & Cooling', slug: 'ac-cooling', icon: '❄️', workerCount: 53),
-    TradeCategory(id: 'mason', name: 'Masonry', slug: 'masonry', icon: '🧱', workerCount: 41),
-    TradeCategory(id: 'weld', name: 'Welder', slug: 'welder', icon: '🔥', workerCount: 38),
-    TradeCategory(id: 'clean', name: 'Cleaner', slug: 'cleaner', icon: '🧹', workerCount: 89),
+    TradeCategory(id: 'elec', name: 'Electrician', slug: 'electrician', icon: '', workerCount: 142),
+    TradeCategory(id: 'plumb', name: 'Plumber', slug: 'plumber', icon: '', workerCount: 98),
+    TradeCategory(id: 'carp', name: 'Carpenter', slug: 'carpenter', icon: '', workerCount: 76),
+    TradeCategory(id: 'paint', name: 'Painter', slug: 'painter', icon: '', workerCount: 64),
+    TradeCategory(id: 'hvac', name: 'AC & Cooling', slug: 'ac-cooling', icon: '', workerCount: 53),
+    TradeCategory(id: 'mason', name: 'Masonry', slug: 'masonry', icon: '', workerCount: 41),
+    TradeCategory(id: 'weld', name: 'Welder', slug: 'welder', icon: '', workerCount: 38),
+    TradeCategory(id: 'clean', name: 'Cleaner', slug: 'cleaner', icon: '', workerCount: 89),
   ];
 
   static List<WorkerProfile> get fallbackFeaturedWorkers => _fallbackFeaturedWorkers;
@@ -99,7 +99,7 @@ class DiscoveryRepository {
       isVerified: true,
       isFeatured: true,
       tradeCategories: [
-        TradeCategory(id: 'elec', name: 'Electrician', slug: 'electrician', icon: '⚡')
+        TradeCategory(id: 'elec', name: 'Electrician', slug: 'electrician', icon: '')
       ],
       services: [
         WorkerService(id: 's1', title: 'Electrical Diagnostic & Repair', priceMinor: 12000, pricingType: 'FIXED'),
@@ -119,7 +119,7 @@ class DiscoveryRepository {
       isVerified: true,
       isFeatured: true,
       tradeCategories: [
-        TradeCategory(id: 'plumb', name: 'Plumber', slug: 'plumber', icon: '🔧')
+        TradeCategory(id: 'plumb', name: 'Plumber', slug: 'plumber', icon: '')
       ],
     ),
     WorkerProfile(
@@ -135,7 +135,7 @@ class DiscoveryRepository {
       isVerified: true,
       isFeatured: false,
       tradeCategories: [
-        TradeCategory(id: 'carp', name: 'Carpenter', slug: 'carpenter', icon: '🪚')
+        TradeCategory(id: 'carp', name: 'Carpenter', slug: 'carpenter', icon: '')
       ],
     ),
   ];

@@ -193,6 +193,46 @@ enum MediaCategory {
   verification_doc
 }
 
+enum PostReactionType {
+  LIKE
+  CELEBRATE
+  SUPPORT
+  LOVE
+  INSIGHTFUL
+  FUNNY
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+  REMOVED
+}
+
+enum EventRsvpStatus {
+  ATTENDING
+  INTERESTED
+  DECLINED
+}
+
+enum GroupPrivacy {
+  OPEN
+  PRIVATE
+}
+
+enum GroupMemberRole {
+  ADMIN
+  MODERATOR
+  MEMBER
+}
+
+enum RecommendationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  HIDDEN
+}
+
 model User {
   id                            String                        @id @default(uuid())
   email                         String?                       @unique
@@ -248,6 +288,34 @@ model User {
   supportTicketsOpened          SupportTicket[]               @relation("SupportTicketsOpened")
   workerProfile                 WorkerProfile?
   ApiIdempotencyKey             ApiIdempotencyKey[]
+  openToWork                    Boolean                       @default(false)
+  openToWorkTitle               String?
+  openToHire                    Boolean                       @default(false)
+  profileExperiences            ProfileExperience[]
+  profileEducations             ProfileEducation[]
+  profileAccomplishments        ProfileAccomplishment[]
+  profileVolunteers             ProfileVolunteer[]
+  profileFeaturedItems          ProfileFeaturedItem[]
+  userSkills                    UserSkill[]
+  skillEndorsementsGiven        SkillEndorsement[]
+  recommendationsGiven          Recommendation[]              @relation("RecommendationsGiven")
+  recommendationsReceived       Recommendation[]              @relation("RecommendationsReceived")
+  profileViewsReceived          ProfileView[]                 @relation("ProfileViewsReceived")
+  profileViewsMade              ProfileView[]                 @relation("ProfileViewsMade")
+  articles                      Article[]
+  articleReactions              ArticleReaction[]
+  articleComments               ArticleComment[]
+  eventsOrganized               Event[]
+  eventAttendances              EventAttendee[]
+  groupsCreated                 Group[]
+  groupMemberships              GroupMember[]
+  companyPagesAdministered      CompanyPage[]
+  companyFollows                CompanyFollower[]
+  companyEmployments            CompanyEmployee[]
+  postReposts                   PostRepost[]
+  pollVotes                     PollVote[]
+  hashtagFollows                HashtagFollow[]
+  jobAlerts                     JobAlert[]
 
   @@map("users")
 }
@@ -560,6 +628,10 @@ model Post {
   likes        PostLike[]
   media        PostMedia[]
   saves        PostSave[]
+  reposts      PostRepost[]
+  poll         Poll?
+  hashtags     PostHashtag[]
+  groupPosts   GroupPost[]
 
   @@index([authorUserId, createdAt])
   @@index([createdAt])
@@ -583,12 +655,13 @@ model PostMedia {
 }
 
 model PostLike {
-  id        String   @id @default(uuid())
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String           @id @default(uuid())
+  postId       String
+  userId       String
+  reactionType PostReactionType @default(LIKE)
+  createdAt    DateTime         @default(now())
+  post         Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@map("post_likes")
@@ -1278,4 +1351,445 @@ model NotificationBroadcast {
 
   @@index([status, createdAt])
   @@map("notification_broadcasts")
+}
+
+model ProfileExperience {
+  id          String    @id @default(uuid())
+  userId      String
+  title       String
+  company     String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  skills      String[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startDate])
+  @@map("profile_experiences")
+}
+
+model ProfileEducation {
+  id           String    @id @default(uuid())
+  userId       String
+  school       String
+  degree       String?
+  fieldOfStudy String?
+  startDate    DateTime?
+  endDate      DateTime?
+  grade        String?
+  activities   String?
+  description  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("profile_educations")
+}
+
+model ProfileAccomplishment {
+  id             String    @id @default(uuid())
+  userId         String
+  type           String
+  title          String
+  issuer         String?
+  issueDate      DateTime?
+  expirationDate DateTime?
+  credentialId   String?
+  credentialUrl  String?
+  description    String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@map("profile_accomplishments")
+}
+
+model ProfileVolunteer {
+  id           String    @id @default(uuid())
+  userId       String
+  organization String
+  role         String
+  cause        String?
+  startDate    DateTime?
+  endDate      DateTime?
+  description  String?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("profile_volunteers")
+}
+
+model ProfileFeaturedItem {
+  id          String   @id @default(uuid())
+  userId      String
+  itemType    String
+  title       String
+  description String?
+  url         String?
+  mediaUrl    String?
+  postId      String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sortOrder])
+  @@map("profile_featured_items")
+}
+
+model Skill {
+  id         String      @id @default(uuid())
+  name       String      @unique
+  category   String
+  slug       String      @unique
+  isVerified Boolean     @default(false)
+  userSkills UserSkill[]
+  createdAt  DateTime    @default(now())
+
+  @@index([category])
+  @@map("skills")
+}
+
+model UserSkill {
+  id           String             @id @default(uuid())
+  userId       String
+  skillId      String
+  createdAt    DateTime           @default(now())
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill        Skill              @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  endorsements SkillEndorsement[]
+
+  @@unique([userId, skillId])
+  @@map("user_skills")
+}
+
+model SkillEndorsement {
+  id             String    @id @default(uuid())
+  userSkillId    String
+  endorserUserId String
+  createdAt      DateTime  @default(now())
+  userSkill      UserSkill @relation(fields: [userSkillId], references: [id], onDelete: Cascade)
+  endorserUser   User      @relation(fields: [endorserUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userSkillId, endorserUserId])
+  @@map("skill_endorsements")
+}
+
+model Recommendation {
+  id              String               @id @default(uuid())
+  authorUserId    String
+  recipientUserId String
+  relationship    String
+  text            String
+  status          RecommendationStatus @default(PENDING)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  authorUser      User                 @relation("RecommendationsGiven", fields: [authorUserId], references: [id], onDelete: Cascade)
+  recipientUser   User                 @relation("RecommendationsReceived", fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  @@index([recipientUserId, status])
+  @@map("recommendations")
+}
+
+model ProfileView {
+  id           String    @id @default(uuid())
+  viewedUserId String
+  viewerUserId String?
+  viewedAt     DateTime  @default(now())
+  viewedUser   User      @relation("ProfileViewsReceived", fields: [viewedUserId], references: [id], onDelete: Cascade)
+  viewerUser   User?     @relation("ProfileViewsMade", fields: [viewerUserId], references: [id], onDelete: SetNull)
+
+  @@index([viewedUserId, viewedAt])
+  @@map("profile_views")
+}
+
+model Article {
+  id                 String            @id @default(uuid())
+  authorUserId       String
+  title              String
+  slug               String            @unique
+  body               String
+  coverImageUrl      String?
+  readingTimeMinutes Int               @default(3)
+  status             ArticleStatus     @default(PUBLISHED)
+  viewCount          Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  publishedAt        DateTime?
+  authorUser         User              @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  reactions          ArticleReaction[]
+  comments           ArticleComment[]
+
+  @@index([authorUserId, createdAt])
+  @@index([status, publishedAt])
+  @@map("articles")
+}
+
+model ArticleReaction {
+  id           String           @id @default(uuid())
+  articleId    String
+  userId       String
+  reactionType PostReactionType @default(LIKE)
+  createdAt    DateTime         @default(now())
+  article      Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([articleId, userId])
+  @@map("article_reactions")
+}
+
+model ArticleComment {
+  id              String           @id @default(uuid())
+  articleId       String
+  authorUserId    String
+  parentCommentId String?
+  body            String
+  isDeleted       Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  article         Article          @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorUser      User             @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+  parentComment   ArticleComment?  @relation("ArticleCommentReplies", fields: [parentCommentId], references: [id])
+  replies         ArticleComment[] @relation("ArticleCommentReplies")
+
+  @@index([articleId, createdAt])
+  @@map("article_comments")
+}
+
+model Event {
+  id              String          @id @default(uuid())
+  organizerUserId String
+  title           String
+  description     String
+  coverImageUrl   String?
+  eventType       String          @default("ONLINE")
+  location        String?
+  externalUrl     String?
+  startAt         DateTime
+  endAt           DateTime?
+  attendeeCount   Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  organizerUser   User            @relation(fields: [organizerUserId], references: [id], onDelete: Cascade)
+  attendees       EventAttendee[]
+
+  @@index([organizerUserId])
+  @@index([startAt])
+  @@map("events")
+}
+
+model EventAttendee {
+  id        String          @id @default(uuid())
+  eventId   String
+  userId    String
+  status    EventRsvpStatus @default(ATTENDING)
+  createdAt DateTime        @default(now())
+  event     Event           @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_attendees")
+}
+
+model Group {
+  id            String        @id @default(uuid())
+  creatorUserId String
+  name          String
+  description   String
+  coverImageUrl String?
+  privacy       GroupPrivacy  @default(OPEN)
+  memberCount   Int           @default(1)
+  postCount     Int           @default(0)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  creatorUser   User          @relation(fields: [creatorUserId], references: [id], onDelete: Cascade)
+  members       GroupMember[]
+  posts         GroupPost[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id       String          @id @default(uuid())
+  groupId  String
+  userId   String
+  role     GroupMemberRole @default(MEMBER)
+  joinedAt DateTime        @default(now())
+  group    Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model GroupPost {
+  id        String   @id @default(uuid())
+  groupId   String
+  postId    String
+  createdAt DateTime @default(now())
+  group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, postId])
+  @@map("group_posts")
+}
+
+model CompanyPage {
+  id                 String             @id @default(uuid())
+  adminUserId        String
+  name               String
+  slug               String             @unique
+  tagline            String?
+  description        String
+  website            String?
+  industry           String
+  companySize        String?
+  headquarters       String?
+  logoUrl            String?
+  coverImageUrl      String?
+  verificationStatus VerificationStatus @default(DRAFT)
+  followerCount      Int                @default(0)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  adminUser          User               @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  followers          CompanyFollower[]
+  employees          CompanyEmployee[]
+
+  @@index([industry])
+  @@map("company_pages")
+}
+
+model CompanyFollower {
+  id        String      @id @default(uuid())
+  companyId String
+  userId    String
+  createdAt DateTime    @default(now())
+  company   CompanyPage @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@map("company_followers")
+}
+
+model CompanyEmployee {
+  id        String      @id @default(uuid())
+  companyId String
+  userId    String
+  title     String
+  isCurrent Boolean     @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  company   CompanyPage @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, userId])
+  @@map("company_employees")
+}
+
+model PostRepost {
+  id           String   @id @default(uuid())
+  postId       String
+  authorUserId String
+  comment      String?
+  createdAt    DateTime @default(now())
+  originalPost Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorUser   User     @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([authorUserId, createdAt])
+  @@map("post_reposts")
+}
+
+model Poll {
+  id        String       @id @default(uuid())
+  postId    String       @unique
+  question  String
+  endsAt    DateTime
+  createdAt DateTime     @default(now())
+  post      Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  options   PollOption[]
+  votes     PollVote[]
+
+  @@map("polls")
+}
+
+model PollOption {
+  id        String     @id @default(uuid())
+  pollId    String
+  label     String
+  voteCount Int        @default(0)
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes     PollVote[]
+
+  @@map("poll_options")
+}
+
+model PollVote {
+  id           String     @id @default(uuid())
+  pollId       String
+  pollOptionId String
+  userId       String
+  createdAt    DateTime   @default(now())
+  poll         Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  pollOption   PollOption @relation(fields: [pollOptionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  @@map("poll_votes")
+}
+
+model Hashtag {
+  id        String        @id @default(uuid())
+  tag       String        @unique
+  postCount Int           @default(0)
+  createdAt DateTime      @default(now())
+  posts     PostHashtag[]
+  followers HashtagFollow[]
+
+  @@map("hashtags")
+}
+
+model PostHashtag {
+  id        String   @id @default(uuid())
+  postId    String
+  hashtagId String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, hashtagId])
+  @@map("post_hashtags")
+}
+
+model HashtagFollow {
+  id        String   @id @default(uuid())
+  hashtagId String
+  userId    String
+  createdAt DateTime @default(now())
+  hashtag   Hashtag  @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([hashtagId, userId])
+  @@map("hashtag_follows")
+}
+
+model JobAlert {
+  id              String    @id @default(uuid())
+  userId          String
+  queryText       String
+  location        String?
+  tradeCategoryId String?
+  frequency       String    @default("DAILY")
+  isActive        Boolean   @default(true)
+  lastSentAt      DateTime?
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+  @@map("job_alerts")
 }

@@ -5,19 +5,23 @@ import '../../core/storage/storage_service.dart';
 import '../models/chat_model.dart';
 
 class ChatRepository {
-  final ApiClient _apiClient;
-  final WebSocketClient _wsClient;
-  final StorageService _storage;
+  final ApiClient apiClient;
+  final WebSocketClient wsClient;
+  final StorageService storage;
+
+  ApiClient get _apiClient => apiClient;
+  WebSocketClient get _wsClient => wsClient;
+  StorageService get _storage => storage;
 
   ChatRepository({
-    required this._apiClient,
-    required this._wsClient,
-    required this._storage,
+    required this.apiClient,
+    required this.wsClient,
+    required this.storage,
   });
 
   String get _currentUserId {
     final user = _storage.getUser();
-    return user?['id'] as String? ?? '';
+    return user?['id'] as String? ?? 'current-user';
   }
 
   Future<List<Conversation>> getConversations() async {
@@ -34,7 +38,7 @@ class ChatRepository {
       }
     } catch (_) {}
 
-    return _fallbackConversations;
+    return _fallbackConversations.map((c) => c.copyWith()).toList();
   }
 
   Future<List<ChatMessage>> getMessages(
@@ -56,28 +60,34 @@ class ChatRepository {
       }
     } catch (_) {}
 
-    return _fallbackMessages;
+    return _fallbackMessages.map((m) => m.copyWith()).toList();
   }
 
   Future<ChatMessage> sendMessage({
     required String conversationId,
     required String content,
     String? mediaUrl,
+    String? replyToMessageId,
+    String? replyToSenderName,
+    String? replyToContent,
   }) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
-      ApiConstants.conversationMessages(conversationId),
-      body: {
-        'content': content,
-        'mediaUrl': ?mediaUrl,
-      },
-    );
+    try {
+      final response = await _apiClient.post<Map<String, dynamic>>(
+        ApiConstants.conversationMessages(conversationId),
+        body: {
+          'content': content,
+          'mediaUrl': ?mediaUrl,
+          'replyToMessageId': ?replyToMessageId,
+        },
+      );
 
-    final data = response.data;
-    if (data != null) {
-      final msg = ChatMessage.fromJson(data, _currentUserId);
-      _wsClient.send('chat:message', data);
-      return msg;
-    }
+      final data = response.data;
+      if (data != null) {
+        final msg = ChatMessage.fromJson(data, _currentUserId);
+        _wsClient.send('chat:message', data);
+        return msg;
+      }
+    } catch (_) {}
 
     // Local echo fallback
     return ChatMessage(
@@ -87,10 +97,45 @@ class ChatRepository {
       senderName: 'You',
       content: content,
       mediaUrl: mediaUrl,
+      replyToMessageId: replyToMessageId,
+      replyToSenderName: replyToSenderName,
+      replyToContent: replyToContent,
       isMine: true,
       status: 'SENT',
       createdAt: DateTime.now(),
     );
+  }
+
+  Future<void> sendReaction(String messageId, String emoji) async {
+    try {
+      await _apiClient.post(
+        '/chat/messages/$messageId/reactions',
+        body: {'emoji': emoji},
+      );
+      _wsClient.send('chat:reaction', {'messageId': messageId, 'emoji': emoji});
+    } catch (_) {}
+  }
+
+  Future<void> removeReaction(String messageId, String emoji) async {
+    try {
+      await _apiClient.delete(
+        '/chat/messages/$messageId/reactions',
+        body: {'emoji': emoji},
+      );
+    } catch (_) {}
+  }
+
+  Future<void> markConversationRead(String conversationId) async {
+    try {
+      await _apiClient.post('/chat/conversations/$conversationId/read');
+    } catch (_) {}
+  }
+
+  void sendTyping(String conversationId, bool isTyping) {
+    _wsClient.send('chat:typing', {
+      'conversationId': conversationId,
+      'isTyping': isTyping,
+    });
   }
 
   void joinChatRoom(String conversationId) {
@@ -110,6 +155,7 @@ class ChatRepository {
       lastMessageTime: DateTime.now().subtract(const Duration(minutes: 15)),
       unreadCount: 1,
       isOnline: true,
+      isTyping: false,
     ),
     Conversation(
       id: 'conv-2',
@@ -119,6 +165,7 @@ class ChatRepository {
       lastMessageTime: DateTime.now().subtract(const Duration(days: 2)),
       unreadCount: 0,
       isOnline: false,
+      isTyping: false,
     ),
   ];
 
@@ -130,7 +177,9 @@ class ChatRepository {
       senderName: 'Bob Williams',
       content: 'Hello! I received your booking request for the fuse box inspection.',
       isMine: false,
+      status: 'READ',
       createdAt: DateTime.now().subtract(const Duration(minutes: 40)),
+      reactions: {'👍': 1},
     ),
     ChatMessage(
       id: 'm2',
@@ -139,6 +188,7 @@ class ChatRepository {
       senderName: 'You',
       content: 'Hi Bob, yes! It keeps tripping whenever the AC is switched on.',
       isMine: true,
+      status: 'READ',
       createdAt: DateTime.now().subtract(const Duration(minutes: 35)),
     ),
     ChatMessage(
@@ -147,8 +197,13 @@ class ChatRepository {
       senderId: 'worker-1',
       senderName: 'Bob Williams',
       content: 'Understood. Sounds like an overload on that breaker. I am on my way to your location now.',
+      replyToMessageId: 'm2',
+      replyToSenderName: 'You',
+      replyToContent: 'Hi Bob, yes! It keeps tripping whenever the AC is switched on.',
       isMine: false,
+      status: 'READ',
       createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
+      reactions: {'🤝': 1, '👍': 1},
     ),
   ];
 }

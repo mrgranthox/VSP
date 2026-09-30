@@ -6,7 +6,7 @@ import { Router, type Request, type Response } from "express";
 import { setReadinessState } from "../lib/metrics";
 import { runApiReadinessChecks } from "../lib/readiness";
 import { success } from "../lib/response";
-import { adminRoutes } from "../modules/admin/admin.routes";
+import { adminRoutes, adminPlatformRoutes } from "../modules/admin/admin.routes";
 import { analyticsRoutes } from "../modules/analytics/analytics.routes";
 import { authRoutes } from "../modules/auth/auth.routes";
 import { billingRoutes } from "../modules/billing/billing.routes";
@@ -23,6 +23,16 @@ import { socialRoutes } from "../modules/social/social.routes";
 import { supportRoutes } from "../modules/support/support.routes";
 import { usersRoutes } from "../modules/users/users.routes";
 import { workerProfilesRoutes } from "../modules/worker-profiles/worker-profiles.routes";
+import { profileSectionsRoutes } from "../modules/profile-sections/profile-sections.routes";
+import { skillsRoutes } from "../modules/skills/skills.routes";
+import { recommendationsRoutes } from "../modules/recommendations/recommendations.routes";
+import { articlesRoutes } from "../modules/articles/articles.routes";
+import { eventsRoutes } from "../modules/events/events.routes";
+import { groupsRoutes } from "../modules/groups/groups.routes";
+import { companyPagesRoutes } from "../modules/company-pages/company-pages.routes";
+import { hashtagsRoutes } from "../modules/hashtags/hashtags.routes";
+import { jobAlertsRoutes } from "../modules/job-alerts/job-alerts.routes";
+import { networkRoutes } from "../modules/network/network.routes";
 
 const routes = Router();
 
@@ -73,6 +83,7 @@ routes.get("/health/ready", async (req: Request, res: Response) => {
 
 routes.use("/auth", authRoutes);
 routes.use(adminRoutes);
+routes.use(adminPlatformRoutes);
 routes.use(analyticsRoutes);
 routes.use(observabilityRoutes);
 routes.use(billingRoutes);
@@ -87,5 +98,15 @@ routes.use("/worker-profiles", workerProfilesRoutes);
 routes.use(searchRoutes);
 routes.use(socialRoutes);
 routes.use(supportRoutes);
+routes.use(profileSectionsRoutes);
+routes.use(skillsRoutes);
+routes.use(recommendationsRoutes);
+routes.use(articlesRoutes);
+routes.use(eventsRoutes);
+routes.use(groupsRoutes);
+routes.use(companyPagesRoutes);
+routes.use(hashtagsRoutes);
+routes.use(jobAlertsRoutes);
+routes.use(networkRoutes);
 
 export { routes };

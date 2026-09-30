@@ -3,11 +3,17 @@ import {
   Activity,
   BarChart3,
   BellRing,
+  BookOpen,
   BriefcaseBusiness,
+  Building2,
+  Calendar,
+  DollarSign,
   Flag,
   Gavel,
   HardHat,
+  Hash,
   HeadphonesIcon,
+  Layers,
   LayoutDashboard,
   MapPinned,
   PanelRightOpen,
@@ -15,9 +21,12 @@ import {
   Search,
   Settings2,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   SquareUser,
   Star,
+  TrendingUp,
+  UserCheck,
   UserCog,
   Users
 } from "lucide-react";
@@ -55,13 +64,21 @@ const navSections: NavSection[] = [
     label: "Marketplace",
     items: [
       { label: "Service Requests", path: "/service-requests", permission: "SERVICE_REQUEST_VIEW", icon: BriefcaseBusiness },
-      { label: "Bookings", path: "/bookings", permission: "BOOKING_VIEW", icon: Sparkles }
+      { label: "Bookings", path: "/bookings", permission: "BOOKING_VIEW", icon: Sparkles },
+      { label: "Skills Taxonomy", path: "/skills", permission: "CONFIG_VIEW", icon: Layers },
+      { label: "Company Pages", path: "/company-pages", permission: "WORKER_VIEW", icon: Building2 },
+      { label: "Events", path: "/events", permission: "CONTENT_VIEW", icon: Calendar },
+      { label: "Trade Groups", path: "/groups", permission: "CONTENT_VIEW", icon: Users },
+      { label: "Trending Hashtags", path: "/hashtags", permission: "CONTENT_VIEW", icon: Hash },
+      { label: "Articles", path: "/articles", permission: "CONTENT_VIEW", icon: BookOpen },
+      { label: "Subscriptions", path: "/subscriptions", permission: "ANALYTICS_VIEW_OVERVIEW", icon: DollarSign }
     ]
   },
   {
     label: "Moderation",
     items: [
       { label: "Content Operations", path: "/content", permission: "CONTENT_VIEW", icon: PanelRightOpen },
+      { label: "Content Queue", path: "/content-queue", permission: "CONTENT_VIEW", icon: ShieldCheck },
       { label: "Reports Queue", path: "/reports", permission: "REPORT_VIEW", icon: Flag },
       { label: "Moderation Cases", path: "/moderation-cases", permission: "REPORT_VIEW", icon: Gavel },
       { label: "Fraud Signals", path: "/fraud-signals", permission: "FRAUD_SIGNAL_VIEW", icon: ShieldAlert }
@@ -76,7 +93,9 @@ const navSections: NavSection[] = [
     items: [
       { label: "Search Analytics", path: "/analytics/search", permission: "ANALYTICS_VIEW_SEARCH", icon: Search },
       { label: "Engagement Analytics", path: "/analytics/engagement", permission: "ANALYTICS_VIEW_ENGAGEMENT", icon: BarChart3 },
-      { label: "Marketplace Analytics", path: "/analytics/marketplace", permission: "ANALYTICS_VIEW_MARKETPLACE", icon: BriefcaseBusiness }
+      { label: "Marketplace Analytics", path: "/analytics/marketplace", permission: "ANALYTICS_VIEW_MARKETPLACE", icon: BriefcaseBusiness },
+      { label: "Onboarding Funnel", path: "/analytics/onboarding", permission: "ANALYTICS_VIEW_OVERVIEW", icon: TrendingUp },
+      { label: "Profile Health", path: "/analytics/profiles", permission: "ANALYTICS_VIEW_OVERVIEW", icon: UserCheck }
     ]
   },
   {

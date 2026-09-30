@@ -70,16 +70,52 @@ const ReportCommentBody = z
   })
   .strict();
 
+const PostReactionTypeEnum = z.enum(["LIKE", "CELEBRATE", "SUPPORT", "LOVE", "INSIGHTFUL", "FUNNY"]);
+
+const ReactPostBody = z
+  .object({
+    reactionType: PostReactionTypeEnum.default("LIKE")
+  })
+  .strict();
+
+const RepostBody = z
+  .object({
+    comment: z.string().max(1000).optional()
+  })
+  .strict();
+
+const PollVoteBody = z
+  .object({
+    optionId: z.string().min(1).max(100)
+  })
+  .strict();
+
+const PollIdParams = z.object({
+  pollId: z.string().min(1).max(100)
+});
+
+const CreateReplyBody = z
+  .object({
+    content: z.string().min(1).max(1000).trim()
+  })
+  .strict();
+
 export {
   AddPostMediaBody,
   CommentIdParams,
   CreateCommentBody,
   CreatePostBody,
+  CreateReplyBody,
   GetCommentsQuery,
   GetFeedQuery,
   MediaIdParams,
+  PollIdParams,
+  PollVoteBody,
   PostIdParams,
+  PostReactionTypeEnum,
+  ReactPostBody,
   ReportCommentBody,
+  RepostBody,
   UpdateCommentBody,
   UpdatePostBody
 };

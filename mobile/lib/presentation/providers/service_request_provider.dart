@@ -3,7 +3,7 @@ import '../../data/models/service_request_model.dart';
 import '../../data/repositories/requests_repository.dart';
 
 class ServiceRequestProvider extends ChangeNotifier {
-  final RequestsRepository _requestsRepo;
+  final RequestsRepository requestsRepo;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -12,7 +12,7 @@ class ServiceRequestProvider extends ChangeNotifier {
   List<ServiceRequest> get requests => _requests;
   List<ServiceRequest> get myRequests => _requests;
 
-  ServiceRequestProvider({required this._requestsRepo}) {
+  ServiceRequestProvider({required this.requestsRepo}) {
     loadRequests();
   }
 
@@ -21,7 +21,7 @@ class ServiceRequestProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _requests = await _requestsRepo.getRequests();
+      _requests = await requestsRepo.getRequests();
     } catch (_) {}
 
     _isLoading = false;
@@ -40,7 +40,7 @@ class ServiceRequestProvider extends ChangeNotifier {
     List<String> mediaUrls = const [],
   }) async {
     try {
-      final req = await _requestsRepo.createRequest(
+      final req = await requestsRepo.createRequest(
         tradeCategoryId: tradeCategoryId,
         title: title,
         description: description,
@@ -61,14 +61,14 @@ class ServiceRequestProvider extends ChangeNotifier {
 
   Future<void> acceptAssignment(String reqId, String assignmentId) async {
     try {
-      await _requestsRepo.acceptAssignment(reqId, assignmentId);
+      await requestsRepo.acceptAssignment(reqId, assignmentId);
       await loadRequests();
     } catch (_) {}
   }
 
   Future<void> declineAssignment(String reqId, String assignmentId, String reason) async {
     try {
-      await _requestsRepo.declineAssignment(reqId, assignmentId, reason);
+      await requestsRepo.declineAssignment(reqId, assignmentId, reason);
       await loadRequests();
     } catch (_) {}
   }

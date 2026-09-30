@@ -102,7 +102,7 @@ class WorkerProfilePreviewScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildHeaderStat(
-                        '${worker?.ratingAvg ?? 4.9} ★',
+                        '${worker?.ratingAvg ?? 4.9}',
                         '${worker?.reviewCount ?? 26} Reviews',
                       ),
                       Container(

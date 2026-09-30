@@ -20,7 +20,7 @@ class TradeCategory {
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       slug: json['slug'] as String? ?? '',
-      icon: json['icon'] as String? ?? '⚡',
+      icon: json['icon'] as String? ?? '',
       description: json['description'] as String?,
       workerCount: json['workerCount'] as int? ?? 0,
     );

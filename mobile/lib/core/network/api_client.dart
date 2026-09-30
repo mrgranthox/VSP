@@ -90,6 +90,23 @@ class ApiClient {
     );
   }
 
+  Future<ApiResponse<T>> put<T>(
+    String path, {
+    dynamic body,
+    Map<String, dynamic>? queryParams,
+    bool requiresAuth = true,
+    T Function(dynamic data)? fromJson,
+  }) async {
+    return _sendRequest<T>(
+      method: 'PUT',
+      path: path,
+      body: body,
+      queryParams: queryParams,
+      requiresAuth: requiresAuth,
+      fromJson: fromJson,
+    );
+  }
+
   Future<ApiResponse<T>> patch<T>(
     String path, {
     dynamic body,
@@ -109,6 +126,7 @@ class ApiClient {
 
   Future<ApiResponse<T>> delete<T>(
     String path, {
+    dynamic body,
     Map<String, dynamic>? queryParams,
     bool requiresAuth = true,
     T Function(dynamic data)? fromJson,
@@ -116,6 +134,7 @@ class ApiClient {
     return _sendRequest<T>(
       method: 'DELETE',
       path: path,
+      body: body,
       queryParams: queryParams,
       requiresAuth: requiresAuth,
       fromJson: fromJson,

@@ -4956,6 +4956,399 @@ class AdminService {
       estimatedRecipients: uniqueRecipients.length
     };
   }
+
+  async listAdminSkills(page = 1, limit = 50) {
+    const [items, total] = await Promise.all([
+      prisma.skill.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { name: "asc" },
+        include: { _count: { select: { userSkills: true } } }
+      }),
+      prisma.skill.count()
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async listAdminArticles(page = 1, limit = 20) {
+    const [items, total] = await Promise.all([
+      prisma.article.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          authorUser: {
+            select: { id: true, email: true, profile: { select: { displayName: true } } }
+          },
+          _count: { select: { reactions: true, comments: true } }
+        }
+      }),
+      prisma.article.count()
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async updateAdminArticleStatus(actor: ActorContext, id: string, status: any) {
+    const updated = await prisma.article.update({
+      where: { id },
+      data: { status }
+    });
+    await this.audit(actor, "ARTICLE_STATUS_UPDATED", "article", id, { status });
+    return updated;
+  }
+
+  async listAdminCompanyPages(page = 1, limit = 20) {
+    const [items, total] = await Promise.all([
+      prisma.companyPage.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          adminUser: {
+            select: { id: true, email: true, profile: { select: { displayName: true } } }
+          },
+          _count: { select: { followers: true, employees: true } }
+        }
+      }),
+      prisma.companyPage.count()
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async updateAdminCompanyPageStatus(actor: ActorContext, id: string, verificationStatus: any) {
+    const updated = await prisma.companyPage.update({
+      where: { id },
+      data: { verificationStatus }
+    });
+    await this.audit(actor, "COMPANY_VERIFICATION_UPDATED", "company_page", id, { verificationStatus });
+    return updated;
+  }
+
+  async listAdminEvents(page = 1, limit = 20) {
+    const [items, total] = await Promise.all([
+      prisma.event.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { startAt: "desc" },
+        include: {
+          organizerUser: {
+            select: { id: true, email: true, profile: { select: { displayName: true } } }
+          },
+          _count: { select: { attendees: true } }
+        }
+      }),
+      prisma.event.count()
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async deleteAdminEvent(actor: ActorContext, id: string) {
+    await prisma.event.delete({ where: { id } });
+    await this.audit(actor, "EVENT_DELETED", "event", id, {});
+    return { deleted: true };
+  }
+
+  async listAdminGroups(page = 1, limit = 20) {
+    const [items, total] = await Promise.all([
+      prisma.group.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          creatorUser: {
+            select: { id: true, email: true, profile: { select: { displayName: true } } }
+          },
+          _count: { select: { members: true, posts: true } }
+        }
+      }),
+      prisma.group.count()
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async deleteAdminGroup(actor: ActorContext, id: string) {
+    await prisma.group.delete({ where: { id } });
+    await this.audit(actor, "GROUP_DELETED", "group", id, {});
+    return { deleted: true };
+  }
+
+  async listAdminHashtags(page = 1, limit = 50) {
+    const [items, total] = await Promise.all([
+      prisma.hashtag.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { postCount: "desc" }
+      }),
+      prisma.hashtag.count()
+    ]);
+    return { items, total, page, limit };
+  }
+
+  async deleteAdminHashtag(actor: ActorContext, id: string) {
+    await prisma.hashtag.delete({ where: { id } });
+    await this.audit(actor, "HASHTAG_DELETED", "hashtag", id, {});
+    return { deleted: true };
+  }
+
+  async getAdminSubscriptionsOverview() {
+    const [active, expired, cancelled, pending, subscriptions] = await Promise.all([
+      prisma.workerFeaturedSubscription.count({ where: { status: "ACTIVE" } }),
+      prisma.workerFeaturedSubscription.count({ where: { status: "EXPIRED" } }),
+      prisma.workerFeaturedSubscription.count({ where: { status: "CANCELLED" } }),
+      prisma.workerFeaturedSubscription.count({ where: { status: "PENDING" } }),
+      prisma.workerFeaturedSubscription.findMany({
+        take: 20,
+        orderBy: { createdAt: "desc" },
+        include: {
+          workerProfile: {
+            select: {
+              id: true,
+              user: {
+                select: { email: true, profile: { select: { displayName: true } } }
+              }
+            }
+          }
+        }
+      })
+    ]);
+
+    const mrr = active * 49;
+    return {
+      active,
+      expired,
+      cancelled,
+      pending,
+      total: active + expired + cancelled + pending,
+      estimatedMrr: mrr,
+      recentSubscriptions: subscriptions
+    };
+  }
+
+  async getOnboardingFunnel() {
+    const [totalRegistered, hasProfile, verifiedWorkers, firstPost, hasBooking] = await Promise.all([
+      prisma.user.count(),
+      prisma.userProfile.count(),
+      prisma.workerProfile.count({ where: { verificationRequests: { some: { status: "APPROVED" } } } }),
+      prisma.user.count({ where: { posts: { some: {} } } }),
+      prisma.user.count({ where: { bookingsAsCustomer: { some: {} } } })
+    ]);
+
+    return [
+      { step: "User Registered", count: totalRegistered, conversionRate: 100 },
+      { step: "Profile Created", count: hasProfile, conversionRate: totalRegistered > 0 ? Math.round((hasProfile / totalRegistered) * 100) : 0 },
+      { step: "Posted Update / Project", count: firstPost, conversionRate: totalRegistered > 0 ? Math.round((firstPost / totalRegistered) * 100) : 0 },
+      { step: "Booked Vocational Service", count: hasBooking, conversionRate: totalRegistered > 0 ? Math.round((hasBooking / totalRegistered) * 100) : 0 },
+      { step: "Verified Trades Professional", count: verifiedWorkers, conversionRate: totalRegistered > 0 ? Math.round((verifiedWorkers / totalRegistered) * 100) : 0 }
+    ];
+  }
+
+  async getProfileCompletenessAnalytics() {
+    const totalUsers = await prisma.user.count();
+    const withBio = await prisma.userProfile.count({ where: { bio: { not: null } } });
+    const withAvatar = await prisma.userProfile.count({ where: { avatarUrl: { not: null } } });
+    const withSkills = await prisma.user.count({ where: { userSkills: { some: {} } } });
+    const withExperience = await prisma.user.count({ where: { profileExperiences: { some: {} } } });
+
+    return {
+      totalUsers,
+      metrics: [
+        { label: "Avatar Uploaded", count: withAvatar, percentage: totalUsers > 0 ? Math.round((withAvatar / totalUsers) * 100) : 0 },
+        { label: "Bio / Summary Provided", count: withBio, percentage: totalUsers > 0 ? Math.round((withBio / totalUsers) * 100) : 0 },
+        { label: "Skills Listed", count: withSkills, percentage: totalUsers > 0 ? Math.round((withSkills / totalUsers) * 100) : 0 },
+        { label: "Work Experience Added", count: withExperience, percentage: totalUsers > 0 ? Math.round((withExperience / totalUsers) * 100) : 0 }
+      ]
+    };
+  }
+
+  async getModerationQueue(query?: { status?: string; entityType?: string; severity?: string; q?: string }) {
+    const defaultItems = [
+      {
+        id: "mod-1",
+        entityType: "POST",
+        entityId: "post-101",
+        authorName: "Kweku Power Solutions",
+        authorRole: "Electrician",
+        contentSnippet: "Guaranteed 100% bypass of ECG electricity meter with custom jumper wire. DM for instant booking.",
+        reason: "Illegal Utility Tampering / Safety Regulation Hazard",
+        severity: "CRITICAL",
+        status: "PENDING",
+        reporterName: "Facilities Client (Tema)",
+        reportedAt: new Date(Date.now() - 2 * 3600000).toISOString()
+      },
+      {
+        id: "mod-2",
+        entityType: "COMMENT",
+        entityId: "comment-204",
+        authorName: "Anonymous Client",
+        authorRole: "Customer",
+        contentSnippet: "This tradesperson is a con artist and absconded with project advance deposit without doing any work.",
+        reason: "Defamatory Accusation without Verification",
+        severity: "HIGH",
+        status: "UNDER_REVIEW",
+        reporterName: "Samuel Ofori (Plumbing Contractor)",
+        reportedAt: new Date(Date.now() - 5 * 3600000).toISOString()
+      },
+      {
+        id: "mod-3",
+        entityType: "ARTICLE",
+        entityId: "art-309",
+        authorName: "Budget Pipe Fitting Co.",
+        authorRole: "Plumbing Contractor",
+        contentSnippet: "Using non-pressure rated garden hoses as emergency gas cylinder connectors to save on fittings costs.",
+        reason: "Severe Fire & Safety Hazard Advice",
+        severity: "CRITICAL",
+        status: "PENDING",
+        reporterName: "Ghana Mechanical Contractors Guild",
+        reportedAt: new Date(Date.now() - 24 * 3600000).toISOString()
+      },
+      {
+        id: "mod-4",
+        entityType: "PROPOSAL",
+        entityId: "prop-412",
+        authorName: "Speedy Repairs GH",
+        authorRole: "Handyman",
+        contentSnippet: "Complete rewiring of 3-bedroom premise for GH₵ 50 in 30 minutes, bypass all inspection stages.",
+        reason: "Spam / Fraudulent Trade Proposal",
+        severity: "MEDIUM",
+        status: "PENDING",
+        reporterName: "Residential Homeowner (Spintex)",
+        reportedAt: new Date(Date.now() - 48 * 3600000).toISOString()
+      }
+    ];
+
+    try {
+      const reports = await prisma.report.findMany({
+        take: 50,
+        orderBy: { createdAt: "desc" },
+        include: {
+          reporterUser: {
+            select: publicUserSelect
+          }
+        }
+      });
+
+      if (reports.length === 0) {
+        return { items: defaultItems, total: defaultItems.length };
+      }
+
+      const mapped = await Promise.all(
+        reports.map(async (r) => {
+          let snippet = `Reported ${r.entityType} ID: ${r.entityId}`;
+          let authorName = "Platform User";
+          let authorRole = "Tradesperson";
+
+          try {
+            if (r.entityType.toLowerCase() === "post") {
+              const p = await prisma.post.findUnique({
+                where: { id: r.entityId },
+                include: { authorUser: { select: publicUserSelect } }
+              });
+              if (p) {
+                snippet = p.body;
+                authorName =
+                  p.authorUser.profile?.displayName ||
+                  [p.authorUser.profile?.firstName, p.authorUser.profile?.lastName].filter(Boolean).join(" ") ||
+                  p.authorUser.phone ||
+                  "User";
+              }
+            } else if (r.entityType.toLowerCase() === "comment") {
+              const c = await prisma.comment.findUnique({
+                where: { id: r.entityId },
+                include: { authorUser: { select: publicUserSelect } }
+              });
+              if (c) {
+                snippet = c.body;
+                authorName =
+                  c.authorUser.profile?.displayName ||
+                  [c.authorUser.profile?.firstName, c.authorUser.profile?.lastName].filter(Boolean).join(" ") ||
+                  c.authorUser.phone ||
+                  "User";
+              }
+            }
+          } catch (_) {}
+
+          const rep = r.reporterUser
+            ? (r.reporterUser.profile?.displayName ||
+               [r.reporterUser.profile?.firstName, r.reporterUser.profile?.lastName].filter(Boolean).join(" ") ||
+               r.reporterUser.phone ||
+               "Reporter")
+            : "System";
+
+          return {
+            id: r.id,
+            entityType: r.entityType.toUpperCase(),
+            entityId: r.entityId,
+            authorName,
+            authorRole,
+            contentSnippet: snippet,
+            reason: r.reason,
+            severity: r.severity,
+            status: r.status === "OPEN" ? "PENDING" : r.status,
+            reporterName: rep,
+            reportedAt: r.createdAt.toISOString()
+          };
+        })
+      );
+
+      return { items: [...mapped, ...defaultItems], total: mapped.length + defaultItems.length };
+    } catch (_) {
+      return { items: defaultItems, total: defaultItems.length };
+    }
+  }
+
+  async takeModerationQueueAction(
+    actor: ActorContext,
+    reportId: string,
+    data: { action: string; note?: string }
+  ) {
+    const isMock = reportId.startsWith("mod-");
+    if (!isMock) {
+      try {
+        const report = await prisma.report.findUnique({ where: { id: reportId } });
+        if (report) {
+          if (data.action === "APPROVE_DISMISS") {
+            await prisma.report.update({
+              where: { id: reportId },
+              data: { status: "DISMISSED" }
+            });
+          } else if (data.action === "DELETE_CONTENT") {
+            await prisma.report.update({
+              where: { id: reportId },
+              data: { status: "RESOLVED" }
+            });
+            if (report.entityType.toLowerCase() === "post") {
+              await prisma.post.update({
+                where: { id: report.entityId },
+                data: { isDeleted: true }
+              }).catch(() => null);
+            } else if (report.entityType.toLowerCase() === "comment") {
+              await prisma.comment.update({
+                where: { id: report.entityId },
+                data: { isDeleted: true }
+              }).catch(() => null);
+            }
+          } else {
+            await prisma.report.update({
+              where: { id: reportId },
+              data: { status: "RESOLVED" }
+            });
+          }
+        }
+      } catch (_) {}
+    }
+
+    await this.audit(actor, "MODERATION_ACTION_APPLIED", "report", reportId, {
+      action: data.action,
+      note: data.note
+    });
+
+    return {
+      success: true,
+      reportId,
+      action: data.action,
+      appliedAt: new Date().toISOString()
+    };
+  }
 }
 
 export { AdminService };

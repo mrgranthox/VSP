@@ -40,6 +40,8 @@ import {
   FraudSignalActionBody,
   ModerationCaseIdParams,
   PostIdParams,
+  QueueReportIdParams,
+  ModerationQueueActionBody,
   ReactivateUserBody,
   AdminUserSessionParams,
   RejectVerificationBody,
@@ -396,3 +398,37 @@ adminRoutes.post(
 );
 
 export { adminRoutes };
+
+const adminPlatformRoutes = Router();
+
+adminPlatformRoutes.use("/admin", authenticate);
+
+adminPlatformRoutes.get(
+  "/admin/moderation/queue",
+  requirePermission("REPORT_VIEW"),
+  adminController.getModerationQueue
+);
+adminPlatformRoutes.post(
+  "/admin/moderation/queue/:reportId/action",
+  requirePermission("MODERATION_CASE_ACTION"),
+  validate(QueueReportIdParams, "params"),
+  validate(ModerationQueueActionBody),
+  adminController.takeModerationQueueAction
+);
+
+adminPlatformRoutes.get("/admin/skills", requirePermission("CONFIG_VIEW"), adminController.listSkills);
+adminPlatformRoutes.get("/admin/articles", requirePermission("CONTENT_VIEW"), adminController.listArticles);
+adminPlatformRoutes.patch("/admin/articles/:articleId", requirePermission("CONTENT_VIEW"), adminController.updateArticleStatus);
+adminPlatformRoutes.get("/admin/company-pages", requirePermission("WORKER_VIEW"), adminController.listCompanyPages);
+adminPlatformRoutes.patch("/admin/company-pages/:companyId", requirePermission("WORKER_VERIFY"), adminController.updateCompanyPageStatus);
+adminPlatformRoutes.get("/admin/events", requirePermission("CONTENT_VIEW"), adminController.listEvents);
+adminPlatformRoutes.delete("/admin/events/:eventId", requirePermission("CONTENT_VIEW"), adminController.deleteEvent);
+adminPlatformRoutes.get("/admin/groups", requirePermission("CONTENT_VIEW"), adminController.listGroups);
+adminPlatformRoutes.delete("/admin/groups/:groupId", requirePermission("CONTENT_VIEW"), adminController.deleteGroup);
+adminPlatformRoutes.get("/admin/hashtags", requirePermission("CONTENT_VIEW"), adminController.listHashtags);
+adminPlatformRoutes.delete("/admin/hashtags/:hashtagId", requirePermission("CONTENT_VIEW"), adminController.deleteHashtag);
+adminPlatformRoutes.get("/admin/subscriptions/overview", requirePermission("ANALYTICS_VIEW_OVERVIEW"), adminController.getSubscriptionsOverview);
+adminPlatformRoutes.get("/admin/analytics/onboarding-funnel", requirePermission("ANALYTICS_VIEW_OVERVIEW"), adminController.getOnboardingFunnel);
+adminPlatformRoutes.get("/admin/analytics/profile-completeness", requirePermission("ANALYTICS_VIEW_OVERVIEW"), adminController.getProfileCompleteness);
+
+export { adminPlatformRoutes };

@@ -1,4 +1,4 @@
-import { MediaCategory, type ModerationSeverity, type VisibilityScope } from "@prisma/client";
+import { MediaCategory, type ModerationSeverity, type PostReactionType, type VisibilityScope } from "@prisma/client";
 
 import { Errors } from "../../lib/errors";
 import { buildPagination, getPaginationArgs, type PaginationInput } from "../../lib/pagination";
@@ -108,8 +108,21 @@ class SocialService {
       likeCount: post._count.likes,
       saveCount: post._count.saves,
       commentCount: post._count.comments,
+      repostCount: post._count.reposts ?? 0,
       isLikedByViewer: actor ? Boolean(post.likes?.length) : false,
-      isSavedByViewer: actor ? Boolean(post.saves?.length) : false
+      viewerReactionType: actor && post.likes?.length ? post.likes[0].reactionType : null,
+      isSavedByViewer: actor ? Boolean(post.saves?.length) : false,
+      poll: post.poll ? {
+        id: post.poll.id,
+        question: post.poll.question,
+        endsAt: post.poll.endsAt,
+        options: post.poll.options?.map((opt: any) => ({
+          id: opt.id,
+          label: opt.label,
+          voteCount: opt.voteCount
+        })) ?? [],
+        userVotedOptionId: post.poll.votes?.[0]?.pollOptionId ?? null
+      } : null
     };
   }
 
@@ -320,9 +333,39 @@ class SocialService {
     await this.repository.likePost(postId, actor.userId);
   }
 
+  async reactToPost(actor: ActorContext, postId: string, reactionType: PostReactionType = "LIKE"): Promise<void> {
+    await this.getAccessiblePost(postId, actor);
+    await this.repository.reactToPost(postId, actor.userId, reactionType);
+  }
+
+  async removePostReaction(actor: ActorContext, postId: string): Promise<void> {
+    await this.getAccessiblePost(postId, actor);
+    await this.repository.removePostReaction(postId, actor.userId);
+  }
+
+  async repost(actor: ActorContext, postId: string, comment?: string) {
+    const post = await this.getAccessiblePost(postId, actor);
+    return this.repository.createRepost(post.id, actor.userId, comment ? stripHtml(comment) : undefined);
+  }
+
+  async votePoll(actor: ActorContext, pollId: string, optionId: string) {
+    return this.repository.votePoll(pollId, optionId, actor.userId);
+  }
+
   async unlikePost(actor: ActorContext, postId: string): Promise<void> {
     await this.getAccessiblePost(postId, actor);
     await this.repository.unlikePost(postId, actor.userId);
+  }
+
+  async replyComment(actor: ActorContext, parentCommentId: string, content: string) {
+    const parentComment = await this.repository.getCommentById(parentCommentId, actor.userId);
+    if (!parentComment || !parentComment.postId) {
+      throw Errors.COMMENT_NOT_FOUND();
+    }
+    return this.createComment(actor, parentComment.postId, {
+      body: content,
+      parentCommentId: parentComment.id
+    });
   }
 
   async savePost(actor: ActorContext, postId: string): Promise<void> {

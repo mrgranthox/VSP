@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/worker_profile_model.dart';
 import '../../../data/repositories/discovery_repository.dart';
+import '../../widgets/article_card.dart';
 import '../../widgets/avatar_badge.dart';
+import '../../widgets/degree_chip.dart';
+import '../../widgets/premium_badge.dart';
+import '../../widgets/skill_chip.dart';
 import '../../widgets/vsp_button.dart';
 
 class WorkerDetailScreen extends StatefulWidget {
@@ -21,16 +26,26 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
   late TabController _tabController;
   WorkerProfile? _worker;
   bool _isSaved = false;
+  bool _isConnected = false;
+  bool _isFollowing = false;
+
+  late List<Map<String, dynamic>> _skills;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _loadWorker();
+    _skills = [
+      {'name': 'Solar Inverter Maintenance', 'count': 24, 'endorsed': false},
+      {'name': 'Distribution Board Wiring', 'count': 38, 'endorsed': true},
+      {'name': 'Fault Finding & Testing', 'count': 19, 'endorsed': false},
+      {'name': '3-Phase Power Installation', 'count': 15, 'endorsed': false},
+      {'name': 'Domestic Conduit Running', 'count': 29, 'endorsed': false},
+    ];
   }
 
   void _loadWorker() {
-    // Find matching fixture or default
     final list = DiscoveryRepository.fallbackFeaturedWorkers;
     final found = list.where((w) => w.id == widget.workerId);
     setState(() {
@@ -42,6 +57,31 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _toggleEndorse(int index) {
+    HapticFeedback.lightImpact();
+    setState(() {
+      final skill = _skills[index];
+      final isCurrentlyEndorsed = skill['endorsed'] as bool;
+      final currentCount = skill['count'] as int;
+
+      skill['endorsed'] = !isCurrentlyEndorsed;
+      skill['count'] = isCurrentlyEndorsed ? currentCount - 1 : currentCount + 1;
+    });
+
+    final skill = _skills[index];
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        content: Text(
+          (skill['endorsed'] as bool)
+              ? 'Endorsed ${_worker?.displayName} for ${skill['name']}'
+              : 'Endorsement removed',
+        ),
+      ),
+    );
   }
 
   @override
@@ -99,7 +139,11 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        AvatarBadge(name: worker.displayName, size: 68),
+                        PremiumBadge(
+                          isPremium: worker.isVerified,
+                          showBadgeLabel: true,
+                          child: AvatarBadge(name: worker.displayName, size: 68),
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -117,9 +161,12 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                                       ),
                                     ),
                                   ),
-                                  if (worker.isVerified)
+                                  const DegreeChip(degree: 1),
+                                  if (worker.isVerified) ...[
+                                    const SizedBox(width: 4),
                                     const Icon(Icons.verified,
                                         size: 18, color: AppColors.brand),
+                                  ],
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -131,21 +178,41 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: AppColors.brandLight,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  '${worker.primaryTradeIcon} ${worker.primaryTrade}',
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.brandDark,
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.brandLight,
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '${worker.primaryTradeIcon} ${worker.primaryTrade}',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.brandDark,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    onTap: () {
+                                      setState(() => _isFollowing = !_isFollowing);
+                                    },
+                                    child: Text(
+                                      _isFollowing ? 'Following' : '+ Follow',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: _isFollowing
+                                            ? AppColors.midText
+                                            : AppColors.brand,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -154,9 +221,77 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                     ),
                   ),
 
+                  // Connect Action Bar (LinkedIn Style)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                    child: Row(
+                      children: [
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: _isConnected ? AppColors.midText : AppColors.brand,
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                            minimumSize: const Size(90, 34),
+                          ),
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            setState(() => _isConnected = !_isConnected);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                duration: const Duration(seconds: 1),
+                                content: Text(_isConnected
+                                    ? 'Connected with ${worker.displayName}'
+                                    : 'Connection removed'),
+                              ),
+                            );
+                          },
+                          icon: Icon(
+                            _isConnected ? Icons.check : Icons.person_add_outlined,
+                            size: 16,
+                            color: _isConnected ? AppColors.midText : AppColors.brand,
+                          ),
+                          label: Text(
+                            _isConnected ? 'Connected' : 'Connect',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: _isConnected ? AppColors.midText : AppColors.brand,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.border, width: 1.2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusFull),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                            minimumSize: const Size(90, 34),
+                          ),
+                          onPressed: () => context.push('/skills/assessment'),
+                          icon: const Icon(Icons.verified_outlined, size: 16, color: AppColors.darkText),
+                          label: const Text(
+                            'Assess Skills',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.darkText,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   // Stats Row Card
                   Container(
-                    margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
                     decoration: BoxDecoration(
                       color: AppColors.screenBg,
@@ -166,7 +301,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStat('Rating', '${worker.avgRating} ⭐', '${worker.totalReviews} reviews'),
+                        _buildStat('Rating', '${worker.avgRating}', '${worker.totalReviews} reviews'),
                         _buildVerticalDivider(),
                         _buildStat('Experience', '${worker.experienceYears} Years', 'Professional'),
                         _buildVerticalDivider(),
@@ -175,7 +310,7 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                     ),
                   ),
 
-                  // Profile Detail Tabs
+                  // Profile Detail Tabs (5 LinkedIn Parity Tabs)
                   TabBar(
                     controller: _tabController,
                     indicatorColor: AppColors.brand,
@@ -195,52 +330,83 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                       Tab(text: 'About'),
                       Tab(text: 'Services'),
                       Tab(text: 'Portfolio'),
+                      Tab(text: 'Articles'),
                       Tab(text: 'Reviews'),
                     ],
                   ),
 
                   // Tab Views Content Container
                   SizedBox(
-                    height: 380,
+                    height: 480,
                     child: TabBarView(
                       controller: _tabController,
                       children: [
-                        // About Tab
-                        Padding(
+                        // 1. About Tab with Skill Endorsements
+                        ListView(
                           padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Professional Bio',
-                                  style: TextStyle(
-                                      fontSize: 15, fontWeight: FontWeight.w800)),
-                              const SizedBox(height: 8),
-                              Text(
-                                worker.bio ??
-                                    'Licensed tradesperson with extensive experience in domestic and commercial electrical maintenance.',
-                                style: const TextStyle(
-                                    fontSize: 14, color: AppColors.dark3, height: 1.6),
-                              ),
-                              const SizedBox(height: 20),
-                              const Text('Service Areas Covered',
-                                  style: TextStyle(
-                                      fontSize: 15, fontWeight: FontWeight.w800)),
-                              const SizedBox(height: 8),
-                              const Row(
-                                children: [
-                                  Icon(Icons.location_on_outlined,
-                                      size: 16, color: AppColors.brand),
-                                  SizedBox(width: 6),
-                                  Text('Greater Accra (25km coverage radius)',
+                          children: [
+                            const Text('Professional Bio',
+                                style: TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 8),
+                            Text(
+                              worker.bio ??
+                                  'Licensed tradesperson with extensive experience in domestic and commercial electrical maintenance.',
+                              style: const TextStyle(
+                                  fontSize: 14, color: AppColors.dark3, height: 1.6),
+                            ),
+                            const SizedBox(height: 20),
+                            const Text('Service Areas Covered',
+                                style: TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 8),
+                            const Row(
+                              children: [
+                                Icon(Icons.location_on_outlined,
+                                    size: 16, color: AppColors.brand),
+                                SizedBox(width: 6),
+                                Text('Greater Accra (25km coverage radius)',
+                                    style: TextStyle(
+                                        fontSize: 13, fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Skills & Endorsements',
+                                    style: TextStyle(
+                                        fontSize: 15, fontWeight: FontWeight.w800)),
+                                InkWell(
+                                  onTap: () => context.push('/customer/skills'),
+                                  child: const Text('View All',
                                       style: TextStyle(
-                                          fontSize: 13, fontWeight: FontWeight.w600)),
-                                ],
-                              ),
-                            ],
-                          ),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.brand)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _skills.asMap().entries.map((entry) {
+                                final idx = entry.key;
+                                final s = entry.value;
+                                return SkillChip(
+                                  name: s['name'] as String,
+                                  endorsementsCount: s['count'] as int,
+                                  isEndorsedByMe: s['endorsed'] as bool,
+                                  isVerified: true,
+                                  onEndorse: () => _toggleEndorse(idx),
+                                );
+                              }).toList(),
+                            ),
+                          ],
                         ),
 
-                        // Services Tab
+                        // 2. Services Tab
                         ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
@@ -253,41 +419,66 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                           ],
                         ),
 
-                        // Portfolio Tab
+                        // 3. Portfolio Tab (Featured Trade Gallery)
                         GridView.count(
                           crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
                           padding: const EdgeInsets.all(16),
-                          children: List.generate(4, (index) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE2E8F0),
-                                borderRadius: BorderRadius.circular(12),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
-                                ),
-                              ),
-                              child: const Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.photo_outlined,
-                                        size: 32, color: AppColors.lightText),
-                                    SizedBox(height: 4),
-                                    Text('Project Photo',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: AppColors.midText,
-                                            fontWeight: FontWeight.w600)),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }),
+                          children: [
+                            _buildPortfolioCard(
+                              title: 'Solar Inverter Setup',
+                              category: 'Residential',
+                              year: '2024',
+                            ),
+                            _buildPortfolioCard(
+                              title: 'Distribution Board Rebuild',
+                              category: 'Commercial',
+                              year: '2024',
+                            ),
+                            _buildPortfolioCard(
+                              title: 'Emergency Generator Interlock',
+                              category: 'Industrial',
+                              year: '2023',
+                            ),
+                            _buildPortfolioCard(
+                              title: 'Architectural LED Fixtures',
+                              category: 'Domestic',
+                              year: '2023',
+                            ),
+                          ],
                         ),
 
-                        // Reviews Tab
+                        // 4. Articles Tab (Trade Knowledge & Articles)
+                        ListView(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          children: [
+                            ArticleCard(
+                              id: 'art-1',
+                              title: 'Proper Surge Protection for Inverter Installations in Ghana',
+                              slug: 'surge-protection-inverter-ghana',
+                              subtitle: 'How to safeguard lithium battery banks from voltage spikes during grid fluctuations.',
+                              authorName: worker.displayName,
+                              authorHeadline: worker.headline ?? worker.primaryTrade,
+                              readingTimeMinutes: 5,
+                              reactionsCount: 42,
+                              commentsCount: 9,
+                            ),
+                            ArticleCard(
+                              id: 'art-2',
+                              title: '5 Signs Your Home Circuit Breaker Needs Urgent Replacement',
+                              slug: '5-signs-circuit-breaker-replacement',
+                              subtitle: 'Frequent trips, burning odors, and heat discoloration guide for homeowners.',
+                              authorName: worker.displayName,
+                              authorHeadline: worker.headline ?? worker.primaryTrade,
+                              readingTimeMinutes: 3,
+                              reactionsCount: 28,
+                              commentsCount: 4,
+                            ),
+                          ],
+                        ),
+
+                        // 5. Reviews Tab
                         ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
@@ -335,6 +526,65 @@ class _WorkerDetailScreenState extends State<WorkerDetailScreen>
                     text: 'Book This Worker',
                     onPressed: () => context.push('/book-worker/${worker.id}'),
                   ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPortfolioCard({
+    required String title,
+    required String category,
+    required String year,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 3, offset: Offset(0, 1)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(11)),
+                gradient: LinearGradient(
+                  colors: [Color(0xFFE0F2FE), Color(0xFFEDE9FE)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: const Center(
+                child: Icon(Icons.engineering_outlined, size: 36, color: AppColors.brand),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(category, style: const TextStyle(fontSize: 10, color: AppColors.midText)),
+                    Text(year, style: const TextStyle(fontSize: 10, color: AppColors.lightText)),
+                  ],
                 ),
               ],
             ),

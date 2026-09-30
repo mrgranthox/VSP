@@ -42,7 +42,7 @@ class WorkerProfile {
 
   String get displayName => userProfile?.fullName ?? headline ?? 'Skilled Tradesperson';
   String get primaryTrade => tradeCategories.isNotEmpty ? tradeCategories.first.name : 'General Trades';
-  String get primaryTradeIcon => tradeCategories.isNotEmpty ? tradeCategories.first.icon : '⚡';
+  String get primaryTradeIcon => tradeCategories.isNotEmpty ? tradeCategories.first.icon : '';
   double get hourlyRate => hourlyRateMinor / 100.0;
   double get ratingAvg => avgRating;
   int get reviewCount => totalReviews;

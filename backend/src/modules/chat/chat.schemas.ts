@@ -80,6 +80,16 @@ const AddAttachmentBody = z
   })
   .strict();
 
+const MessageIdParams = z.object({
+  messageId: z.string().min(1)
+});
+
+const MessageReactionBody = z
+  .object({
+    emoji: z.string().min(1).max(20).optional()
+  })
+  .strict();
+
 export {
   AddAttachmentBody,
   AddParticipantBody,
@@ -90,5 +100,7 @@ export {
   GetConversationsQuery,
   GetMessagesQuery,
   MarkReadBody,
+  MessageIdParams,
+  MessageReactionBody,
   SendMessageBody
 };

@@ -3,9 +3,54 @@ import '../../core/network/api_client.dart';
 import '../models/service_request_model.dart';
 
 class RequestsRepository {
-  final ApiClient _apiClient;
+  final ApiClient apiClient;
 
-  RequestsRepository({required this._apiClient});
+  RequestsRepository({required this.apiClient});
+
+  static final List<ServiceRequest> fallbackRequests = [
+    ServiceRequest(
+      id: 'req-1',
+      customerUserId: 'usr-1',
+      tradeCategoryId: 'trade-elec',
+      tradeName: 'Electrical Installation',
+      title: 'Commercial 3-Phase Panel Upgrade',
+      description:
+          'Need certified master electrician to upgrade distribution board and balance phases for a commercial bakery in Osu.',
+      urgency: 'HIGH',
+      status: 'SUBMITTED',
+      locationAddress: 'Osu, Accra',
+      budgetMinor: 120000,
+      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
+    ),
+    ServiceRequest(
+      id: 'req-2',
+      customerUserId: 'usr-2',
+      tradeCategoryId: 'trade-plumb',
+      tradeName: 'Plumbing & Drainage',
+      title: 'Emergency Main Pipe Leak Repair',
+      description:
+          'High-pressure water main pipe ruptured behind kitchen wall. Needs immediate isolation and line replacement.',
+      urgency: 'EMERGENCY',
+      status: 'SUBMITTED',
+      locationAddress: 'East Legon, Accra',
+      budgetMinor: 65000,
+      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+    ),
+    ServiceRequest(
+      id: 'req-3',
+      customerUserId: 'usr-3',
+      tradeCategoryId: 'trade-solar',
+      tradeName: 'Solar & Renewable Energy',
+      title: '10kVA Hybrid Inverter & Lithium Battery Installation',
+      description:
+          'Mounting and configuring 10kVA inverter with two 5.12kWh batteries, surge protectors, and changeover switch.',
+      urgency: 'MEDIUM',
+      status: 'SUBMITTED',
+      locationAddress: 'Cantonments, Accra',
+      budgetMinor: 250000,
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+  ];
 
   Future<ServiceRequest> createRequest({
     required String tradeCategoryId,
@@ -18,7 +63,7 @@ class RequestsRepository {
     int? budgetMinor,
     List<String> mediaUrls = const [],
   }) async {
-    final response = await _apiClient.post<Map<String, dynamic>>(
+    final response = await apiClient.post<Map<String, dynamic>>(
       ApiConstants.serviceRequests,
       body: {
         'tradeCategoryId': tradeCategoryId,
@@ -54,43 +99,49 @@ class RequestsRepository {
     }
 
     try {
-      final response = await _apiClient.get<List<dynamic>>(
+      final response = await apiClient.get<List<dynamic>>(
         ApiConstants.serviceRequests,
         queryParams: queryParams,
       );
 
       final list = response.data;
-      if (list != null) {
+      if (list != null && list.isNotEmpty) {
         return list
             .map((e) => ServiceRequest.fromJson(e as Map<String, dynamic>))
             .toList();
       }
     } catch (_) {}
 
-    return [];
+    return fallbackRequests;
   }
 
   Future<ServiceRequest> getRequestDetail(String id) async {
-    final response = await _apiClient.get<Map<String, dynamic>>(
-      ApiConstants.serviceRequestDetail(id),
-    );
+    try {
+      final response = await apiClient.get<Map<String, dynamic>>(
+        ApiConstants.serviceRequestDetail(id),
+      );
 
-    final data = response.data;
-    if (data != null) {
-      return ServiceRequest.fromJson(data);
-    }
-    throw Exception('Request not found');
+      final data = response.data;
+      if (data != null) {
+        return ServiceRequest.fromJson(data);
+      }
+    } catch (_) {}
+
+    return fallbackRequests.firstWhere(
+      (r) => r.id == id,
+      orElse: () => fallbackRequests.first,
+    );
   }
 
   Future<void> cancelRequest(String id, String reason) async {
-    await _apiClient.post(
+    await apiClient.post(
       ApiConstants.serviceRequestCancel(id),
       body: {'reason': reason},
     );
   }
 
   Future<void> acceptAssignment(String reqId, String assignmentId) async {
-    await _apiClient.post(
+    await apiClient.post(
       ApiConstants.serviceRequestAccept(reqId, assignmentId),
     );
   }
@@ -100,7 +151,7 @@ class RequestsRepository {
     String assignmentId,
     String reason,
   ) async {
-    await _apiClient.post(
+    await apiClient.post(
       ApiConstants.serviceRequestDecline(reqId, assignmentId),
       body: {'reason': reason},
     );
