@@ -5,12 +5,16 @@ class ApiConstants {
 
   // Environment hosts
   static String get defaultBaseUrl {
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+    if (envUrl.isNotEmpty) return envUrl;
     if (kIsWeb) return 'http://localhost:3000/api/v1';
     // 127.0.0.1 routes through adb reverse on physical devices and emulators
     return 'http://127.0.0.1:3000/api/v1';
   }
 
   static String get defaultWsUrl {
+    const envWs = String.fromEnvironment('WS_BASE_URL');
+    if (envWs.isNotEmpty) return envWs;
     if (kIsWeb) return 'ws://localhost:3002/ws';
     return 'ws://127.0.0.1:3002/ws';
   }
