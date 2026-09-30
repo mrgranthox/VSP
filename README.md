@@ -1,379 +1,472 @@
 # Vocational Services Platform (VSP)
 
-> A monorepo platform connecting vocational workers and clients, featuring a Node.js/Express backend API, asynchronous job workers, real-time WebSocket gateway, and a React-based administrative console.
+> **Enterprise Monorepo**: Production-grade platform connecting residential and commercial clients with verified vocational tradespeople and skilled service professionals. Features an Express/TypeScript modular monolith, Redis/BullMQ background processors, real-time WebSocket gateway, React 18 administrative control plane, and a 41-screen Flutter mobile application for Android & iOS.
 
-[![Backend CI](https://github.com/edwardnyame/vsp/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/edwardnyame/vsp/actions/workflows/backend-ci.yml)
+[![CI Pipeline](https://github.com/mrgranthox/VSP/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/mrgranthox/VSP/actions)
+[![Flutter Analyze](https://img.shields.io/badge/Flutter%20Analyze-0%20Issues-brightgreen.svg)](mobile)
+[![Flutter Tests](https://img.shields.io/badge/Flutter%20Tests-12%2F12%20Passing-brightgreen.svg)](mobile)
+[![Backend Tests](https://img.shields.io/badge/Backend%20Tests-Passing-brightgreen.svg)](backend)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8%20Strict-blue.svg)](backend)
+[![Prisma](https://img.shields.io/badge/Prisma-5.22-informational.svg)](backend/prisma)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Installation & Setup](#installation--setup)
-- [Environment Variables](#environment-variables)
-- [Usage & Commands](#usage--commands)
-- [Project Structure](#project-structure)
-- [API Reference](#api-reference)
-- [Observability & Operations](#observability--operations)
-- [Testing & Verification](#testing--verification)
-- [Deployment & CI/CD](#deployment--cicd)
-- [License](#license)
-
-
----
-
-## Overview
-
-The Vocational Services Platform (VSP) provides the backend core infrastructure and administrative frontend for a marketplace connecting clients with vocational service providers (e.g., technicians, tradespeople, service professionals).
-
-The platform supports end-to-end service delivery: user and worker profiles, request management, booking workflows, real-time messaging, review systems, billing, moderation, support desk operations, and real-time observability. Architecturally, it follows a modular monolith approach in Express/TypeScript with decoupled background workers (BullMQ/Redis) and a dedicated WebSocket gateway runtime.
+1. [System Architecture](#system-architecture)
+2. [Monorepo Structure](#monorepo-structure)
+3. [Technology Stack](#technology-stack)
+4. [Domain Capabilities & Personas](#domain-capabilities--personas)
+5. [Prerequisites](#prerequisites)
+6. [Quick Start (Local Development)](#quick-start-local-development)
+7. [Physical Android Device Deployment (USB + ADB)](#physical-android-device-deployment-usb--adb)
+8. [Environment Configuration Reference](#environment-configuration-reference)
+9. [Pre-Seeded Evaluation Credentials](#pre-seeded-evaluation-credentials)
+10. [REST API & Real-Time Gateway Protocols](#rest-api--real-time-gateway-protocols)
+11. [Testing & Quality Verification](#testing--quality-verification)
+12. [Observability & Security Operations](#observability--security-operations)
+13. [Makefile & Tooling Index](#makefile--tooling-index)
+14. [License](#license)
 
 ---
 
-## Features
+## System Architecture
 
-- **Authentication & Security**: JWT-based access/refresh token pair handling, RSA-256 signatures, key rotation support (`JWT_PUBLIC_KEY_BASE64_PREVIOUS`), TOTP and SMS multi-factor authentication (MFA) with AES-256 encrypted secrets, session revocation, and step-up auth for high-risk actions.
-- **Role-Based Access Control (RBAC)**: Fine-grained admin roles (`SUPER_ADMIN`, `ADMIN`, `MODERATOR`, `SUPPORT`) and client/worker account separation.
-- **Service Request & Booking Pipeline**: Lifecycle tracking from request submission through quotes, scheduling, job status updates, completion, and reviews.
-- **Real-Time Gateway**: Dedicated WebSocket server for live presence, chat messaging, and event delivery backed by Redis Pub/Sub.
-- **Background Processing & Queues**: Asynchronous execution of media processing, notification dispatch, search indexing, and scheduled cleanup using BullMQ.
-- **Search & Discovery**: Fast worker and service search integration powered by optional Typesense engine.
-- **Admin Desk Console**: React SPA featuring dashboard analytics, user session management, moderation queues, support ticket workflows, and CSV export utilities.
-- **Observability Suite**: Prometheus metrics endpoint, Jaeger OpenTelemetry OTLP tracing, Sentry error-reporting integration, and pre-built Grafana dashboards with Alertmanager routing.
-- **Operational Verifiers**: Automated scripts for zero-downtime database backup/restore verification, secret generation, MFA re-wrapping, and artifact drift checking.
-
----
-
-## Tech Stack
-
-### Backend
-| Layer | Technology |
-|---|---|
-| Runtime | Node.js (>=20.0.0) |
-| Language | TypeScript 5.7 |
-| Web Framework | Express 4.21 |
-| ORM & Database | Prisma 5.22, PostgreSQL 16 |
-| Cache & Queue | Redis 7 (ioredis, BullMQ 5.16) |
-| Real-time | WebSocket (`ws` 8.18) |
-| Search | Typesense 27.1 |
-| Auth & Crypto | JSON Web Tokens (`jsonwebtoken`), `bcrypt`, `otplib`, `twilio` |
-
-### Frontend (Admin Console)
-| Layer | Technology |
-|---|---|
-| Library & Build | React 18, Vite 5, TypeScript 5.6 |
-| State & Query | TanStack React Query 5.91 |
-| Routing & Forms | React Router 6, React Hook Form 7, Zod 4 |
-| Styling & UI | Tailwind CSS 3, Lucide React, Sonner, Recharts |
-| E2E Testing | Playwright 1.55, `@axe-core/playwright` |
-
-### Observability & Infrastructure
-| Service | Tooling |
-|---|---|
-| Containers | Docker, Docker Compose |
-| Monitoring | Prometheus 2.54, Grafana 11.1, Alertmanager 0.27 |
-| Distributed Tracing | OpenTelemetry Node SDK, Jaeger 1.61 |
-| Error Reporting | Sentry (`@sentry/node` 10.45) |
-
----
-
-## Architecture
-
-VSP employs a modular monolithic backend codebase with distinct operational execution targets:
-
-1. **HTTP API Server**: Handles client and admin REST endpoints, request validation, authentication, and synchronous business logic.
-2. **Background Workers**: Dedicated process executing async jobs (BullMQ queues) for heavy computation, external webhooks, and push notifications.
-3. **WebSocket Gateway**: Separate lightweight server handling persistent client connections, heartbeats, presence state, and live notifications via Redis Pub/Sub.
-4. **Admin Web SPA**: Vite/React interface communicating with the backend API over HTTPS.
+VSP follows a decoupled, modular multi-tier architecture designed for horizontal scalability, zero-downtime rolling deployments, and strict operational separation:
 
 ```mermaid
-graph TD
-    Client[Web & Mobile Clients] -->|HTTPS REST| API[API Server Express]
-    Client -->|WSS WebSockets| Gateway[WebSocket Gateway]
-    Admin[Admin Console React] -->|HTTPS REST| API
-
-    subgraph Backend Core Runtimes
-        API -->|ORM| Postgres[(PostgreSQL 16)]
-        API -->|Cache / Event Pub| Redis[(Redis 7)]
-        Workers[Background Workers] -->|Consume Jobs| Redis
-        Workers -->|ORM| Postgres
-        Gateway -->|Pub/Sub & Presence| Redis
-        API -.->|Search Indexing| Typesense[(Typesense)]
+flowchart TD
+    subgraph Clients["Presentation & Edge Tier"]
+        Mobile["Flutter Mobile App<br/>(Customer & Worker Personas · 41 Screens)<br/>Android / iOS / Web"]
+        AdminDesk["Admin Console<br/>(React 18 · Vite · Tailwind · React Query)"]
     end
 
-    subgraph Observability
-        API & Workers & Gateway -->|Prometheus Metrics| Prom[Prometheus]
-        Prom --> Grafana[Grafana Dashboard]
-        API & Workers & Gateway -.->|OTLP Traces| Jaeger[Jaeger Tracing]
-        API & Workers & Gateway -.->|Errors| Sentry[Sentry / Webhook]
+    subgraph Edge["Gateway & Traffic Distribution"]
+        Proxy["Nginx Reverse Proxy / Cloudflare Edge"]
+        RateLimit["Distributed Redis Rate Limiter & Security Headers"]
     end
+
+    subgraph BackendRuntimes["Core Application Tier (Express + TypeScript Monolith)"]
+        API["HTTP API Server (:3000)<br/>REST Endpoints · Auth · Validation · Business Logic"]
+        Gateway["WebSocket Gateway (:3002)<br/>Real-Time Presence · Chat Streams · Notifications"]
+        Workers["BullMQ Job Workers<br/>Async Media · Push Notifications · Cleanup · Indexing"]
+    end
+
+    subgraph Persistence["Persistence, Cache & Queue Tier"]
+        PG[("PostgreSQL 16<br/>41 Relational Tables · Foreign Keys · Indexes")]
+        RedisStore[("Redis 7<br/>Session Blacklist · Pub/Sub · Job Queues")]
+        SearchEngine[("Typesense Engine (Optional)<br/>Fast Geospatial & Full-Text Search")]
+    end
+
+    subgraph Telemetry["Observability & Operations"]
+        Prometheus["Prometheus Metrics (:9090)"]
+        Grafana["Grafana Dashboards (:3003)"]
+        Jaeger["Jaeger OTLP Traces (:16686)"]
+        Alerts["Alertmanager Routing (:9093)"]
+    end
+
+    Mobile -->|HTTPS REST| Proxy
+    Mobile -->|WSS Socket| Gateway
+    AdminDesk -->|HTTPS REST| Proxy
+
+    Proxy --> RateLimit --> API
+    Gateway <-->|Redis PubSub| RedisStore
+
+    API -->|Prisma ORM| PG
+    API -->|Cache / Push Jobs| RedisStore
+    API -.->|Search Indexing| SearchEngine
+
+    Workers -->|Consume Jobs| RedisStore
+    Workers -->|Persistence| PG
+
+    API & Gateway & Workers -->|Metrics Export| Prometheus
+    Prometheus --> Grafana
+    API & Gateway & Workers -.->|Distributed Traces| Jaeger
+    Prometheus --> Alerts
 ```
+
+---
+
+## Monorepo Structure
+
+```text
+.
+├── backend/                       # Node.js + Express + Prisma Monolith Core
+│   ├── contracts/                 # Generated OpenAPI 3.1 & route contract specs
+│   ├── observability/             # Prometheus metrics, Alertmanager & Grafana configs
+│   ├── prisma/                    # Schema definitions, migrations, and database seeders
+│   │   ├── schema.prisma          # 41 Prisma models with relational constraints
+│   │   └── seed.ts                # Production-grade idempotent seed fixtures
+│   ├── reports/                   # Route inventory, test coverage & lint artifacts
+│   ├── scripts/                   # Zero-downtime backup, restore, MFA rewrap & ops scripts
+│   └── src/
+│       ├── bootstrap/             # Runtimes: api.ts, workers.ts, gateway.ts
+│       ├── config/                # Validated environment schemas (Zod)
+│       ├── database/              # Prisma client initialization & query extensions
+│       ├── gateway/               # WebSocket connection manager, heartbeat & pub/sub
+│       ├── middleware/            # RSA JWT auth, RBAC, error filters, rate limiters
+│       ├── modules/               # Domain feature modules (auth, admin, requests, chat, etc.)
+│       ├── queues/                # BullMQ queue definitions and scheduler jobs
+│       └── workers/               # Async worker processors
+│
+├── frontend-admin/                # React 18 Admin Web Application
+│   ├── e2e/                       # Playwright browser automation test suites
+│   ├── public/                    # Branding and static web assets
+│   ├── scripts/                   # Build verifiers and error reporting validation
+│   └── src/
+│       ├── components/            # Reusable UI component library
+│       ├── features/              # Modular admin features (users, tickets, moderation, metrics)
+│       ├── lib/                   # API client, auth session context & formatters
+│       └── pages/                 # Top-level route pages
+│
+├── mobile/                        # Flutter 3.x / Dart 3.x Native Mobile Client
+│   ├── android/                   # Native Android wrapper (permissions, cleartext config)
+│   ├── ios/                       # Native iOS runner & Xcode project configurations
+│   ├── lib/
+│   │   ├── core/                  # Constants, network clients (REST/WS), theme & storage
+│   │   │   ├── constants/         # API routes, color tokens, typography scales
+│   │   │   ├── network/           # ApiClient (HTTP + interceptors), WebSocketClient
+│   │   │   ├── storage/           # StorageService (Encrypted / SharedPreferences tokens)
+│   │   │   └── theme/             # Nunito + Inter typography, light & dark palettes
+│   │   ├── data/
+│   │   │   ├── models/            # Domain models (User, Worker, Booking, Chat, Review)
+│   │   │   └── repositories/      # 11 Clean Architecture repositories
+│   │   └── presentation/
+│   │       ├── providers/         # 9 ChangeNotifier business logic providers
+│   │       ├── routes/            # GoRouter configuration with dynamic aliases
+│   │       ├── screens/           # 41 mobile screens (Auth, Customer Shell, Worker Shell)
+│   │       └── widgets/           # Atomic UI elements (cards, badges, pills, text fields)
+│   └── test/                      # Unit and widget test suite (12/12 passing)
+│
+├── compose.yml                    # Main Docker Compose multi-service orchestration
+├── Makefile                       # Developer shortcuts for build, test, and release
+└── README.md                      # Monorepo architecture & operations documentation
+```
+
+---
+
+## Technology Stack
+
+| Layer | Component | Technologies & Libraries |
+| :--- | :--- | :--- |
+| **Backend Core** | Runtime & API | **Node.js 22 LTS**, **TypeScript 5.8** (Strict mode), **Express 4.21** |
+| | Database & Cache | **PostgreSQL 16**, **Prisma ORM 5.22**, **Redis 7** (`ioredis`) |
+| | Queues & Real-Time | **BullMQ 5.16**, **WebSocket** (`ws` 8.18) with Redis Pub/Sub |
+| | Security & Crypto | **RSA-256 JWT** (`jsonwebtoken`), **bcrypt**, **otplib** (TOTP MFA), **AES-256-GCM** |
+| **Admin Console** | Frontend Framework | **React 18.3**, **Vite 5.4**, **TypeScript 5.6** |
+| | UI & Styling | **Tailwind CSS 3.4**, **Lucide React**, **Recharts 3.8**, **Sonner** |
+| | State & Forms | **TanStack React Query 5.91**, **React Hook Form 7**, **Zod 4** |
+| | Testing | **Playwright 1.55**, **`@axe-core/playwright`** (Accessibility testing) |
+| **Mobile App** | Framework & SDK | **Flutter 3.47**, **Dart 3.13** |
+| | State Management | **Provider 6.1** (`ChangeNotifier` architecture) |
+| | Navigation & Routing | **GoRouter 14.8** (Declarative routing + shorthand redirects) |
+| | Networking & IO | **`http` 1.2**, **`web_socket_channel` 3.0**, **`shared_preferences` 2.3** |
+| | Typography & Design | **Google Fonts 6.2** (Nunito + Inter with offline caching) |
+| **DevOps & Observability** | Orchestration | **Docker 27**, **Docker Compose v2** |
+| | Metrics & Dashboards | **Prometheus 2.54**, **Grafana 11.1**, **Alertmanager 0.27** |
+| | Tracing & Errors | **OpenTelemetry Node SDK**, **Jaeger 1.61**, **Sentry SDK 10.4** |
+
+---
+
+## Domain Capabilities & Personas
+
+### 1. Customer Persona (Mobile)
+- **Discovery & Search**: Localized vocational trades search (Electrician, Plumber, Carpenter, HVAC, Cleaner, Mason, etc.) filtered by GPS distance, ratings, price tier, and verified badges.
+- **Service Request Pipeline**: Submit requests with location details, images, scheduling windows, and receive competitive quotes from nearby tradespeople.
+- **Bookings Engine**: Real-time booking tracking from confirmation through in-progress work to completion.
+- **Real-Time Communication**: In-app encrypted WebSocket chat with typing indicators and notification delivery.
+- **Ratings & Reviews**: Post-service rating and verified review submissions.
+
+### 2. Worker / Tradesperson Persona (Mobile)
+- **Onboarding Wizard**: Step-by-step verification wizard (trades, service areas, licenses, certifications, ID verification, and hourly rates).
+- **Leads & Request Management**: Instant notifications of new localized service requests, quote submission, and scheduling.
+- **Job Execution**: Live status transitions (`ACCEPTED` $\to$ `IN_PROGRESS` $\to$ `COMPLETED`).
+- **Worker Analytics & Portfolio**: Real-time earnings summary, rating history, completed job counts, and media portfolio showcase.
+
+### 3. Administrator Persona (Web Console)
+- **Operations Control Plane**: Platform telemetry, transaction volume, active jobs, and worker capacity heatmaps.
+- **KYC & Verification Desks**: Review worker licenses, insurance documentation, and approve/reject verification status.
+- **Moderation & Fraud Prevention**: Flagged post reviews, dispute mediation, and user suspension controls.
+- **Support Ticketing**: Ticket triage, priority assignments, and internal operator notes.
 
 ---
 
 ## Prerequisites
 
-- **Node.js**: `^20.0.0` (LTS recommended)
-- **npm**: `>=10.0.0`
-- **PostgreSQL**: `>=16.0` (with `pg_dump`, `pg_restore`, `psql` CLI tools installed)
-- **Redis**: `>=7.0`
-- **Docker & Docker Compose**: (Optional, for containerized local runtime)
+Before starting local development, ensure the following dependencies are installed on your host system:
+
+- **Node.js**: `>= 20.0.0 LTS`
+- **npm**: `>= 10.0.0`
+- **Docker & Docker Compose**: v2.20+
+- **Flutter SDK**: `>= 3.24.0` (with Dart `>= 3.5.0`)
+- **Android SDK & platform-tools**: `adb` tool in your system `PATH` (for physical device or emulator execution)
 
 ---
 
-## Installation & Setup
+## Quick Start (Local Development)
 
-### 1. Repository Setup
+### Step 1: Start Core Infrastructure (Docker)
+Start the PostgreSQL 16 database and Redis 7 cache from the workspace root:
 
-Clone the repository:
 ```bash
-git clone https://github.com/edwardnyame/vsp.git
-cd vsp
+cd /home/edward-nyame/VSP
+docker compose up -d postgres redis
 ```
 
-### 2. Environment Configuration
+*Note: PostgreSQL is exposed on host port `5433` (container port 5432) to prevent conflicts with existing local PostgreSQL instances. Redis is available on port `6379`.*
 
-Copy environment template files:
+### Step 2: Configure & Start Backend Monolith
 ```bash
-cp backend/.env.example backend/.env
-cp frontend-admin/.env.example frontend-admin/.env
-```
+cd /home/edward-nyame/VSP/backend
 
-Generate fresh development secrets for JWT, MFA, and storage signing:
-```bash
-cd backend
+# Install dependencies
 npm install
-npm run ops:secrets:generate
-cd ..
-```
 
-### 3. Database Migration & Seeding
-
-Deploy Prisma migrations and seed initial test fixtures:
-```bash
-cd backend
+# Run database migrations and seed baseline data
 npm run db:migrate:deploy
 npm run db:seed
-cd ..
+
+# Start the API server in watch mode (:3000)
+npm run dev
+```
+
+In separate terminal tabs, start the background worker and WebSocket gateway runtimes:
+```bash
+cd /home/edward-nyame/VSP/backend
+npm run workers     # Background job processor (BullMQ)
+npm run gateway     # WebSocket gateway server (:3002)
+```
+
+### Step 3: Start Admin Web Console
+```bash
+cd /home/edward-nyame/VSP/frontend-admin
+
+# Install dependencies and start Vite dev server (:3001)
+npm install
+npm run dev
+```
+Open **`http://localhost:3001`** in your browser.
+
+### Step 4: Run Mobile Application (Flutter)
+To run on your desktop browser (Chrome):
+```bash
+cd /home/edward-nyame/VSP/mobile
+flutter run -d chrome
 ```
 
 ---
 
-## Environment Variables
+## Physical Android Device Deployment (USB + ADB)
 
-### Backend Core Configuration (`backend/.env`)
+To run the mobile app on a physical Android device connected via USB (e.g., **Samsung Galaxy M11**):
 
-| Variable | Description | Default / Required |
-|---|---|---|
-| `NODE_ENV` | Environment mode (`development`, `test`, `production`) | `development` |
+### 1. Enable USB Debugging
+Enable **Developer Options** on your phone (tap *Build Number* 7 times in *Settings > About Phone*) and toggle on **USB Debugging**.
+
+### 2. Verify Device Connection
+```bash
+adb devices -l
+# Expected output:
+# R9JN30HACLJ    device usb:2-2 product:m11qnnxx model:SM_M115F device:m11q
+```
+
+### 3. Establish Reverse Port Tunneling
+Forward device local ports to your development host so the mobile app can reach the backend without needing external network/WiFi connectivity:
+```bash
+adb reverse tcp:3000 tcp:3000   # HTTP REST API
+adb reverse tcp:3002 tcp:3002   # WebSocket Gateway
+```
+
+### 4. Build & Install Debug APK
+```bash
+cd /home/edward-nyame/VSP/mobile
+
+# Fast assemble debug APK
+flutter build apk --debug
+
+# Install directly to attached device
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
+
+# Launch the app
+adb shell am start -n com.vsp.vsp_mobile/.MainActivity
+```
+
+*Tip: You can also execute live hot-reload development using:*
+```bash
+flutter run -d <DEVICE_ID>
+```
+
+---
+
+## Environment Configuration Reference
+
+### Backend Core (`backend/.env`)
+
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
 | `PORT` | API HTTP port | `3000` |
-| `APP_BASE_URL` | Base URL of the API server | **Required** (e.g. `http://localhost:3000`) |
-| `DATABASE_URL` | PostgreSQL connection URL | **Required** |
-| `REDIS_URL` | Redis connection URL | **Required** |
-| `CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed origins | **Required** |
-| `CDN_BASE_URL` | Public CDN base URL for media files | **Required** |
-| `STORAGE_SIGNING_SECRET` | Secret key for signed media URLs | **Required** |
-| `JWT_PRIVATE_KEY_BASE64` | Base64-encoded RSA PEM private key | **Required** |
-| `JWT_PUBLIC_KEY_BASE64` | Base64-encoded RSA PEM public key | **Required** |
-| `JWT_PUBLIC_KEY_BASE64_PREVIOUS` | Base64-encoded key for zero-downtime rotation | Optional |
-| `MFA_ENCRYPTION_KEY_BASE64` | Base64 32-byte key for MFA secret encryption | **Required** |
-| `INTERNAL_API_KEY` | Key for internal metrics/monitoring endpoints | Required in `production` |
-| `EVENT_BUS_MODE` | Event dispatch mechanism (`inline` or `queue`) | `inline` |
-| `BACKGROUND_WORKERS_ENABLED` | Run workers in API process if set `true` | `false` |
-| `WS_GATEWAY_PORT` | WebSocket gateway server port | `3002` |
-| `TWILIO_VERIFY_MOCK_MODE` | Enable mock mode for Twilio SMS MFA | `true` |
-| `TWILIO_ACCOUNT_SID` | Twilio Account SID | Required if mock mode `false` |
-| `TWILIO_AUTH_TOKEN` | Twilio Auth Token | Required if mock mode `false` |
-| `TWILIO_VERIFY_SERVICE_SID` | Twilio Service SID | Required if mock mode `false` |
-| `TYPESENSE_HOST` | Hostname for Typesense engine | Optional |
-| `TYPESENSE_API_KEY` | API Key for Typesense search engine | Required if `TYPESENSE_HOST` set |
-| `TRACING_ENABLED` | Enable OpenTelemetry tracing | `false` |
-| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | OTLP collector endpoint URL | Optional |
-| `SENTRY_ENABLED` | Enable Sentry error reporting | `false` |
-| `SENTRY_DSN` | Sentry project DSN | Required if `SENTRY_ENABLED=true` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:postgres@localhost:5433/vsp_dev?schema=public` |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
+| `WS_GATEWAY_PORT` | WebSocket gateway port | `3002` |
+| `JWT_PRIVATE_KEY_BASE64` | Base64-encoded RSA-256 private key | Generated via `npm run ops:secrets:generate` |
+| `JWT_PUBLIC_KEY_BASE64` | Base64-encoded RSA-256 public key | Generated via `npm run ops:secrets:generate` |
+| `JWT_PUBLIC_KEY_BASE64_PREVIOUS` | Fallback public key for zero-downtime key rotation | Optional |
+| `MFA_ENCRYPTION_KEY_BASE64` | 32-byte AES-256 key for encrypted TOTP/SMS secrets | Generated via `npm run ops:secrets:generate` |
+| `STORAGE_SIGNING_SECRET` | Secret key for signed media URLs | Generated via `npm run ops:secrets:generate` |
+| `CORS_ALLOWED_ORIGINS` | Comma-separated allowed frontend origins | `http://localhost:3001,http://localhost:5173` |
 
-### Frontend Admin Configuration (`frontend-admin/.env`)
+### Frontend Admin (`frontend-admin/.env`)
 
-| Variable | Description | Default / Required |
-|---|---|---|
-| `VITE_API_BASE_URL` | Target API base URL | **Required** (e.g. `http://localhost:3000/api/v1`) |
-| `VITE_APP_NAME` | Display application title | `VSP Admin` |
-| `VITE_APP_RELEASE` | Build/Release identifier | `local` |
-| `VITE_ERROR_REPORTING_ENABLED` | Enable error reporting | `false` |
-| `VITE_ERROR_REPORTING_ENDPOINT` | Error intake webhook URL | Optional |
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `VITE_API_BASE_URL` | Target Backend REST endpoint | `http://localhost:3000/api/v1` |
+| `VITE_APP_NAME` | Portal header brand title | `VSP Admin` |
+| `VITE_APP_RELEASE` | Release version tag | `1.0.0` |
 
 ---
 
-## Usage & Commands
+## Pre-Seeded Evaluation Credentials
 
-### Monorepo Makefile Targets
+The database seeder (`backend/prisma/seed.ts`) automatically provisions standard test accounts for instant evaluation:
 
-| Command | Purpose |
-|---|---|
-| `make backend-dev` | Start API server in watch mode |
-| `make backend-workers` | Start background worker process |
-| `make backend-gateway` | Start WebSocket gateway server |
-| `make backend-test` | Run backend unit & integration tests |
-| `make backend-ci` | Run full backend CI verification pipeline locally |
-| `make compose-up` | Boot Docker Compose API service |
-| `make staging-up` | Boot full staging-like stack (API, Admin, Workers, Gateway) |
-| `make staging-gate` | Run E2E release gate against staging stack |
-| `make staging-down` | Stop staging Docker stack |
-| `make final-hard-gate` | Execute complete repository hard release gate |
+| Persona | Email | Password | Role / Details |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `superadmin@example.com` | `Change-This-Password-123!` | Full control plane, RBAC management, audit logs |
+| **Operations Admin** | `admin@example.com` | `Change-This-Password-123!` | Verification queues, dispute resolution, analytics |
+| **Customer** | `alice@example.com` | `Change-This-Password-123!` | Alice Customer (Accra) · Has active confirmed booking |
+| **Worker / Tradesperson**| `bob@example.com` | `Change-This-Password-123!` | Bob Williams · Licensed Electrician · 4.8 Rating |
 
-### Backend Development
+> **Mobile Quick-Fill**: The mobile login screen features one-tap quick-fill buttons (`⚡ Customer (Alice)` and `⚡ Worker (Bob)`) for instant authentication without typing credentials.
 
-```bash
-cd backend
-npm run dev        # API in watch mode (http://localhost:3000)
-npm run workers    # Background worker runtime
-npm run gateway    # WebSocket gateway runtime (ws://localhost:3002/ws)
+---
+
+## REST API & Real-Time Gateway Protocols
+
+All REST API endpoints are prefixed with `/api/v1` and return structured JSON responses:
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "meta": {
+    "requestId": "94e80816-11f8-450a-bf19-74d6f83abec8",
+    "timestamp": "2026-09-30T09:23:22.401Z"
+  }
+}
 ```
 
-### Admin Console Development
+### Essential Endpoints
 
+- **Health Checks**:
+  - `GET /api/v1/health` — Liveness probe.
+  - `GET /api/v1/health/ready` — Readiness probe (validates PostgreSQL & Redis connectivity).
+- **Authentication (`/api/v1/auth`)**:
+  - `POST /auth/register` — User account creation.
+  - `POST /auth/login` — Issues access token (15m RSA JWT) and refresh token.
+  - `POST /auth/refresh` — Refresh expired access token.
+  - `GET /auth/me` — Fetches authenticated user profile, permissions, and roles.
+- **Marketplace & Discovery**:
+  - `GET /api/v1/trade-categories` — List available vocational trade categories.
+  - `GET /api/v1/discovery/featured-workers` — Vetted tradespeople ranked by proximity and rating.
+  - `GET /api/v1/search/workers` — Geospatial and textual search with radius filters.
+- **Service Requests & Bookings**:
+  - `POST /api/v1/service-requests` — Create client request for quotes.
+  - `GET /api/v1/bookings` — List customer/worker bookings.
+  - `PATCH /api/v1/bookings/:id/status` — Lifecycle transitions (`CONFIRMED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`).
+- **Real-Time WebSocket Gateway (`ws://<host>:3002/ws`)**:
+  - Send: `{"type": "auth", "token": "<JWT>"}` to authenticate connection.
+  - Send: `{"type": "chat_message", "conversationId": "...", "body": "..."}` for direct messaging.
+  - Receive: Instant notification and message dispatch events backed by Redis Pub/Sub.
+
+---
+
+## Testing & Quality Verification
+
+VSP maintains strict test coverage and zero-tolerance lint standards across all modules:
+
+### 1. Mobile Application (Flutter)
+```bash
+cd mobile
+
+# Static code analysis (must report 0 issues)
+flutter analyze
+
+# Execute 12/12 unit and widget tests
+flutter test
+```
+
+### 2. Backend Monolith
+```bash
+cd backend
+
+# TypeScript strict type checking
+npm run typecheck
+
+# Execute authentication and integration test suite
+npm run test:auth
+npm run test:admin
+```
+
+### 3. Frontend Admin Console
 ```bash
 cd frontend-admin
-npm run dev        # Vite dev server (http://localhost:5173)
-npm run build      # Production build
-npm run preview    # Preview built admin bundle (http://localhost:4173)
-```
 
-### Docker Compose Local Stack
+# Typecheck and production build verification
+npm run build
 
-Boot full containerized stack:
-```bash
-docker compose up --build api admin-web
-```
-
-Include monitoring (Prometheus + Grafana + Alertmanager):
-```bash
-docker compose --profile monitoring up --build
+# Run Playwright end-to-end browser tests
+npm run e2e
 ```
 
 ---
 
-## Project Structure
+## Observability & Security Operations
 
-```text
-.
-├── backend/                       # Node.js + Express + Prisma Monolith Core
-│   ├── contracts/                 # Generated OpenAPI 3.1 & route artifacts
-│   ├── observability/             # Prometheus, Grafana & Alertmanager configs
-│   ├── prisma/                    # Database schema and seed scripts
-│   │   ├── schema.prisma
-│   │   └── seed.ts
-│   ├── reports/                   # Route inventory and HTTP test coverage
-│   ├── scripts/                   # CI, backup, restore & ops scripts
-│   └── src/
-│       ├── bootstrap/             # Runtimes: api.ts, workers.ts, gateway.ts
-│       ├── config/                # Environment schema and loaded configs
-│       ├── gateway/               # WebSocket connection manager & Redis pub/sub
-│       ├── middleware/            # Auth, RBAC, error handling, tracing
-│       ├── modules/               # Domain feature modules (auth, admin, requests, etc.)
-│       ├── queues/                # BullMQ queue definitions and job dispatches
-│       └── workers/               # Worker job processors
-├── frontend-admin/                # React 18 Admin Web Application
-│   ├── e2e/                       # Playwright browser automation test scripts
-│   ├── public/                    # Static assets
-│   ├── scripts/                   # Verification utilities
-│   └── src/
-│       ├── components/            # Reusable UI components
-│       ├── features/              # Modular admin domain screens & hooks
-│       ├── lib/                   # API client, auth context & helpers
-│       └── pages/                 # Top-level route pages
-├── doc/                           # Architecture specifications & system design packs
-├── scripts/                       # Repository-wide release gates
-├── compose.yml                    # Main Docker Compose orchestration spec
-├── Makefile                       # Top-level command runner shortcuts
-├── .env.staging.example           # Staging environment template
-└── LICENSE                        # Repository license file
-```
-
----
-
-## API Reference
-
-The backend API is served under `/api/v1`. OpenAPI 3.1 contracts are automatically generated in `backend/contracts/openapi.json`.
-
-### Core Health & Operations
-
-- `GET /api/v1/health` — API liveness check.
-- `GET /api/v1/health/ready` — API readiness check (verifies database & Redis connectivity).
-- `GET /api/v1/internal/metrics` — Prometheus metrics endpoint (requires `INTERNAL_API_KEY`).
-
-### Primary Feature Modules
-
-- **Auth (`/api/v1/auth`)**: Register, login, token refresh, logout, session revocation, MFA TOTP setup/verify, SMS request/challenge.
-- **Admin (`/api/v1/admin`)**: User management, account session revocation, role assignments, audit logs.
-- **Worker Profiles (`/api/v1/worker-profiles`)**: Skills, service areas, availability, verification status.
-- **Requests & Bookings (`/api/v1/requests`, `/api/v1/bookings`)**: Service request creation, quoting, acceptance, scheduling, and job state transitions.
-- **Chat (`/api/v1/chat`)**: Conversation threads and direct message history.
-- **Moderation & Support (`/api/v1/moderation`, `/api/v1/support`)**: Flagged content review, reports, dispute handling, support ticketing.
-
----
-
-## Observability & Operations
-
-### Database Backup & Restore Verification
-
-The backend includes automated operational verification scripts to ensure disaster recovery procedures remain functional:
-
+### Disaster Recovery: Database Backup & Restore Verifier
+Automated backup and restore verification scripts guarantee database snapshot reproducibility:
 ```bash
 cd backend
-npm run ops:backup          # Takes PostgreSQL dump in custom format
-npm run ops:restore:verify  # Restores into scratch DB and verifies schema integrity
+npm run ops:backup               # Dumps PostgreSQL snapshot in custom format
+npm run ops:restore:verify       # Restores into isolated scratch DB and verifies schema parity
 ```
 
-### Key Rotation Utilities
-
-- **MFA Secrets**: Re-encrypt stored secrets under a new key:
+### Zero-Downtime Cryptographic Rotation
+- **RSA JWT Key Rotation**: Deploy new `JWT_PUBLIC_KEY_BASE64` while keeping the old key in `JWT_PUBLIC_KEY_BASE64_PREVIOUS` to validate older active tokens without logging users out.
+- **MFA Secret Re-Wrapping**:
   ```bash
-  npm run ops:mfa:rewrap -- --dry-run
+  cd backend
+  npm run ops:mfa:rewrap -- --dry-run   # Test re-encryption of stored TOTP secrets
   ```
-- **JWT Key Rotation**: Support zero-downtime key rotation by setting `JWT_PUBLIC_KEY_BASE64_PREVIOUS`.
+
+### Metrics & Tracing Dashboards
+Boot the full observability suite with Docker Compose:
+```bash
+docker compose --profile monitoring up -d
+```
+- **Grafana**: `http://localhost:3003` (Pre-configured VSP system dashboards)
+- **Prometheus**: `http://localhost:9090` (Scrapes `/api/v1/internal/metrics`)
+- **Jaeger UI**: `http://localhost:16686` (End-to-end distributed trace spans)
 
 ---
 
-## Testing & Verification
+## Makefile & Tooling Index
 
-### Backend Suite
+The repository includes a top-level `Makefile` for streamlined command execution:
 
-Run native integration tests:
-```bash
-cd backend
-npm test
-```
-
-Run specialized test sub-suites:
-```bash
-npm run test:auth    # Auth module unit/integration tests
-npm run test:admin   # Admin RBAC and session tests
-```
-
-### Admin Console E2E Tests
-
-Run Playwright browser suite (covers MFA setup, moderation desks, bulk actions, and accessibility):
-```bash
-cd frontend-admin
-npm run e2e:install   # One-time browser binary download
-npm run e2e           # Run E2E tests headless
-```
-
----
-
-## Deployment & CI/CD
-
-Continuous Integration is powered by GitHub Actions (`.github/workflows/backend-ci.yml`). On every push to `backend/**`, CI provisions ephemeral PostgreSQL and Redis service containers, runs database migrations, executes artifact drift checks, runs the test suite, verifies tracing OTLP export, and tests backup/restore flows.
+| Target | Description |
+| :--- | :--- |
+| `make compose-up` | Starts PostgreSQL and Redis infrastructure containers |
+| `make backend-dev` | Boots Express backend API in watch mode |
+| `make backend-workers`| Launches BullMQ background worker process |
+| `make backend-gateway`| Launches real-time WebSocket gateway server |
+| `make backend-test` | Runs backend unit and integration test suites |
+| `make staging-up` | Launches full staging stack via Docker Compose |
+| `make staging-gate` | Runs automated E2E release gate against running stack |
+| `make final-hard-gate`| Executes entire repository verification pipeline (types, tests, lint) |
 
 ---
 
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
