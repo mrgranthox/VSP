@@ -21,6 +21,28 @@ const allowedOrigins = env.CORS_ALLOWED_ORIGINS
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const isAllowedOrigin = (origin: string): boolean => {
+  if (allowedOrigins.includes(origin)) return true;
+  if (env.NODE_ENV === "development") {
+    try {
+      const url = new URL(origin);
+      const host = url.hostname;
+      if (
+        host === "localhost" ||
+        host === "127.0.0.1" ||
+        host.startsWith("192.168.") ||
+        host.startsWith("10.") ||
+        (host.startsWith("172.") && /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(host))
+      ) {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+  return false;
+};
+
 const contentSecurityPolicy = {
   directives: {
     defaultSrc: ["'self'"],
@@ -51,7 +73,7 @@ app.use(
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || isAllowedOrigin(origin)) {
         callback(null, true);
         return;
       }

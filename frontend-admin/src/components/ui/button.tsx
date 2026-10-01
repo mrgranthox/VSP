@@ -9,19 +9,19 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-[linear-gradient(135deg,var(--jo-forest),#55aa58,var(--jo-gold))] text-white shadow-[0_16px_30px_rgba(65,150,70,0.25)] hover:brightness-[1.03]",
-  secondary: "bg-[color:var(--jo-ink)] text-white shadow-sm hover:bg-[#20453a]",
-  ghost: "bg-transparent text-[color:var(--jo-muted)] hover:bg-[rgba(65,150,70,0.08)] hover:text-[color:var(--jo-ink)]",
-  danger: "bg-[linear-gradient(135deg,var(--jo-coral),#ff6e39)] text-white shadow-[0_14px_28px_rgba(255,75,25,0.22)] hover:brightness-[1.04]",
-  outline: "border border-[rgba(112,104,84,0.16)] bg-[rgba(255,253,248,0.96)] text-[color:var(--jo-ink)] hover:border-[rgba(65,150,70,0.24)] hover:bg-white",
-  success: "bg-[linear-gradient(135deg,var(--jo-forest),#67b36a)] text-white shadow-[0_14px_28px_rgba(65,150,70,0.2)] hover:brightness-[1.03]"
+  primary: "bg-sky-600 text-white shadow-sm hover:bg-sky-700 active:bg-sky-800",
+  secondary: "bg-slate-900 text-white shadow-sm hover:bg-slate-800 active:bg-slate-950",
+  ghost: "bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900",
+  danger: "bg-red-600 text-white shadow-sm hover:bg-red-700 active:bg-red-800",
+  outline: "border border-slate-300 bg-white text-slate-800 hover:border-slate-400 hover:bg-slate-50",
+  success: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 active:bg-emerald-800"
 };
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(({ className, variant = "primary", type = "button", ...props }, ref) => (
   <button
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center gap-2 rounded-[1rem] px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(65,150,70,0.28)] disabled:cursor-not-allowed disabled:opacity-60",
+      "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30 disabled:cursor-not-allowed disabled:opacity-50",
       variantClasses[variant],
       className
     )}

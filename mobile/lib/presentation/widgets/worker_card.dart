@@ -29,7 +29,7 @@ class WorkerCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-          border: Border.all(color: AppColors.borderLight),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -177,7 +177,7 @@ class WorkerCard extends StatelessWidget {
                     height: 36,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.brand,
+                        foregroundColor: AppColors.brandDark,
                         side: const BorderSide(color: AppColors.brand, width: 1.5),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppTheme.radius),

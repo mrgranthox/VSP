@@ -9,18 +9,18 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const badgeClasses: Record<BadgeVariant, string> = {
-  blue: "bg-[rgba(65,150,70,0.12)] text-[#285e2d]",
-  green: "bg-[rgba(65,150,70,0.16)] text-[#285e2d]",
-  amber: "bg-[rgba(246,179,19,0.18)] text-[#9a6a00]",
-  red: "bg-[rgba(255,75,25,0.16)] text-[color:var(--jo-coral-deep)]",
-  slate: "border border-[rgba(112,104,84,0.14)] bg-[rgba(217,212,202,0.72)] text-[#445045]",
-  purple: "bg-[rgba(233,119,155,0.16)] text-[color:var(--jo-rose)]"
+  blue: "bg-sky-50 text-sky-700 border border-sky-200",
+  green: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  amber: "bg-amber-50 text-amber-800 border border-amber-200",
+  red: "bg-red-50 text-red-700 border border-red-200",
+  slate: "bg-slate-100 text-slate-700 border border-slate-200",
+  purple: "bg-purple-50 text-purple-700 border border-purple-200"
 };
 
 const Badge = ({ className, children, variant = "slate", ...props }: BadgeProps) => {
   return (
     <span
-      className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold", badgeClasses[variant], className)}
+      className={cn("inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold", badgeClasses[variant], className)}
       {...props}
     >
       {children}

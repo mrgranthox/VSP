@@ -41,9 +41,13 @@ class AppTheme {
         onSecondaryContainer: AppColors.accentDark,
         surface: AppColors.cardBg,
         onSurface: AppColors.darkText,
+        surfaceContainer: const Color(0xFFF1F5F9),
+        surfaceContainerHigh: const Color(0xFFE2E8F0),
+        onSurfaceVariant: AppColors.midText,
+        outline: AppColors.border,
+        outlineVariant: AppColors.borderLight,
         error: AppColors.danger,
         onError: Colors.white,
-        outline: AppColors.border,
       ),
       textTheme: baseTextTheme.copyWith(
         displayLarge: nunito.copyWith(
@@ -77,7 +81,7 @@ class AppTheme {
         bodyLarge: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: AppColors.dark3,
+          color: AppColors.darkText,
           height: 1.5,
         ),
         bodyMedium: GoogleFonts.inter(
@@ -105,8 +109,8 @@ class AppTheme {
         labelSmall: nunito.copyWith(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppColors.lightText,
-          letterSpacing: 0.5,
+          color: AppColors.midText,
+          letterSpacing: 0.4,
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -114,20 +118,20 @@ class AppTheme {
         foregroundColor: AppColors.darkText,
         elevation: 0,
         scrolledUnderElevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.08),
         titleTextStyle: nunito.copyWith(
           fontSize: 18,
           fontWeight: FontWeight.w800,
           color: AppColors.darkText,
         ),
-        iconTheme: const IconThemeData(color: AppColors.dark2),
+        iconTheme: const IconThemeData(color: AppColors.darkText),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardBg,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusLg),
-          side: const BorderSide(color: AppColors.borderLight, width: 1),
+          side: const BorderSide(color: AppColors.border, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -148,7 +152,7 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.brand,
+          foregroundColor: AppColors.brandDark,
           side: const BorderSide(color: AppColors.brand, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -162,7 +166,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF8FAFC),
+        fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: GoogleFonts.inter(
           fontSize: 14,
@@ -170,16 +174,16 @@ class AppTheme {
         ),
         labelStyle: GoogleFonts.inter(
           fontSize: 14,
-          color: AppColors.midText,
-          fontWeight: FontWeight.w500,
+          color: AppColors.dark3,
+          fontWeight: FontWeight.w600,
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: AppColors.border, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
@@ -196,9 +200,9 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
-        selectedItemColor: AppColors.brand,
+        selectedItemColor: AppColors.brandDark,
         unselectedItemColor: AppColors.lightText,
-        selectedLabelStyle: nunito.copyWith(fontSize: 11, fontWeight: FontWeight.w700),
+        selectedLabelStyle: nunito.copyWith(fontSize: 11, fontWeight: FontWeight.w800),
         unselectedLabelStyle: nunito.copyWith(fontSize: 11, fontWeight: FontWeight.w600),
         type: BottomNavigationBarType.fixed,
         elevation: 8,
@@ -230,22 +234,23 @@ class AppTheme {
       scaffoldBackgroundColor: const Color(0xFF0F172A),
       primaryColor: AppColors.brand,
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.brand,
-        onPrimary: Colors.white,
+        primary: Color(0xFF38BDF8),
+        onPrimary: Color(0xFF0F172A),
         primaryContainer: Color(0xFF0369A1),
         onPrimaryContainer: Colors.white,
-        secondary: AppColors.accent,
-        onSecondary: Colors.white,
+        secondary: Color(0xFFFB923C),
+        onSecondary: Color(0xFF0F172A),
         secondaryContainer: Color(0xFFC2410C),
         onSecondaryContainer: Colors.white,
         surface: AppColors.cardBgDark,
         onSurface: Color(0xFFF8FAFC),
         surfaceContainer: Color(0xFF1E293B),
-        onSurfaceVariant: Color(0xFF94A3B8),
-        outline: Color(0xFF334155),
-        outlineVariant: Color(0xFF1E293B),
-        error: AppColors.danger,
-        onError: Colors.white,
+        surfaceContainerHigh: Color(0xFF334155),
+        onSurfaceVariant: Color(0xFFCBD5E1),
+        outline: Color(0xFF475569),
+        outlineVariant: Color(0xFF334155),
+        error: Color(0xFFF87171),
+        onError: Color(0xFF0F172A),
       ),
       textTheme: baseTextTheme.copyWith(
         displayLarge: nunito.copyWith(
@@ -279,7 +284,7 @@ class AppTheme {
         bodyLarge: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,
-          color: const Color(0xFFCBD5E1),
+          color: const Color(0xFFF8FAFC),
           height: 1.5,
         ),
         bodyMedium: GoogleFonts.inter(
@@ -302,12 +307,12 @@ class AppTheme {
         labelMedium: nunito.copyWith(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF94A3B8),
+          color: const Color(0xFFCBD5E1),
         ),
         labelSmall: nunito.copyWith(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: const Color(0xFF64748B),
+          color: const Color(0xFF94A3B8),
           letterSpacing: 0.5,
         ),
       ),
@@ -316,7 +321,7 @@ class AppTheme {
         foregroundColor: const Color(0xFFF8FAFC),
         elevation: 0,
         scrolledUnderElevation: 1,
-        shadowColor: Colors.black.withValues(alpha: 0.2),
+        shadowColor: Colors.black.withValues(alpha: 0.3),
         titleTextStyle: nunito.copyWith(
           fontSize: 18,
           fontWeight: FontWeight.w800,
@@ -335,8 +340,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.brand,
-          foregroundColor: Colors.white,
+          backgroundColor: const Color(0xFF38BDF8),
+          foregroundColor: const Color(0xFF0F172A),
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -354,7 +359,7 @@ class AppTheme {
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: GoogleFonts.inter(
           fontSize: 14,
-          color: const Color(0xFF64748B),
+          color: const Color(0xFF94A3B8),
         ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
@@ -366,13 +371,13 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(radius),
-          borderSide: const BorderSide(color: AppColors.brand, width: 2),
+          borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 2),
         ),
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: AppColors.cardBgDark,
-        selectedItemColor: AppColors.brand,
-        unselectedItemColor: const Color(0xFF64748B),
+        selectedItemColor: const Color(0xFF38BDF8),
+        unselectedItemColor: const Color(0xFF94A3B8),
         selectedLabelStyle: nunito.copyWith(fontSize: 11, fontWeight: FontWeight.w700),
         unselectedLabelStyle: nunito.copyWith(fontSize: 11, fontWeight: FontWeight.w600),
         type: BottomNavigationBarType.fixed,

@@ -40,7 +40,7 @@ class StatusPill extends StatelessWidget {
         break;
       default:
         bg = AppColors.borderLight;
-        fg = AppColors.midText;
+        fg = AppColors.dark3;
         break;
     }
 

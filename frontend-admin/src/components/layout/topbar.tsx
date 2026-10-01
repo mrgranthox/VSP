@@ -63,12 +63,12 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
 
   return (
     <header className="admin-topbar-shell sticky top-0 z-20 border-b backdrop-blur-xl">
-      <div className="flex min-h-[84px] flex-wrap items-center justify-between gap-4 px-4 py-4 lg:px-8">
-        <div className="space-y-2">
+      <div className="flex min-h-[80px] flex-wrap items-center justify-between gap-4 px-4 py-3.5 lg:px-8">
+        <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <button
               aria-label="Open mobile navigation"
-              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white lg:hidden"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50 lg:hidden"
               onClick={onToggleMobileSidebar}
               type="button"
             >
@@ -76,7 +76,7 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
             </button>
             <button
               aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white lg:flex"
+              className="hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50 lg:flex"
               onClick={onToggleDesktopSidebar}
               type="button"
             >
@@ -89,25 +89,25 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
             </Badge>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">Current module</p>
-            <h1 className="text-2xl font-black tracking-tight text-slate-950">{pageTitle}</h1>
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Current module</p>
+            <h1 className="text-2xl font-black tracking-tight text-slate-900">{pageTitle}</h1>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-3">
-          <div className="hidden items-center gap-2 rounded-[1.25rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-3 py-2 shadow-sm md:flex">
-            <ShieldCheck className="h-4 w-4 text-[color:var(--jo-forest)]" />
+          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm md:flex">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Role lane</p>
-              <p className="text-sm font-bold text-slate-950">{roles.length > 0 ? roles.join(" · ").replaceAll("_", " ") : "Loading roles"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Role lane</p>
+              <p className="text-sm font-bold text-slate-900">{roles.length > 0 ? roles.join(" · ").replaceAll("_", " ") : "Loading roles"}</p>
             </div>
           </div>
 
-          <div className="hidden items-center gap-2 rounded-[1.25rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] px-3 py-2 shadow-sm xl:flex">
-            <Sparkles className="h-4 w-4 text-[color:var(--jo-coral)]" />
+          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm xl:flex">
+            <Sparkles className="h-4 w-4 text-sky-600" />
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">Authority</p>
-              <p className="text-sm font-bold text-slate-950">{roles.includes("SUPER_ADMIN") ? "Unrestricted" : roles.length > 0 ? "Policy limited" : "Resolving"}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Authority</p>
+              <p className="text-sm font-bold text-slate-900">{roles.includes("SUPER_ADMIN") ? "Unrestricted" : roles.length > 0 ? "Policy limited" : "Resolving"}</p>
             </div>
           </div>
 
@@ -116,8 +116,8 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
               aria-expanded={notificationsOpen}
               aria-label="Open notifications"
               className={cn(
-                "relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.92)] text-[color:var(--jo-ink)] shadow-sm transition hover:bg-white",
-                notificationsOpen && "border-[rgba(65,150,70,0.24)] bg-white"
+                "relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-800 shadow-sm transition hover:bg-slate-50",
+                notificationsOpen && "border-sky-500 ring-2 ring-sky-500/20"
               )}
               data-testid="topbar-notifications-toggle"
               onClick={() => setNotificationsOpen((current) => !current)}
@@ -126,8 +126,8 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
               <Bell className="h-4 w-4" />
               {unreadCount > 0 ? (
                 <>
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-[color:var(--jo-coral)]" />
-                  <span className="absolute -right-1 -top-1 flex min-h-[1.2rem] min-w-[1.2rem] items-center justify-center rounded-full bg-[color:var(--jo-coral-deep)] px-1 text-[10px] font-bold text-white">
+                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+                  <span className="absolute -right-1 -top-1 flex min-h-[1.2rem] min-w-[1.2rem] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white shadow-sm">
                     {unreadCount > 9 ? "9+" : unreadCount}
                   </span>
                 </>
@@ -136,16 +136,16 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
 
             {notificationsOpen ? (
               <div
-                className="absolute right-0 top-[calc(100%+0.85rem)] z-30 w-[min(92vw,24rem)] rounded-[1.6rem] border border-[rgba(112,104,84,0.14)] bg-[linear-gradient(180deg,rgba(255,253,248,0.98),rgba(250,245,236,0.96))] p-3 shadow-[0_26px_56px_rgba(71,61,45,0.16)]"
+                className="absolute right-0 top-[calc(100%+0.5rem)] z-30 w-[min(92vw,24rem)] rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xl"
                 data-testid="topbar-notifications-panel"
               >
-                <div className="flex items-start justify-between gap-3 px-2 pb-3">
+                <div className="flex items-start justify-between gap-3 px-2 pb-3 border-b border-slate-100">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:rgba(107,114,102,0.72)]">Notifications</p>
-                    <p className="mt-1 text-sm font-bold text-[color:var(--jo-ink)]">{unreadCount} unread in the last pull</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Notifications</p>
+                    <p className="mt-0.5 text-sm font-bold text-slate-900">{unreadCount} unread in the last pull</p>
                   </div>
                   <button
-                    className="text-xs font-semibold text-[color:var(--jo-forest)]"
+                    className="text-xs font-semibold text-sky-600 hover:text-sky-700"
                     data-testid="topbar-notifications-open-inbox"
                     onClick={() => {
                       setNotificationsOpen(false);
@@ -156,19 +156,19 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                   </button>
                 </div>
 
-                <div className="max-h-[24rem] space-y-2 overflow-y-auto pr-1">
+                <div className="max-h-[22rem] space-y-2 overflow-y-auto py-2 pr-1">
                   {(notificationsQuery.data?.data ?? []).length === 0 ? (
-                    <div className="rounded-[1.25rem] border border-dashed border-[rgba(112,104,84,0.18)] bg-[rgba(255,251,244,0.72)] px-4 py-6 text-center text-sm text-[color:var(--jo-muted)]">
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
                       No notifications yet.
                     </div>
                   ) : (
                     (notificationsQuery.data?.data ?? []).map((notification) => (
                       <button
                         className={cn(
-                          "w-full rounded-[1.25rem] border px-4 py-3 text-left transition",
+                          "w-full rounded-xl border px-3.5 py-2.5 text-left transition",
                           notification.isRead
-                            ? "border-[rgba(112,104,84,0.12)] bg-[rgba(255,253,248,0.96)] hover:border-[rgba(65,150,70,0.24)]"
-                            : "border-[rgba(246,179,19,0.22)] bg-[rgba(246,179,19,0.08)] hover:border-[rgba(65,150,70,0.24)]"
+                            ? "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                            : "border-amber-200 bg-amber-50/60 hover:border-amber-300"
                         )}
                         data-testid={`topbar-notification-item-${notification.id}`}
                         key={notification.id}
@@ -179,30 +179,30 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-bold text-[color:var(--jo-ink)]">{notification.notificationType.replaceAll("_", " ")}</p>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <p className="text-sm font-bold text-slate-900">{notification.notificationType.replaceAll("_", " ")}</p>
                               {!notification.isRead ? <Badge variant="amber">Unread</Badge> : null}
                             </div>
-                            <p className="mt-1 line-clamp-2 text-sm text-[color:var(--jo-muted)]">
+                            <p className="mt-1 line-clamp-2 text-xs text-slate-600 leading-relaxed">
                               {Object.entries(notification.payloadJson ?? {})
                                 .slice(0, 2)
                                 .map(([key, value]) => `${key}: ${String(value)}`)
                                 .join(" · ") || "Notification payload recorded."}
                             </p>
-                            <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:rgba(107,114,102,0.72)]">
+                            <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                               {formatRelativeDate(notification.createdAt)}
                             </p>
                           </div>
-                          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-[color:rgba(107,114,102,0.6)]" />
+                          <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
                         </div>
                       </button>
                     ))
                   )}
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2 px-1">
+                <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-3 px-1">
                   <button
-                    className="inline-flex items-center gap-2 rounded-xl border border-[rgba(112,104,84,0.14)] bg-white px-3 py-2 text-sm font-semibold text-[color:var(--jo-ink)] transition hover:border-[rgba(65,150,70,0.24)]"
+                    className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 hover:border-slate-300"
                     data-testid="topbar-notifications-center"
                     onClick={() => {
                       setNotificationsOpen(false);
@@ -213,14 +213,14 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
                   </button>
                   {canBroadcast ? (
                     <button
-                      className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,var(--jo-forest),var(--jo-gold))] px-3 py-2 text-sm font-semibold text-white shadow-[0_14px_28px_rgba(65,150,70,0.2)]"
+                      className="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:bg-sky-700"
                       data-testid="topbar-notifications-broadcast"
                       onClick={() => {
                         setNotificationsOpen(false);
                         navigate("/notifications/broadcast");
                       }}
                     >
-                      <Megaphone className="h-4 w-4" />
+                      <Megaphone className="h-3.5 w-3.5" />
                       Broadcast
                     </button>
                   ) : null}
@@ -229,21 +229,21 @@ const Topbar = ({ isSidebarCollapsed, onToggleDesktopSidebar, onToggleMobileSide
             ) : null}
           </div>
 
-          <div className="flex items-center gap-3 rounded-[1.4rem] border border-[rgba(112,104,84,0.14)] bg-[rgba(255,253,248,0.94)] px-3 py-2 shadow-sm">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--jo-forest),var(--jo-gold),var(--jo-coral))] text-sm font-bold text-white">
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-xs font-bold text-white shadow-sm">
               {initials}
             </div>
             <div className="hidden min-w-0 sm:block">
-              <p className="truncate text-sm font-semibold text-slate-950">{displayName}</p>
-              <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{roles.length > 0 ? roles.join(" · ") : "LOADING"}</p>
+              <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">{roles.length > 0 ? roles.join(" · ") : "LOADING"}</p>
             </div>
             <button
               aria-label="Sign out"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[rgba(112,104,84,0.14)] text-[color:var(--jo-muted)] transition hover:bg-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-800"
               onClick={() => logoutMutation.mutate()}
               type="button"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

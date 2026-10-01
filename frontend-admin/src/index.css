@@ -6,18 +6,18 @@
 
 @layer base {
   :root {
-    --jo-forest: #419646;
-    --jo-gold: #f6b313;
-    --jo-rose: #e9779b;
-    --jo-coral: #ff4b19;
-    --jo-coral-deep: #b33612;
-    --jo-mist: #d9d4ca;
-    --jo-canvas: #f7f3eb;
-    --jo-paper: #fffdf8;
-    --jo-ink: #173328;
-    --jo-muted: #6b7266;
-    color: var(--jo-ink);
-    background: var(--jo-canvas);
+    --jo-forest: #059669;
+    --jo-gold: #d97706;
+    --jo-rose: #7c3aed;
+    --jo-coral: #dc2626;
+    --jo-coral-deep: #991b1b;
+    --jo-mist: #e2e8f0;
+    --jo-canvas: #f8fafc;
+    --jo-paper: #ffffff;
+    --jo-ink: #0f172a;
+    --jo-muted: #475569;
+    color: #0f172a;
+    background: #f8fafc;
     font-family: "Plus Jakarta Sans", system-ui, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -36,13 +36,11 @@
   }
 
   body {
-    @apply m-0 min-w-[320px] text-text;
+    @apply m-0 min-w-[320px] text-slate-900 bg-slate-50;
     background-image:
-      radial-gradient(circle at top left, rgba(65, 150, 70, 0.15), transparent 26%),
-      radial-gradient(circle at top right, rgba(246, 179, 19, 0.18), transparent 22%),
-      radial-gradient(circle at 64% 12%, rgba(233, 119, 155, 0.14), transparent 20%),
-      radial-gradient(circle at 88% 18%, rgba(255, 75, 25, 0.09), transparent 18%),
-      linear-gradient(180deg, #fbfaf6 0%, #f3eee6 52%, #f8f4ec 100%);
+      radial-gradient(circle at 10% 0%, rgba(2, 132, 199, 0.04), transparent 25%),
+      radial-gradient(circle at 90% 0%, rgba(14, 165, 233, 0.03), transparent 25%),
+      linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
   }
 
   a {
@@ -64,71 +62,59 @@
   }
 
   .admin-canvas-overlay {
-    background:
-      radial-gradient(circle at 0% 0%, rgba(65, 150, 70, 0.12), transparent 26%),
-      radial-gradient(circle at 100% 0%, rgba(246, 179, 19, 0.14), transparent 22%),
-      radial-gradient(circle at 84% 18%, rgba(233, 119, 155, 0.12), transparent 18%),
-      linear-gradient(180deg, rgba(255, 252, 246, 0.84), rgba(247, 243, 235, 0.96));
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.98) 100%);
   }
 
   .admin-sidebar-panel {
-    background:
-      radial-gradient(circle at top right, rgba(246, 179, 19, 0.18), transparent 24%),
-      radial-gradient(circle at 10% 18%, rgba(233, 119, 155, 0.1), transparent 18%),
-      linear-gradient(180deg, #183328 0%, #1d4233 38%, #13271f 100%);
-    box-shadow: 0 24px 60px rgba(23, 51, 40, 0.26);
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
   }
 
   .admin-topbar-shell {
-    background: rgba(255, 252, 246, 0.84);
-    border-color: rgba(112, 104, 84, 0.12);
-    box-shadow: 0 14px 32px rgba(71, 61, 45, 0.08);
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #e2e8f0;
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
   }
 
   .admin-sidebar-scroll {
-    scrollbar-color: rgba(246, 179, 19, 0.72) rgba(255, 255, 255, 0.06);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+
+  .admin-sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
   }
 
   .admin-sidebar-scroll::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(246, 179, 19, 0.82), rgba(233, 119, 155, 0.72));
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
   }
 
   .admin-sidebar-scroll::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
+    background: transparent;
   }
 }
 
 @layer utilities {
   .bg-admin-canvas {
-    background:
-      linear-gradient(180deg, rgba(251, 249, 243, 0.96) 0%, rgba(245, 240, 230, 0.92) 100%);
-  }
-
-  .text-slate-400,
-  .text-gray-400,
-  .text-zinc-400,
-  .text-stone-400 {
-    color: #6b7266;
-  }
-
-  .text-slate-500,
-  .text-gray-500,
-  .text-zinc-500,
-  .text-stone-500 {
-    color: #4f574e;
+    background: #f8fafc;
   }
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(65, 150, 70, 0.68), rgba(246, 179, 19, 0.74));
+  background: #cbd5e1;
   border-radius: 999px;
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 ::-webkit-scrollbar-track {
-  background: rgba(217, 212, 202, 0.52);
+  background: #f1f5f9;
 }
